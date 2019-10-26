@@ -1,17 +1,13 @@
-#[macro_use]
-extern crate nom;
-
 use nom::{
     IResult,
     bytes::complete::tag,
-}
+};
 
 pub mod mhc {
-    use super::nom::IResult;
-
-    fn parse_hla_name(hla_name: &str) -> IResult<&str, &str> {
-
-    }
+    use super::*;
+//    fn parse_hla_name(hla_name: &str) -> IResult<&str, &str> {
+//
+//    }
 
     pub struct HLA {
         gene: Locus,
@@ -24,9 +20,9 @@ pub mod mhc {
         mhc_class: MHC,
     }
 
-    impl HLA {
-        pub fn new(name: String) -> HLA {}
-    }
+//    impl HLA {
+//        pub fn new(name: String) -> HLA {}
+//    }
 
     enum Locus {
         A,
@@ -63,8 +59,8 @@ pub mod mhc {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_create_from_short_name() {
-        assert_eq!("HLA-A*03:01", )
-    }
+//    #[test]
+//    fn test_create_from_short_name() {
+//        assert_eq!("HLA-A*03:01", )
+//    }
 }

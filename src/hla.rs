@@ -1,4 +1,17 @@
-mod mhc {
+#[macro_use]
+extern crate nom;
+
+use nom::{
+    IResult,
+    bytes::complete::tag,
+}
+
+pub mod mhc {
+    use super::nom::IResult;
+
+    fn parse_hla_name(hla_name: &str) -> IResult<&str, &str> {
+
+    }
 
     pub struct HLA {
         gene: Locus,
@@ -8,10 +21,14 @@ mod mhc {
         non_coding_difference: u8,
         expression_change: ExpressionChange,
         ligand_group: LigandGroup,
-        mhc_class: MHC
+        mhc_class: MHC,
     }
 
-    pub enum Locus {
+    impl HLA {
+        pub fn new(name: String) -> HLA {}
+    }
+
+    enum Locus {
         A,
         B,
         C,
@@ -19,15 +36,15 @@ mod mhc {
         DM,
         DO,
         DQ,
-        DR
+        DR,
     }
 
-    pub enum MHC {
+    enum MHC {
         I,
-        II
+        II,
     }
 
-    pub enum ExpressionChange {
+    enum ExpressionChange {
         N,
         L,
         S,
@@ -35,8 +52,19 @@ mod mhc {
         A,
         Q,
     }
+
     pub enum LigandGroup {
         I,
-        II
+        II,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_from_short_name() {
+        assert_eq!("HLA-A*03:01", )
     }
 }

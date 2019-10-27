@@ -1,4 +1,5 @@
 pub mod mhc {
+
     use super::*;
 
     fn parse_hla_digits(
@@ -106,17 +107,11 @@ pub mod mhc_meta {
         Unknown,
     }
 
+    // https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?C*01:02
     #[derive(Debug, Eq, PartialEq)]
     pub(crate) enum LigandGroup {
         I,
         II,
-    }
-
-    pub(crate) fn sanitize_hla_name(hla_name: &str) -> String {
-        hla_name
-            .trim_start_matches("HLA")
-            .trim_start_matches("-")
-            .replace("*", "")
     }
 
     pub(crate) fn hla_name_to_locus(hla_name: &str) -> Locus {

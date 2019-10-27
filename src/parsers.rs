@@ -7,8 +7,6 @@ pub(crate) mod parsers {
     use crate::hla::mhc::HLA;
     use nom::Err;
 
-
-
     pub fn create_hla(hla_name: &str) -> () {
         if hla_name.contains(":") {
             let mut hla_information = hla_name.split(":");
@@ -16,17 +14,17 @@ pub(crate) mod parsers {
                 println!("{:?}", val);
             }
             ()
-//            let (
-//                gene_name,
-//                allele_group,
-//                hla_protein,
-//                cds_synonymous_sub,
-//                non_coding_difference,
-//                expression_change,
-//                ligand_group,
-//                mhc_class,
-//            ) = hla_information.unwrap();
-//            gene_name
+            //            let (
+            //                gene_name,
+            //                allele_group,
+            //                hla_protein,
+            //                cds_synonymous_sub,
+            //                non_coding_difference,
+            //                expression_change,
+            //                ligand_group,
+            //                mhc_class,
+            //            ) = hla_information.unwrap();
+            //            gene_name
         }
     }
 }

@@ -1,3 +1,7 @@
+use crate::error::HLAErr::HLAError;
+
+type Result<T> = std::result::Result<T, HLAError>;
+
 pub mod mhc {
 
     use super::*;
@@ -45,10 +49,10 @@ pub mod mhc {
     }
 
     impl HLA {
-        pub fn new(name: &str) -> HLA {
+        pub fn new(name: &str) -> Result<HLA> {
             let mut hla_name = name.trim_start_matches("HLA-").replace("*", "");
 
-            let gene: mhc_meta::Locus = mhc_meta::hla_name_to_locus(&hla_name[..2]);
+            let gene: mhc_meta::Locus = mhc_meta::hla_name_to_locus(&hla_name[..2])?;
             let expression_change: mhc_meta::ExpressionChange =
                 mhc_meta::hla_name_to_expression_change(hla_name.chars().last().unwrap());
 
@@ -62,7 +66,7 @@ pub mod mhc {
             let (allele_group, hla_protein, cds_synonymous_sub, non_coding_difference) =
                 parse_hla_digits(hla_name, second_field_size);
 
-            HLA {
+            Ok(HLA {
                 gene,
                 allele_group,
                 hla_protein,
@@ -71,12 +75,14 @@ pub mod mhc {
                 expression_change,
                 ligand_group: mhc_meta::LigandGroup::I,
                 mhc_class: mhc_meta::MHC::I,
-            }
+            })
         }
     }
 }
 
 pub mod mhc_meta {
+    use super::*;
+
     #[derive(Debug, Eq, PartialEq)]
     pub(crate) enum Locus {
         A,
@@ -114,20 +120,26 @@ pub mod mhc_meta {
         II,
     }
 
-    pub(crate) fn hla_name_to_locus(hla_name: &str) -> Locus {
+    pub(crate) fn hla_name_to_locus(hla_name: &str) -> Result<Locus> {
         hla_name[..2]
             .chars()
-            .fold(Locus::Unknown, |mut locus, char| {
-                match char {
-                    'A' => locus = Locus::A,
-                    'B' => locus = Locus::B,
-                    'C' => locus = Locus::C,
-                    'P' => locus = Locus::DP,
-                    'M' => locus = Locus::DM,
-                    'O' => locus = Locus::DO,
-                    'Q' => locus = Locus::DQ,
-                    'R' => locus = Locus::DR,
-                    _ => (),
+            .fold(Ok(Locus::Unknown), |mut locus, c| {
+                match c {
+                    'A' => locus = Ok(Locus::A),
+                    'B' => locus = Ok(Locus::B),
+                    'C' => locus = Ok(Locus::C),
+                    'P' => locus = Ok(Locus::DP),
+                    'M' => locus = Ok(Locus::DM),
+                    'O' => locus = Ok(Locus::DO),
+                    'Q' => locus = Ok(Locus::DQ),
+                    'R' => locus = Ok(Locus::DR),
+                    _ => {
+                        if c.is_digit(10) & (locus == Ok(Locus::Unknown)) {
+                            locus = Err(HLAError)
+                        } else {
+                            ()
+                        }
+                    }
                 }
                 locus
             })
@@ -153,8 +165,8 @@ mod tests {
 
     #[test]
     fn test_hla_to_locus() {
-        assert_eq!(hla_name_to_locus("A0301"), mhc_meta::Locus::A);
-        assert_eq!(hla_name_to_locus("0301"), mhc_meta::Locus::Unknown);
+        assert_eq!(hla_name_to_locus("A0301"), Ok(mhc_meta::Locus::A));
+        assert_eq!(hla_name_to_locus("0301"), Err(HLAError));
     }
 
     #[test]
@@ -169,6 +181,6 @@ mod tests {
             ligand_group: mhc_meta::LigandGroup::I,
             mhc_class: mhc_meta::MHC::I,
         };
-        assert_eq!(mhc::HLA::new("HLA-A*01:101"), hla);
+        assert_eq!(mhc::HLA::new("HLA-A*01:101"), Ok(hla));
     }
 }

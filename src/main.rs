@@ -2,6 +2,7 @@ extern crate nom;
 extern crate reqwest;
 extern crate select;
 
+mod error;
 mod hla;
 mod ligand_groups;
 mod parsers;

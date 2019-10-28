@@ -3,7 +3,7 @@ extern crate reqwest;
 extern crate select;
 
 mod hla;
-mod ligands_groups;
+mod ligand_groups;
 mod parsers;
 
 use hla::mhc::HLA;

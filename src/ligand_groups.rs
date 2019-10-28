@@ -49,7 +49,6 @@ pub mod ligands_groups {
                 .filter_map(|l| l.attr("tr"))
                 .for_each(|x| println!("{}", x));
         }
-
         return "".to_string();
     }
 

@@ -1,32 +1,31 @@
-use std::error;
-use std::fmt;
+use std::fmt::{self,Display};
 
 type Result<T> = std::result::Result<T, HLAErr::HLAError>;
 
-pub mod HLAErr {
-    use super::*;
+#[derive(Debug, Clone, Eq, PartialEq, Copy)]
+pub enum HLAErr {
+    ParseError(String)
+}
 
-    #[derive(Debug, Clone, Eq, PartialEq, Copy)]
-    pub(crate) struct HLAError;
-
-    impl fmt::Display for HLAError {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(
-                f,
-                "Invalid HLA locus/gene specified the allowd options are A, B, C, DP, DR, DQ, DN"
-            )
-        }
-    }
-
-    impl error::Error for HLAError {
-        fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-            None
+impl fmt::Display for HLAErr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            HLAErr::ParseError(s) => {write!(f, "HLA allele specified incorrectly: {}", s)}
         }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn check_hla_error() {}
+impl std::error::Error for HLAErr{
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            HLAErr::ParseError(_) => None,
+        }
+    }
 }
+//impl From<std::io::Error> for Fast5Error {
+//        fn from(err: std::io::Error) -> Self {
+//            Fast5Error::PathError(err)
+//        }
+//
+//    }
+

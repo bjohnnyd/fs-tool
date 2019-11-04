@@ -48,6 +48,7 @@ pub(crate) struct HLA {
 impl HLA {
     pub fn new(name: &str) -> Result<HLA> {
         let mut hla_name = name.trim_start_matches("HLA-").replace("*", "");
+        hla_name.to_hla()
 
         let gene: mhc_meta::Locus = mhc_meta::hla_name_to_locus(&hla_name[..2])?;
         let expression_change: mhc_meta::ExpressionChange =
@@ -87,12 +88,6 @@ pub(crate) enum Locus {
     DQ,
     DR,
     Unknown,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub(crate) enum MHC {
-    I,
-    II,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -142,30 +137,3 @@ pub(crate) fn hla_name_to_expression_change(change_char: char) -> ExpressionChan
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::hla::mhc::HLA;
-    use crate::hla::mhc_meta::hla_name_to_locus;
-
-    #[test]
-    fn test_hla_to_locus() {
-        assert_eq!(hla_name_to_locus("A0301"), Ok(mhc_meta::Locus::A));
-        assert_eq!(hla_name_to_locus("0301"), Err(HLAError));
-    }
-
-    #[test]
-    fn test_create_hla() {
-        let hla = HLA {
-            gene: mhc_meta::Locus::A,
-            allele_group: String::from("01"),
-            hla_protein: Some("101".to_string()),
-            cds_synonymous_sub: None,
-            non_coding_difference: None,
-            expression_change: mhc_meta::ExpressionChange::Unknown,
-            ligand_group: mhc_meta::LigandGroup::I,
-            mhc_class: mhc_meta::MHC::I,
-        };
-        assert_eq!(mhc::HLA::new("HLA-A*01:101"), Ok(hla));
-    }
-}

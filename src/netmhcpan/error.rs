@@ -3,31 +3,17 @@ use std::fmt;
 
 type Result<T> = std::result::Result<T, HLAErr::HLAError>;
 
+#[derive(Default)]
+pub struct ParseError;
 
-pub mod HLAErr  {
-use super::*;
-
-#[derive(Debug, Clone, Eq, PartialEq, Copy)]
-pub (crate) struct HLAError;
-
-impl fmt::Display for HLAError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Invalid HLA locus/gene specified the allowd options are A, B, C, DP, DR, DQ, DN")
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "A parsing error occurred.")
     }
 }
-
-impl error::Error for HLAError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        None
-    }
-}
-}
-
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn check_hla_error() {
-    }
+    fn check_netmhcpan_error() {}
 }
-    

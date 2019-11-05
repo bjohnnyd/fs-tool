@@ -58,6 +58,6 @@ mod tests {
 
     #[test]
     fn test_get_ligand_group() {
-        assert_eq!(ligands_groups::get_ligand_group("C*01:02"), "TEST");
+        assert_eq!(get_ligand_group("C*01:02"), "TEST");
     }
 }

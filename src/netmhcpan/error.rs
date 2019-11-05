@@ -1,8 +1,6 @@
 use std::error;
 use std::fmt;
 
-type Result<T> = std::result::Result<T, HLAErr::HLAError>;
-
 #[derive(Default)]
 pub struct ParseError;
 

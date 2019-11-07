@@ -1,4 +1,5 @@
 use crate::mhc::error::HLAErr;
+use crate::mhc::ligand_group::LigandGroup;
 
 type Result<T> = std::result::Result<T, HLAErr>;
 
@@ -10,6 +11,9 @@ pub(crate) struct HLA {
     pub cds_synonymous_sub: Option<String>,
     pub non_coding_diff: Option<String>,
     pub expression_change: ExpressionChange,
+    two_digit_hla: ExpressionChange,
+    ligand_group: LigandGroup
+    //    pub ligand_group: mhc_meta::LigandGroup,
     // TODO: Need to implement ligand groups
     //    pub ligand_group: mhc_meta::LigandGroup,
 }
@@ -18,6 +22,8 @@ impl HLA {
     pub fn new(name: &str) -> Result<HLA> {
         let mut hla_name = name.trim_start_matches("HLA-").replace("*", "");
         hla_name.parse::<HLA>()
+    }
+
     }
 }
 

@@ -5432,7 +5432,6 @@ HLA-A80:03	Unclassified	Common or Well Defined
 HLA-A80:04	Unclassified	Common or Well Defined
 HLA-A80:05	Unclassified	Common or Well Defined
 HLA-A80:06	Unclassified	Common or Well Defined
-HLA-Allele	Predicted Ligand	Allele Frequency
 HLA-B07:02:01:01	Bw6	Common or Well Defined
 HLA-B07:02:01:02	Bw6	Common or Well Defined
 HLA-B07:02:01:03	Bw6	Common or Well Defined
@@ -12243,7 +12242,6 @@ HLA-B82:02:01:02	Bw6	Common or Well Defined
 HLA-B82:02:02	Bw6	Common or Well Defined
 HLA-B82:03	Bw6	Common or Well Defined
 HLA-B83:01	Bw6	Rare
-HLA-Allele	Predicted Ligand	Allele Frequency
 HLA-C01:02:01:01	C1	Common or Well Defined
 HLA-C01:02:01:02	C1	Common or Well Defined
 HLA-C01:02:01:03	C1	Common or Well Defined

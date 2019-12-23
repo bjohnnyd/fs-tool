@@ -25,7 +25,6 @@ impl HLA {
     }
 
     }
-}
 
 impl std::str::FromStr for HLA {
     type Err = HLAErr;
@@ -92,6 +91,8 @@ impl std::str::FromStr for HLA {
             cds_synonymous_sub,
             non_coding_diff,
             expression_change,
+            two_digit_hla: ExpressionChange::N,
+            ligand_group: LigandGroup::A3
         })
     }
 }
@@ -132,10 +133,10 @@ mod tests {
             cds_synonymous_sub: None,
             non_coding_diff: None,
             expression_change: ExpressionChange::Unknown,
+            two_digit_hla: ExpressionChange::Unknown,
+            ligand_group: LigandGroup::A3
         };
 
         assert_eq!("HLA-A*01:101".parse::<HLA>(), Ok(hla));
-        //        assert_eq!("A*01:101".parse::<HLA>(), Ok(hla));
-        //        assert_eq!("A01101".parse::<HLA>(), Ok(hla));
     }
 }

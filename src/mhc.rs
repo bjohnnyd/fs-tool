@@ -1,3 +1,3 @@
 mod error;
 mod hla;
-mod ligand_group;
+pub mod ligand_group;

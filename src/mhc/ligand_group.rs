@@ -36,28 +36,9 @@ pub(crate) enum LigandGroup {
     Unknown,
 }
 
-pub fn get_ligand_group(hla: &str) -> String {
-    let url = format!("{}{}", IPD_URL, hla);
-    println!("URL = {}", url);
-
-    let mut resp = reqwest::get(&url).unwrap();
-    println!("{}", resp.text().unwrap());
-    if resp.status().is_success() {
-        Document::from_read(resp)
-            .unwrap()
-            .find(Name("table"))
-            .filter_map(|l| l.attr("tr"))
-            .for_each(|x| println!("{}", x));
-    }
-    return "".to_string();
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_get_ligand_group() {
-        assert_eq!(get_ligand_group("C*01:02"), "TEST");
-    }
 }

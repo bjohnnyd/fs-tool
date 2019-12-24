@@ -5,7 +5,7 @@ pub enum RetrieveLigandError {
     InvalidHLA(String),
     RequestError(reqwest::Error),
     NoLigandTableFound(String),
-    //    ParseError(cssparser::ParseError)
+    CSSParseError(u32, u32),
 }
 
 impl std::fmt::Display for RetrieveLigandError {
@@ -16,7 +16,8 @@ impl std::fmt::Display for RetrieveLigandError {
             RetrieveLigandError::RequestError(err) => std::fmt::Display::fmt(&err, f),
             RetrieveLigandError::NoLigandTableFound(url) =>
                 {writeln!(f, "No ligand table found at URL:\n{}", url)},
-//            RetrieveLigandError::ParseError(err) => std::fmt::Display::fmt(&err, f),
+            RetrieveLigandError::CSSParseError(line, column) =>
+            {writeln!(f, "Website parsing error encountered at line {} and character number {}", line, column)},
         }
     }
 }
@@ -26,9 +27,3 @@ impl From<reqwest::Error> for RetrieveLigandError {
         RetrieveLigandError::RequestError(e)
     }
 }
-
-//impl From<cssparser::ParseError> for RetrieveLigandError {
-//    fn from(e: cssparser::ParseError) -> Self {
-//        RetrieveLigandError::ParseError(e)
-//    }
-//}

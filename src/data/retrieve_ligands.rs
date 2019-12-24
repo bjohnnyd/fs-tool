@@ -2,30 +2,36 @@ use crate::data::errors::RetrieveLigandError::{self, InvalidHLA};
 use scraper::{Html, Selector};
 use std::fmt::{Error, Formatter};
 
-/// #TODO
-///  parse as in, match on Ok/Err and in the Err branch, read the fields of the error
-/// (e.g. line/column) and construct your own error type "wrapper"
-/// that actually implements Error and can display itself as a string or something a CssError
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
+
+/* Converts `cssparser::ParseError` to a RetrieveLigandError */
+macro_rules! selector_error_convert {
+    ($e:expr) => {{
+        match Selector::parse($e) {
+            Ok(selector) => Ok(selector),
+            Err(err) => {
+                let line = err.location.line + 1;
+                Err(RetrieveLigandError::CSSParseError(
+                    line,
+                    err.location.column,
+                ))
+            }
+        }
+    }};
+}
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct LigandInfo(String, String, String);
 
 impl From<Vec<&str>> for LigandInfo {
     fn from(info: Vec<&str>) -> Self {
+        let mut frequency = String::new();
         if info.len() == 2 {
-            LigandInfo(
-                info[0].to_string(),
-                info[1].to_string(),
-                String::from("Unknown"),
-            )
+            frequency.push_str("Unknown");
         } else {
-            LigandInfo(
-                info[0].to_string(),
-                info[1].to_string(),
-                info[2].to_string(),
-            )
+            frequency = info[2].to_string();
         }
+        LigandInfo(info[0].to_string(), info[1].to_string(), frequency)
     }
 }
 
@@ -76,9 +82,8 @@ where
     let mut resp = reqwest::get(&url)?;
 
     if let Ok(resp_html) = resp.text() {
-        // Need to deal with these errors of type `cssparser::ParseError`
-        let table_selector = Selector::parse("table").unwrap();
-        let row_selector = Selector::parse("tr").unwrap();
+        let table_selector = selector_error_convert!("table")?;
+        let row_selector = selector_error_convert!("tr")?;
         let document = Html::parse_document(&resp_html);
 
         if let Some(table) = document.select(&table_selector).next() {
@@ -96,6 +101,7 @@ where
         Err(RetrieveLigandError::InvalidHLA(hla.as_ref().to_string()))
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -4,7 +4,7 @@ use std::fmt::{Error, Formatter};
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
 
-/* Converts `cssparser::ParseError` to a RetrieveLigandError */
+/// Converts `cssparser::ParseError` to a RetrieveLigandError
 macro_rules! selector_error_convert {
     ($e:expr) => {{
         match Selector::parse($e) {
@@ -73,15 +73,15 @@ where
     }
 }
 
-pub fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>, RetrieveLigandError>
+pub async fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>, RetrieveLigandError>
 where
     T: AsRef<str>,
 {
     let mut result = Vec::<LigandInfo>::new();
     let url = format!("{}{}", IPD_KIR_URL, &clean_hla(&hla)?);
-    let mut resp = reqwest::get(&url)?;
+    let mut resp = reqwest::get(&url).await?;
 
-    if let Ok(resp_html) = resp.text() {
+    if let Ok(resp_html) = resp.text().await {
         let table_selector = selector_error_convert!("table")?;
         let row_selector = selector_error_convert!("tr")?;
         let document = Html::parse_document(&resp_html);
@@ -112,10 +112,10 @@ mod tests {
         clean_hla(&hla).unwrap();
     }
 
-    #[test]
-    fn test_reqwest() {
+    #[tokio::test]
+    async fn test_reqwest() {
         let hla = "C*01:102";
-        let result = retrieve_ligand_group(&hla).unwrap();
+        let result = retrieve_ligand_group(&hla).await.unwrap();
 
         assert_eq!(
             result[0],

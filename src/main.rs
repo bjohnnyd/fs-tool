@@ -1,5 +1,8 @@
+use tokio::prelude::*;
+
 mod data;
 
-fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }

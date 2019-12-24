@@ -27,3 +27,5 @@ impl From<reqwest::Error> for RetrieveLigandError {
         RetrieveLigandError::RequestError(e)
     }
 }
+
+impl std::error::Error for RetrieveLigandError {}

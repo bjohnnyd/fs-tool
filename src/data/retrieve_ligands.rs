@@ -21,7 +21,7 @@ macro_rules! selector_error_convert {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct LigandInfo(String, String, String);
+pub struct LigandInfo(pub String, pub String, pub String);
 
 impl From<Vec<&str>> for LigandInfo {
     fn from(info: Vec<&str>) -> Self {

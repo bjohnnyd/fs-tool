@@ -2,7 +2,7 @@ mod cmd_opts;
 mod data;
 
 use structopt::StructOpt;
-use tokio::fs::File;
+//use tokio::fs::File;
 use tokio::prelude::*;
 
 use crate::cmd_opts::Opt;

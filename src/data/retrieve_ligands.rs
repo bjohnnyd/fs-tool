@@ -2,8 +2,10 @@ use crate::data::errors::RetrieveLigandError::{self, InvalidHLA};
 use scraper::{Html, Selector};
 use std::fmt::{Error, Formatter};
 use std::path::Path;
-use tokio::fs::File;
+//use tokio::fs::File;
 use tokio::prelude::*;
+use std::fs::File;
+use std::io::Write;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
 
@@ -82,9 +84,10 @@ where
 {
     let mut result = Vec::<LigandInfo>::new();
     let url = format!("{}{}", IPD_KIR_URL, &clean_hla(&hla)?);
-    let mut resp = reqwest::get(&url).await?;
+//    let mut resp = reqwest::get(&url).await?;
+    let mut resp = surf::get(&url).await?;
 
-    if let Ok(resp_html) = resp.text().await {
+    if let Ok(resp_html) = resp.body_string().await {
         let table_selector = selector_error_convert!("table")?;
         let row_selector = selector_error_convert!("tr")?;
         let document = Html::parse_document(&resp_html);
@@ -117,12 +120,12 @@ where
     lg.append(&mut c_lg);
 
     {
-        let mut f = File::create(ligand_file).await?;
+        let mut f = File::create(ligand_file)?;
         for ligand_info in lg {
-            f.write(format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref())
-                .await?;
+            f.write(format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref());
+//                .await?;
         }
-        f.flush().await?;
+//        f.flush().await?;
     }
 
     Ok(())

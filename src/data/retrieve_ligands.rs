@@ -1,6 +1,9 @@
 use crate::data::errors::RetrieveLigandError::{self, InvalidHLA};
 use scraper::{Html, Selector};
 use std::fmt::{Error, Formatter};
+use std::path::Path;
+use tokio::fs::File;
+use tokio::prelude::*;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
 
@@ -100,6 +103,29 @@ where
     } else {
         Err(RetrieveLigandError::InvalidHLA(hla.as_ref().to_string()))
     }
+}
+
+pub async fn obtain_hla_ligand_groups<T>(ligand_file: T) -> Result<(), Box<dyn std::error::Error>>
+where
+    T: AsRef<Path>,
+{
+    let mut lg = retrieve_ligand_group(&"A").await?;
+    let mut b_lg = retrieve_ligand_group(&"B").await?;
+    let mut c_lg = retrieve_ligand_group(&"C").await?;
+
+    lg.append(&mut b_lg);
+    lg.append(&mut c_lg);
+
+    {
+        let mut f = File::create(ligand_file).await?;
+        for ligand_info in lg {
+            f.write(format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref())
+                .await?;
+        }
+        f.flush().await?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

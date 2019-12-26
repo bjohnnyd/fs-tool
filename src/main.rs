@@ -1,5 +1,6 @@
 mod cmd_opts;
 mod data;
+mod mhc;
 
 use crate::cmd_opts::Opt;
 use crate::data::retrieve_ligands::{obtain_hla_ligand_groups, retrieve_ligand_group, LigandInfo};

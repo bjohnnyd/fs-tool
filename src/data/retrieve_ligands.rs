@@ -84,10 +84,10 @@ fn parse_ipd_response(response_html: String) -> Result<Vec<LigandInfo>, Retrieve
     let document = Html::parse_document(&response_html);
 
     if let Some(table) = document.select(&table_selector).next() {
-        let mut rows = table.select(&row_selector).skip(1);
+        let rows = table.select(&row_selector).skip(1);
 
         for row in rows {
-            let mut hla_info: LigandInfo = row.text().collect::<Vec<&str>>().into();
+            let hla_info: LigandInfo = row.text().collect::<Vec<&str>>().into();
             result.push(hla_info);
         }
         Ok(result)
@@ -97,16 +97,16 @@ fn parse_ipd_response(response_html: String) -> Result<Vec<LigandInfo>, Retrieve
 }
 
 fn get_ipd_website(url: &str) -> Result<String, RetrieveLigandError> {
-    let mut res = attohttpc::get(url).send()?;
+    let res = attohttpc::get(url).send()?;
     Ok(res.text()?)
 }
 
-fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>, RetrieveLigandError>
+pub fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>, RetrieveLigandError>
 where
     T: AsRef<str>,
 {
     let url = format!("{}{}", IPD_KIR_URL, &clean_hla(&hla)?);
-    let mut resp = get_ipd_website(url.as_ref())?;
+    let resp = get_ipd_website(url.as_ref())?;
     Ok(parse_ipd_response(resp)?)
 }
 
@@ -126,7 +126,7 @@ where
         for ligand_info in lg {
             f.write_all(
                 format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
-            );
+            )?
         }
     }
 

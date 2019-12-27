@@ -114,23 +114,31 @@ impl std::str::FromStr for HLA {
             _ => 3usize,
         };
 
-        let allele_group = nomenclature_digits.by_ref().take(2).collect::<String>();
-        let hla_protein = nomenclature_digits
-            .by_ref()
-            .take(second_field_size)
-            .collect::<String>();
-        let cds_synonymous_sub = nomenclature_digits.by_ref().take(2).collect::<String>();
-        let non_coding_diff = nomenclature_digits.by_ref().take(2).collect::<String>();
+        let allele_group = extract(&mut nomenclature_digits, 2);
+        let hla_protein = string_to_option(extract(&mut nomenclature_digits, second_field_size));
+        let cds_synonymous_sub = string_to_option(extract(&mut nomenclature_digits, 2));
+        let non_coding_diff = string_to_option(extract(&mut nomenclature_digits, 2));
 
         Ok(Self {
             gene,
             allele_group,
-            hla_protein: to_option!(hla_protein),
-            cds_synonymous_sub: to_option!(cds_synonymous_sub),
-            non_coding_diff: to_option!(non_coding_diff),
+            hla_protein,
+            cds_synonymous_sub,
+            non_coding_diff,
             expression_change,
         })
     }
+}
+
+fn string_to_option<T: AsRef<str>>(s: T) -> Option<String> {
+    Some(s.as_ref().to_string()).filter(|s| !s.is_empty())
+}
+
+fn extract<I>(it: I, count: usize) -> String
+where
+    I: IntoIterator<Item = char>,
+{
+    it.into_iter().take(count).collect()
 }
 
 #[cfg(test)]

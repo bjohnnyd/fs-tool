@@ -99,11 +99,13 @@ impl std::str::FromStr for HLA {
             .replace(":", "");
 
         let gene: Gene = hla.chars().take(2).collect::<Gene>();
+
         if gene.is_unknown() {
             return Err(HLAError::IncorrectGeneLocus(
                 hla.chars().take(2).collect::<String>(),
             ));
         }
+
         let expression_change =
             ExpressionChange::from(s.chars().last().ok_or(HLAError::GeneNameTooShort)?);
 
@@ -114,17 +116,12 @@ impl std::str::FromStr for HLA {
             _ => 3usize,
         };
 
-        let allele_group = extract(&mut nomenclature_digits, 2);
-        let hla_protein = string_to_option(extract(&mut nomenclature_digits, second_field_size));
-        let cds_synonymous_sub = string_to_option(extract(&mut nomenclature_digits, 2));
-        let non_coding_diff = string_to_option(extract(&mut nomenclature_digits, 2));
-
         Ok(Self {
             gene,
-            allele_group,
-            hla_protein,
-            cds_synonymous_sub,
-            non_coding_diff,
+            allele_group: extract(&mut nomenclature_digits, 2),
+            hla_protein: string_to_option(extract(&mut nomenclature_digits, second_field_size)),
+            cds_synonymous_sub: string_to_option(extract(&mut nomenclature_digits, 2)),
+            non_coding_diff: string_to_option(extract(&mut nomenclature_digits, 2)),
             expression_change,
         })
     }

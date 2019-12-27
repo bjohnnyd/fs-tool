@@ -171,4 +171,18 @@ mod tests {
 
         assert_eq!(hla, expected);
     }
+    #[test]
+    fn to_hla_incomplete() {
+        let hla = HLA::new("A01").unwrap();
+        let expected = HLA {
+            gene: Gene::C,
+            allele_group: "01".to_string(),
+            hla_protein: Some("11".to_string()),
+            cds_synonymous_sub: None,
+            non_coding_diff: None,
+            expression_change: ExpressionChange::Unknown,
+        };
+
+        assert_eq!(hla, expected);
+    }
 }

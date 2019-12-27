@@ -1,3 +1,8 @@
+// # TODO
+// 1. Separate peptide into own module/file
+// 2. Implement Vec<PeptideDifference>.to_core(&peptide) -> String
+// 3. Start working on parser
+
 pub const MAX_PEPTIDE_LEN: usize = 12;
 
 #[derive(Debug)]
@@ -32,9 +37,9 @@ impl PeptideDifference {
 impl std::ops::AddAssign<usize> for PeptideDifference {
     fn add_assign(&mut self, rhs: usize) {
         match self {
-            PeptideDifference::Match(ref mut val) => val.add_assign(rhs),
-            PeptideDifference::Deletion(ref mut val) => val.add_assign(rhs),
-            PeptideDifference::Insertion(ref mut val) => val.add_assign(rhs),
+            PeptideDifference::Match(val) => val.add_assign(rhs),
+            PeptideDifference::Deletion(val) => val.add_assign(rhs),
+            PeptideDifference::Insertion(val) => val.add_assign(rhs),
         }
     }
 }
@@ -87,15 +92,12 @@ fn edit_distance<T: AsRef<str>>(peptide: T, core: T) -> Vec<PeptideDifference> {
     for pep_aa in peptide_chars {
         if let Some(next_core_aa) = core_chars.peek() {
             let next_diff = match next_core_aa {
-                '-' => PeptideDifference::Insertion(1),
-                _ => {
-                    if pep_aa == *next_core_aa {
-                        core_chars.next();
-                        PeptideDifference::Match(1)
-                    } else {
-                        PeptideDifference::Deletion(1)
-                    }
+                _c if *_c == pep_aa => {
+                    core_chars.next();
+                    PeptideDifference::Match(1)
                 }
+                '-' => PeptideDifference::Insertion(1),
+                _ => PeptideDifference::Deletion(1),
             };
 
             match result.last_mut() {

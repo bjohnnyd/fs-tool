@@ -1,5 +1,5 @@
 // # TODO
-// 1. Separate peptide into own module/file
+// 1. (MAYBE) Separate peptide into own module/file
 // 2. Implement Vec<PeptideDifference>.to_core(&peptide) -> String
 // 3. Start working on parser
 
@@ -48,8 +48,8 @@ impl std::ops::AddAssign<usize> for PeptideDifference {
 pub struct Peptide<'a> {
     pos: usize,
     length: usize,
-    core: &'a [u8; 9],
-    interaction_core: &'a [u8],
+    core: Vec<PeptideDifference>,
+    interaction_core: Vec<PeptideDifference>,
     core_start_offset: usize,
     deletion: Deletion,
     insertion: Insertion,
@@ -82,6 +82,21 @@ impl Protein {
             self.sequence.push_str(sequence.as_ref())
         }
     }
+}
+
+fn pep_to_core<T: AsRef<str>>(steps: &Vec<PeptideDifference>, peptide: T) -> String {
+    let mut peptide_seq = peptide.as_ref().chars();
+    let mut core = String::new();
+    steps.iter().for_each(|edit| match edit {
+        PeptideDifference::Match(aa) => {
+            core.push_str(peptide_seq.by_ref().take(*aa).collect::<String>().as_ref())
+        }
+        PeptideDifference::Deletion(aa) => {
+            peptide_seq.by_ref().take(*aa).count();
+        }
+        PeptideDifference::Insertion(aa) => (0..*aa).for_each(|_| core.push('-')),
+    });
+    core
 }
 
 fn edit_distance<T: AsRef<str>>(peptide: T, core: T) -> Vec<PeptideDifference> {
@@ -160,6 +175,7 @@ mod tests {
         let core = "TVHQAAMQM";
 
         let result = edit_distance(peptide, core);
+
         let expected = vec![
             PeptideDifference::Match(2),
             PeptideDifference::Deletion(2),
@@ -167,5 +183,15 @@ mod tests {
         ];
 
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn get_core() {
+        let peptide = "TVGGHQAAMQM";
+        let core = "TVHQAAMQM";
+
+        let result = edit_distance(peptide, core);
+
+        assert_eq!(pep_to_core(&result, peptide), core);
     }
 }

@@ -194,4 +194,23 @@ mod tests {
 
         assert_eq!(pep_to_core(&result, peptide), core);
     }
+
+    #[test]
+    fn test_netmhcpan_line() {
+        let example_wo_ba = vec![
+            "3",
+            "HLA-A*03:01",
+            "QDLNTMLNTVG",
+            "QDLNTNTVG",
+            "0",
+            "5",
+            "2",
+            "0",
+            "0",
+            "QDLNTMLNTVG",
+            "Gag_180_209",
+            "0.0000040",
+            "96.0000",
+        ];
+    }
 }

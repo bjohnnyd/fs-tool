@@ -7,6 +7,7 @@ pub enum RetrieveLigandError {
     NoLigandTableFound(String),
     CSSParseError(u32, u32),
     FileError(std::io::Error),
+    ErrorWithIPDWebsite(String),
 }
 
 impl std::fmt::Display for RetrieveLigandError {
@@ -20,6 +21,8 @@ impl std::fmt::Display for RetrieveLigandError {
             RetrieveLigandError::CSSParseError(line, column) =>
             {writeln!(f, "Website parsing error encountered at line {} and character number {}", line, column)},
             RetrieveLigandError::FileError(err) => std::fmt::Display::fmt(&err, f),
+            RetrieveLigandError::ErrorWithIPDWebsite(url) =>
+                {writeln!(f, "Error with accessing IPD Website at {}", url)},
         }
     }
 }

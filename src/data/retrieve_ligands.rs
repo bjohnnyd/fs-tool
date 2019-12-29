@@ -1,11 +1,14 @@
 use crate::data::errors::RetrieveLigandError::{self, InvalidHLA};
+use directories::ProjectDirs;
+use rayon::prelude::*;
 use scraper::{Html, Selector};
 use std::fmt::Formatter;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Write;
-use std::path::Path;
+use std::path::PathBuf;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
+const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
 
 /// Converts `cssparser::ParseError` to a RetrieveLigandError
 macro_rules! selector_error_convert {
@@ -110,26 +113,42 @@ where
     Ok(parse_ipd_response(resp)?)
 }
 
-pub(crate) fn obtain_hla_ligand_groups<T>(ligand_file: T) -> Result<(), RetrieveLigandError>
-where
-    T: AsRef<Path>,
-{
-    let mut lg = retrieve_ligand_group(&"A")?;
-    let mut b_lg = retrieve_ligand_group(&"B")?;
-    let mut c_lg = retrieve_ligand_group(&"C")?;
+pub fn get_ligand_db_file() -> Option<PathBuf> {
+    if let Some(proj_dirs) = ProjectDirs::from("", "", "fs-tool") {
+        let out_dir = proj_dirs.data_local_dir();
+        if !out_dir.exists() {
+            fs::create_dir_all(&out_dir);
+        }
+        Some(out_dir.join("ligand_groups.tsv"))
+    } else {
+        None
+    }
+}
 
-    lg.append(&mut b_lg);
-    lg.append(&mut c_lg);
+pub(crate) fn save_ligand_groups(p: &PathBuf) -> Result<(), RetrieveLigandError> {
+    let ligands = GENE_LOCI
+        .par_iter()
+        .filter_map(|gene| retrieve_ligand_group(gene).ok())
+        .flatten()
+        .collect::<Vec<LigandInfo>>();
 
-    {
-        let mut f = File::create(ligand_file)?;
-        for ligand_info in lg {
-            f.write_all(
-                format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
-            )?
+    if ligands.is_empty() {
+        return Err(RetrieveLigandError::ErrorWithIPDWebsite(
+            IPD_KIR_URL.to_string(),
+        ));
+    }
+    if let Some(proj_dirs) = ProjectDirs::from("", "", "fs-tool") {
+        let out_dir = proj_dirs.data_local_dir();
+
+        {
+            let mut f = File::create(p)?;
+            for ligand_info in &ligands {
+                f.write_all(
+                    format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
+                )?
+            }
         }
     }
-
     Ok(())
 }
 

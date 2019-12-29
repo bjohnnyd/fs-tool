@@ -1,2 +1,2 @@
 mod errors;
-mod hla;
+pub mod hla;

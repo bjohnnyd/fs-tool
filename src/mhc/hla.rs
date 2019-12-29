@@ -1,4 +1,6 @@
+use crate::data::retrieve_ligands::LigandInfo;
 use crate::mhc::errors::HLAError;
+use std::convert::TryFrom;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
@@ -11,6 +13,8 @@ pub struct HLA {
     pub cds_synonymous_sub: Option<String>,
     pub non_coding_diff: Option<String>,
     pub expression_change: ExpressionChange,
+    pub ligand_group: Option<LigandGroup>,
+    pub ipd_frequency: Option<IPDFrequency>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -24,6 +28,58 @@ pub enum Gene {
     DQ,
     DR,
     Unknown,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum LigandGroup {
+    A11,
+    A3,
+    Bw4_80T,
+    Bw4_80I,
+    C1,
+    C2,
+    Unclassified,
+}
+
+impl FromStr for LigandGroup {
+    type Err = HLAError;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let s = s
+            .chars()
+            .filter(|c| !c.is_ascii_whitespace())
+            .collect::<String>();
+        match s.as_str() {
+            "A11" => Ok(LigandGroup::A11),
+            "A3" => Ok(LigandGroup::A3),
+            "Bw4-80T" => Ok(LigandGroup::Bw4_80T),
+            "Bw4-80I" => Ok(LigandGroup::Bw4_80I),
+            "C1" => Ok(LigandGroup::C1),
+            "C2" => Ok(LigandGroup::C2),
+            "Unclassified" => Ok(LigandGroup::Unclassified),
+            _ => Err(HLAError::UnknownLigandGroup(s.to_string())),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum IPDFrequency {
+    Rare,
+    Common,
+    Unknown,
+}
+
+impl FromStr for IPDFrequency {
+    type Err = HLAError;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s.trim() {
+            "Common or Well Defined" => Ok(IPDFrequency::Common),
+            "Rare" => Ok(IPDFrequency::Rare),
+            "Unknown" => Ok(IPDFrequency::Unknown),
+            _ => Err(HLAError::IPDFrequencyIncorrect(s.to_string())),
+        }
+    }
 }
 
 impl Gene {
@@ -81,6 +137,10 @@ impl HLA {
         let mut hla_name = s.as_ref().trim_start_matches("HLA-");
         hla_name.parse::<HLA>()
     }
+
+    pub fn set_ligand_group(&mut self, lg: LigandGroup) {
+        self.ligand_group = Some(lg)
+    }
 }
 
 macro_rules! to_option {
@@ -123,7 +183,22 @@ impl std::str::FromStr for HLA {
             cds_synonymous_sub: string_to_option(extract(&mut nomenclature_digits, 2)),
             non_coding_diff: string_to_option(extract(&mut nomenclature_digits, 2)),
             expression_change,
+            ligand_group: None,
+            ipd_frequency: None,
         })
+    }
+}
+
+impl TryFrom<LigandInfo> for HLA {
+    type Error = HLAError;
+
+    fn try_from(ligand_info: LigandInfo) -> Result<Self> {
+        let mut hla = ligand_info.0.parse::<HLA>()?;
+        let lg = ligand_info.1.parse::<LigandGroup>()?;
+        let freq = ligand_info.2.parse::<IPDFrequency>()?;
+        hla.ligand_group = Some(lg);
+        hla.ipd_frequency = Some(freq);
+        Ok(hla)
     }
 }
 
@@ -167,6 +242,8 @@ mod tests {
             cds_synonymous_sub: None,
             non_coding_diff: None,
             expression_change: ExpressionChange::Unknown,
+            ligand_group: None,
+            ipd_frequency: None,
         };
 
         assert_eq!(hla, expected);
@@ -175,12 +252,14 @@ mod tests {
     fn to_hla_incomplete() {
         let hla = HLA::new("A01").unwrap();
         let expected = HLA {
-            gene: Gene::C,
+            gene: Gene::A,
             allele_group: "01".to_string(),
-            hla_protein: Some("11".to_string()),
+            hla_protein: None,
             cds_synonymous_sub: None,
             non_coding_diff: None,
             expression_change: ExpressionChange::Unknown,
+            ligand_group: None,
+            ipd_frequency: None,
         };
 
         assert_eq!(hla, expected);

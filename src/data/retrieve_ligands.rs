@@ -58,10 +58,7 @@ impl std::fmt::Display for LigandInfo {
     }
 }
 
-fn is_ipd_search_safe<T>(hla: T) -> bool
-where
-    T: AsRef<str>,
-{
+fn is_ipd_search_safe<T: AsRef<str>>(hla: T) -> bool {
     let query = hla.as_ref();
 
     if query.len() == 1 {
@@ -74,10 +71,7 @@ where
     }
 }
 
-fn clean_hla<T>(hla: &T) -> Result<&str, RetrieveLigandError>
-where
-    T: AsRef<str>,
-{
+fn clean_hla<T: AsRef<str>>(hla: &T) -> Result<&str, RetrieveLigandError> {
     let non_prefix_hla = hla.as_ref().trim_start_matches("HLA-");
 
     if is_ipd_search_safe(non_prefix_hla) {
@@ -120,15 +114,15 @@ where
     Ok(parse_ipd_response(resp)?)
 }
 
-fn get_ligand_db_file() -> Option<PathBuf> {
+fn get_ligand_db_file() -> Result<PathBuf, RetrieveLigandError> {
     if let Some(proj_dirs) = ProjectDirs::from("", "", "fs-tool") {
         let out_dir = proj_dirs.data_local_dir();
         if !out_dir.exists() {
-            fs::create_dir_all(&out_dir);
+            fs::create_dir_all(&out_dir)?;
         }
-        Some(out_dir.join("ligand_groups.tsv"))
+        Ok(out_dir.join("ligand_groups.tsv"))
     } else {
-        None
+        Err(RetrieveLigandError::CouldNotAccessData)
     }
 }
 
@@ -163,15 +157,13 @@ pub fn get_ligand_table(
     update_ligand_groups: bool,
 ) -> Result<impl AsRef<str>, RetrieveLigandError> {
     let mut ligand_table = String::new();
-    if let Some(ligand_db_file) = get_ligand_db_file() {
-        if update_ligand_groups || !ligand_db_file.exists() {
-            save_ligand_groups(&ligand_db_file)?;
-        }
-        let mut f = File::open(ligand_db_file)?;
-        f.read_to_string(&mut ligand_table);
-    } else {
-        return Err(RetrieveLigandError::CouldNotAccessData);
+    let ligand_db_file = get_ligand_db_file()?;
+    if update_ligand_groups || !ligand_db_file.exists() {
+        save_ligand_groups(&ligand_db_file)?;
     }
+    let mut f = File::open(ligand_db_file)?;
+    f.read_to_string(&mut ligand_table)?;
+
     Ok(ligand_table)
 }
 

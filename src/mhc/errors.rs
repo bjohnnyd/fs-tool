@@ -5,6 +5,8 @@ pub enum HLAError {
     IncorrectHLA(String),
     IncorrectGeneLocus(String),
     GeneNameTooShort,
+    UnknownLigandGroup(String),
+    IPDFrequencyIncorrect(String),
 }
 
 impl std::fmt::Display for HLAError {
@@ -19,6 +21,12 @@ impl std::fmt::Display for HLAError {
                 gene_locus
             ),
             HLAError::GeneNameTooShort => writeln!(f, "HLA gene name too short"),
+            HLAError::UnknownLigandGroup(ligand_group) => {
+                writeln!(f, "Unknown Ligand Group Specified: {}", ligand_group)
+            }
+            HLAError::IPDFrequencyIncorrect(freq) => {
+                writeln!(f, "Unknown IPD Frequency Specified: {}", freq)
+            }
         }
     }
 }

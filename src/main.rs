@@ -5,8 +5,10 @@ mod netmhcpan;
 
 use crate::cmd_opts::Opt;
 use crate::data::retrieve_ligands::{get_ligand_table, parse_ligand_table, LigandInfo};
+use crate::mhc::hla::HLA;
 use directories::ProjectDirs;
 use rayon::prelude::*;
+use std::convert::TryFrom;
 use std::fs::File;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -30,6 +32,11 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     } else {
         ligand_data = parse_ligand_table(LIGAND_TABLE)
     }
-    println!("{:#?}", ligand_data);
+
+    let hla = ligand_data
+        .into_iter()
+        .filter_map(|lg| HLA::try_from(lg).ok())
+        .collect::<Vec<HLA>>();
+
     Ok(())
 }

@@ -8,6 +8,8 @@ use crate::data::retrieve_ligands::{obtain_hla_ligand_groups, retrieve_ligand_gr
 use rayon::prelude::*;
 use structopt::StructOpt;
 
+const LIGAND_TABLE: &'static str = include_str!("resources/2019-12-29_lg.tsv");
+
 fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let opt = Opt::from_args();
     rayon::ThreadPoolBuilder::new()

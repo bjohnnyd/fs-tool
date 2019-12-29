@@ -4,9 +4,7 @@ mod mhc;
 mod netmhcpan;
 
 use crate::cmd_opts::Opt;
-use crate::data::retrieve_ligands::{
-    get_ligand_db_file, retrieve_ligand_group, save_ligand_groups, LigandInfo,
-};
+use crate::data::retrieve_ligands::{get_ligand_table, parse_ligand_table, LigandInfo};
 use directories::ProjectDirs;
 use rayon::prelude::*;
 use std::fs::File;
@@ -27,20 +25,11 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
     let mut ligand_data = Vec::<LigandInfo>::new();
 
-    // Need to make this a function and switch to other branch and set ligand data if fails
-    if let Some(ligand_db_file) = get_ligand_db_file() {
-        if opt.update_ligand_groups || !ligand_db_file.exists() {
-            save_ligand_groups(&ligand_db_file)?;
-        }
-
-        let mut f = File::open(ligand_db_file)?;
-        let mut ligand_table = String::new();
-        f.read_to_string(&mut ligand_table);
-        println!("{}", ligand_table);
+    if let Ok(ligand_table) = get_ligand_table(opt.update_ligand_groups) {
+        ligand_data = parse_ligand_table(ligand_table);
     } else {
-        println!("Using backup data");
-        println!("{}", LIGAND_TABLE);
+        ligand_data = parse_ligand_table(LIGAND_TABLE)
     }
-
+    println!("{:#?}", ligand_data);
     Ok(())
 }

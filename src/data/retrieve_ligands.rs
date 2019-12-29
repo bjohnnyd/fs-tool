@@ -1,10 +1,11 @@
 use crate::data::errors::RetrieveLigandError::{self, InvalidHLA};
 use directories::ProjectDirs;
+use nom::lib::std::str::FromStr;
 use rayon::prelude::*;
 use scraper::{Html, Selector};
 use std::fmt::Formatter;
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::PathBuf;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
@@ -38,6 +39,12 @@ impl From<Vec<&str>> for LigandInfo {
             frequency = info[2].to_string();
         }
         LigandInfo(info[0].to_string(), info[1].to_string(), frequency)
+    }
+}
+
+impl From<&str> for LigandInfo {
+    fn from(s: &str) -> Self {
+        LigandInfo::from(s.split_ascii_whitespace().collect::<Vec<&str>>())
     }
 }
 
@@ -113,7 +120,7 @@ where
     Ok(parse_ipd_response(resp)?)
 }
 
-pub fn get_ligand_db_file() -> Option<PathBuf> {
+fn get_ligand_db_file() -> Option<PathBuf> {
     if let Some(proj_dirs) = ProjectDirs::from("", "", "fs-tool") {
         let out_dir = proj_dirs.data_local_dir();
         if !out_dir.exists() {
@@ -125,7 +132,7 @@ pub fn get_ligand_db_file() -> Option<PathBuf> {
     }
 }
 
-pub(crate) fn save_ligand_groups(p: &PathBuf) -> Result<(), RetrieveLigandError> {
+fn save_ligand_groups(p: &PathBuf) -> Result<(), RetrieveLigandError> {
     let ligands = GENE_LOCI
         .par_iter()
         .filter_map(|gene| retrieve_ligand_group(gene).ok())
@@ -150,6 +157,26 @@ pub(crate) fn save_ligand_groups(p: &PathBuf) -> Result<(), RetrieveLigandError>
         }
     }
     Ok(())
+}
+
+pub fn get_ligand_table(
+    update_ligand_groups: bool,
+) -> Result<impl AsRef<str>, RetrieveLigandError> {
+    let mut ligand_table = String::new();
+    if let Some(ligand_db_file) = get_ligand_db_file() {
+        if update_ligand_groups || !ligand_db_file.exists() {
+            save_ligand_groups(&ligand_db_file)?;
+        }
+        let mut f = File::open(ligand_db_file)?;
+        f.read_to_string(&mut ligand_table);
+    } else {
+        return Err(RetrieveLigandError::CouldNotAccessData);
+    }
+    Ok(ligand_table)
+}
+
+pub fn parse_ligand_table<T: AsRef<str>>(text: T) -> Vec<LigandInfo> {
+    text.as_ref().lines().map(LigandInfo::from).collect()
 }
 
 #[cfg(test)]

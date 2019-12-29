@@ -8,6 +8,7 @@ pub enum RetrieveLigandError {
     CSSParseError(u32, u32),
     FileError(std::io::Error),
     ErrorWithIPDWebsite(String),
+    CouldNotAccessData,
 }
 
 impl std::fmt::Display for RetrieveLigandError {
@@ -23,6 +24,8 @@ impl std::fmt::Display for RetrieveLigandError {
             RetrieveLigandError::FileError(err) => std::fmt::Display::fmt(&err, f),
             RetrieveLigandError::ErrorWithIPDWebsite(url) =>
                 {writeln!(f, "Error with accessing IPD Website at {}", url)},
+            RetrieveLigandError::CouldNotAccessData =>
+                {writeln!(f, "Error with accessing local resources")},
         }
     }
 }

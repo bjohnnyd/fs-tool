@@ -202,10 +202,12 @@ impl TryFrom<LigandInfo> for HLA {
     }
 }
 
+#[inline]
 fn string_to_option<T: AsRef<str>>(s: T) -> Option<String> {
     Some(s.as_ref().to_string()).filter(|s| !s.is_empty())
 }
 
+#[inline]
 fn extract<I>(it: I, count: usize) -> String
 where
     I: IntoIterator<Item = char>,

@@ -1,8 +1,3 @@
-// # TODO
-// 1. (MAYBE) Separate peptide into own module/file
-// 2. Implement Vec<PeptideDifference>.to_core(&peptide) -> String
-// 3. Start working on parser
-
 pub const MAX_PEPTIDE_LEN: usize = 12;
 
 #[derive(Debug)]
@@ -84,7 +79,7 @@ impl Protein {
     }
 }
 
-fn pep_to_core<T: AsRef<str>>(steps: &Vec<PeptideDifference>, peptide: T) -> String {
+fn pep_to_core<T: AsRef<str>>(steps: &[PeptideDifference], peptide: T) -> String {
     let mut peptide_seq = peptide.as_ref().chars();
     let mut core = String::new();
     steps.iter().for_each(|edit| match edit {
@@ -101,7 +96,7 @@ fn pep_to_core<T: AsRef<str>>(steps: &Vec<PeptideDifference>, peptide: T) -> Str
 
 fn edit_distance<T: AsRef<str>>(peptide: T, core: T) -> Vec<PeptideDifference> {
     let mut core_chars = core.as_ref().chars().peekable();
-    let mut peptide_chars = peptide.as_ref().chars();
+    let peptide_chars = peptide.as_ref().chars();
     let mut result = Vec::<PeptideDifference>::with_capacity(MAX_PEPTIDE_LEN);
 
     for pep_aa in peptide_chars {

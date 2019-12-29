@@ -1,8 +1,6 @@
-use crate::data::retrieve_ligands::LigandInfo;
-use crate::mhc::errors::HLAError;
-use std::convert::TryFrom;
-use std::iter::FromIterator;
-use std::str::FromStr;
+use crate::prelude::error::HLAError;
+use crate::prelude::fs_tool::LigandInfo;
+use crate::prelude::traits::*;
 
 type Result<T> = std::result::Result<T, HLAError>;
 #[derive(Debug, Eq, PartialEq)]
@@ -134,7 +132,7 @@ impl FromIterator<char> for Gene {
 
 impl HLA {
     pub fn new<T: AsRef<str>>(s: T) -> Result<Self> {
-        let mut hla_name = s.as_ref().trim_start_matches("HLA-");
+        let hla_name = s.as_ref().trim_start_matches("HLA-");
         hla_name.parse::<HLA>()
     }
 

@@ -1,12 +1,7 @@
-use crate::data::errors::RetrieveLigandError::{self, InvalidHLA};
-use directories::ProjectDirs;
-use nom::lib::std::str::FromStr;
+use crate::prelude::error::*;
+use crate::prelude::external::{Html, Selector};
+use crate::prelude::io::*;
 use rayon::prelude::*;
-use scraper::{Html, Selector};
-use std::fmt::Formatter;
-use std::fs::{self, File};
-use std::io::{Read, Write};
-use std::path::PathBuf;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
 const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
@@ -49,7 +44,7 @@ impl From<&str> for LigandInfo {
 }
 
 impl std::fmt::Display for LigandInfo {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         writeln!(
             f,
             "HLA: {}, LigandGroup: {}, Frequency: {}",
@@ -77,7 +72,7 @@ fn clean_hla<T: AsRef<str>>(hla: &T) -> Result<&str, RetrieveLigandError> {
     if is_ipd_search_safe(non_prefix_hla) {
         Ok(non_prefix_hla)
     } else {
-        Err(InvalidHLA(hla.as_ref().to_string()))
+        Err(RetrieveLigandError::InvalidHLA(hla.as_ref().to_string()))
     }
 }
 
@@ -115,7 +110,7 @@ where
 }
 
 fn get_ligand_db_file() -> Result<PathBuf, RetrieveLigandError> {
-    if let Some(proj_dirs) = ProjectDirs::from("", "", "fs-tool") {
+    if let Some(proj_dirs) = directories::ProjectDirs::from("", "", "fs-tool") {
         let out_dir = proj_dirs.data_local_dir();
         if !out_dir.exists() {
             fs::create_dir_all(&out_dir)?;
@@ -138,16 +133,12 @@ fn save_ligand_groups(p: &PathBuf) -> Result<(), RetrieveLigandError> {
             IPD_KIR_URL.to_string(),
         ));
     }
-    if let Some(proj_dirs) = ProjectDirs::from("", "", "fs-tool") {
-        let out_dir = proj_dirs.data_local_dir();
-
-        {
-            let mut f = File::create(p)?;
-            for ligand_info in &ligands {
-                f.write_all(
-                    format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
-                )?
-            }
+    {
+        let mut f = File::create(p)?;
+        for ligand_info in &ligands {
+            f.write_all(
+                format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
+            )?
         }
     }
     Ok(())

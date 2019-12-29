@@ -1,21 +1,8 @@
-mod cmd_opts;
-mod data;
-mod mhc;
-mod netmhcpan;
+use ::fs_tool::prelude::external::{Opt, StructOpt};
+use ::fs_tool::prelude::fs_tool::{get_ligand_table, parse_ligand_table, LigandInfo, HLA};
+use ::fs_tool::prelude::traits::TryFrom;
 
-use crate::cmd_opts::Opt;
-use crate::data::retrieve_ligands::{get_ligand_table, parse_ligand_table, LigandInfo};
-use crate::mhc::hla::HLA;
-use directories::ProjectDirs;
-use rayon::prelude::*;
-use std::convert::TryFrom;
-use std::fs::File;
-use std::path::PathBuf;
-use structopt::StructOpt;
-
-use std::io::Read;
-
-pub const LIGAND_TABLE: &'static str = include_str!("resources/2019-12-29_lg.tsv");
+pub const LIGAND_TABLE: &str = include_str!("resources/2019-12-29_lg.tsv");
 
 fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let opt = Opt::from_args();

@@ -1,2 +1,2 @@
-mod errors;
+pub mod errors;
 pub mod retrieve_ligands;

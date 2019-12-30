@@ -1,5 +1,6 @@
 mod cmd_opts;
 mod data;
+mod error;
 mod mhc;
 mod netmhcpan;
 

@@ -25,6 +25,7 @@ pub mod prelude {
     pub mod fs_tool {
         pub use crate::data::retrieve_ligands::*;
         pub use crate::mhc::hla::*;
+        pub use crate::netmhcpan::netmhcpan_record::*;
         pub use crate::netmhcpan::proteome::*;
     }
 
@@ -42,8 +43,10 @@ pub mod prelude {
 
     pub mod nom_tools {
         pub use nom::branch::alt;
-        pub use nom::bytes::complete::{tag, take_until, take_while};
-        pub use nom::combinator::map_res;
+        pub use nom::bytes::complete::{tag, take_till, take_until, take_while};
+        pub use nom::character::complete::space0;
+        pub use nom::character::is_space;
+        pub use nom::combinator::{map_res, opt};
         pub use nom::{AsChar, IResult};
     }
 }

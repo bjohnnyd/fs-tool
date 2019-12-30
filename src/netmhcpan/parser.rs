@@ -1,4 +1,6 @@
+use crate::prelude::fs_tool::{BindLevel, Deletion, Insertion, NetMHCpanRecord, Peptide};
 use crate::prelude::nom_tools::*;
+use nom::sequence::tuple;
 
 mod helpers {
     pub fn to_float(input: &str) -> Result<f32, std::num::ParseFloatError> {
@@ -20,7 +22,7 @@ fn get_number(input: &str) -> IResult<&str, f32> {
     map_res(take_digits, self::helpers::to_float)(i)
 }
 
-fn get_rank(input: &str) -> IResult<&str, (&str, f32)> {
+fn get_rank_threshold(input: &str) -> IResult<&str, (&str, f32)> {
     let find_threshold_type = alt((take_until("Strong"), take_until("Weak")));
     let threshold_type = alt((tag("Strong"), tag("Weak")));
     let (i, (_, threshold_type, threshold)) =
@@ -33,6 +35,74 @@ fn get_nn(input: &str) -> IResult<&str, (&str, f32, &str)> {
     Ok((i, (index, distance, nn)))
 }
 
+fn get_element(input: &str) -> IResult<&str, &str> {
+    let (i, (_, element)) =
+        nom::sequence::tuple((space0, take_while(|c: char| !c.is_whitespace())))(input)?;
+    Ok((i, element))
+}
+
+/// Need to deal with error
+fn get_usize(input: &str) -> IResult<&str, usize> {
+    let (i, digit) = nom::combinator::map(get_element, |gp| gp.parse::<usize>())(input)?;
+
+    Ok((i, digit.unwrap()))
+}
+
+fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32, &'a str)> {
+    let get_bind_level = opt(alt((tag("WB"), tag("SB"))));
+
+    let (i, (score, measure1, measure2, mut bind_level)) = tuple((
+        opt(get_number),
+        opt(get_number),
+        opt(get_number),
+        get_bind_level,
+    ))(input)?;
+
+    dbg!(&score);
+    dbg!(&measure1);
+    dbg!(&measure2);
+    dbg!(&bind_level);
+
+    if bind_level.is_none() {
+        bind_level = Some("NB")
+    }
+
+    if measure2.is_none() {
+        Ok(((
+            i,
+            (
+                score.unwrap(),
+                measure2,
+                measure1.unwrap(),
+                bind_level.unwrap(),
+            ),
+        )))
+    } else {
+        Ok(((
+            i,
+            (
+                score.unwrap(),
+                measure1,
+                measure2.unwrap(),
+                bind_level.unwrap(),
+            ),
+        )))
+    }
+}
+
+/* Need to add creation of Netmhcpan record */
+pub fn process_netmhcpan_record<'a>(
+    input: &'a str,
+) -> IResult<&'a str, (usize, &'a str, usize, usize)> {
+    let (i, (pos, hla, pep_seq, core_seq)) =
+        tuple((get_usize, get_element, get_element, get_element))(input)?;
+    let (i, (offset, del_gp, del_gl, ins_gp, ins_gl)) =
+        tuple((get_usize, get_usize, get_usize, get_usize, get_usize))(i)?;
+    let (i, (icore, identity)) = tuple((get_element, get_element))(i)?;
+    let (i, (score, aff, rank, bind_level)) = process_measures(i)?;
+
+    Ok((i, (pos, hla, del_gp, del_gl)))
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -61,16 +131,18 @@ mod tests {
                 dbg!(nn);
             }
             if line.starts_with("# Rank") {
-                let (_, (threshold_type, threshold)) = get_rank(line).unwrap();
+                let (_, (threshold_type, threshold)) = get_rank_threshold(line).unwrap();
                 dbg!(threshold_type);
                 dbg!(threshold);
             }
 
             if let Some(first_char) = line.chars().take(1).next() {
                 if first_char.is_dec_digit() {
-                    let netmhcpan_line = line.split_ascii_whitespace().collect::<Vec<&str>>();
-                    dbg!(netmhcpan_line.len());
+                    //                    let netmhcpan_line = line.split_ascii_whitespace().collect::<Vec<&str>>();
+                    //                    dbg!(netmhcpan_line.len());
                     println!("STARTS WITH DIGIT\n{}", line);
+                    let (i, result) = process_netmhcpan_record(line).unwrap();
+                    let (i, _) = tuple((get_element, get_element))(i).unwrap();
                 }
             }
         })

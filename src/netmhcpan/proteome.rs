@@ -1,9 +1,9 @@
 pub const MAX_PEPTIDE_LEN: usize = 12;
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Deletion(usize, usize);
+pub struct Deletion(pub usize, pub usize);
 #[derive(Debug, PartialEq, Eq)]
-pub struct Insertion(usize, usize);
+pub struct Insertion(pub usize, pub usize);
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum BindLevel {

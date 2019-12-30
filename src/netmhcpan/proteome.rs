@@ -1,8 +1,8 @@
 pub const MAX_PEPTIDE_LEN: usize = 12;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Deletion(usize, usize);
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Insertion(usize, usize);
 
 #[derive(Debug, Eq, PartialEq)]
@@ -39,7 +39,7 @@ impl std::ops::AddAssign<usize> for PeptideDifference {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Peptide<'a> {
     pos: usize,
     length: usize,
@@ -49,10 +49,6 @@ pub struct Peptide<'a> {
     deletion: Deletion,
     insertion: Insertion,
     protein: &'a Protein,
-    score: f32,
-    aff: Option<f32>,
-    rank: f32,
-    bind_level: BindLevel,
 }
 
 #[derive(Debug, PartialEq, Eq)]

@@ -1,3 +1,5 @@
+use nom::lib::std::collections::HashMap;
+
 pub const MAX_PEPTIDE_LEN: usize = 12;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -39,6 +41,12 @@ impl std::ops::AddAssign<usize> for PeptideDifference {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct PeptideIdentity<'a> {
+    pos: usize,
+    identity: &'a str,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Peptide<'a> {
     pos: usize,
@@ -48,29 +56,31 @@ pub struct Peptide<'a> {
     core_start_offset: usize,
     deletion: Deletion,
     insertion: Insertion,
-    protein: &'a Protein,
+    protein: &'a str,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Protein {
-    identity: String,
-    sequence: String,
+pub struct Proteome {
+    map: HashMap<String, String>,
 }
 
-impl Protein {
-    fn new(identity: String) -> Self {
-        Self {
-            identity,
-            sequence: String::new(),
-        }
+impl Proteome {
+    fn new<T: AsRef<str>>(identity: T) -> Self {
+        let mut map = HashMap::new();
+        map.insert(identity.as_ref().to_string(), String::new());
+        Self { map }
     }
 
-    fn add_peptide<T>(&mut self, sequence: T, pos: usize)
+    fn add_peptide<T>(&mut self, identity: T, pos: usize, pep: T)
     where
         T: AsRef<str>,
     {
-        if self.sequence.is_empty() || pos == self.sequence.len() + 1 {
-            self.sequence.push_str(sequence.as_ref())
+        let sequence = self
+            .map
+            .entry(identity.as_ref().to_string())
+            .or_insert(String::new());
+        if sequence.is_empty() || pos == sequence.len() + 1 {
+            sequence.push_str(pep.as_ref())
         }
     }
 }
@@ -126,38 +136,34 @@ mod tests {
     use super::*;
 
     #[test]
-    fn build_peptide() {
-        let mut protein = Protein::new("Gag_180_209".to_string());
-        let first = ("TPQDLNTMLNT", 1);
-        let second = ("NTVGGHQAAMQ", 10);
-        let third = ("VGGHQAAMQML", 12);
+    fn build_proteome() {
+        let pep1 = (1, "TPQDLNTMLNT");
+        let pep2 = (4, "DLNTMLNTVGG");
+        let pep3 = (12, "VGGHQAAMQML");
+        let identity = "Gag_180_209";
 
-        protein.add_peptide(first.0, first.1);
-        assert_eq!(
-            protein,
-            Protein {
-                identity: String::from("Gag_180_209"),
-                sequence: String::from("TPQDLNTMLNT")
-            }
-        );
+        let mut base_hashmap = HashMap::new();
+        base_hashmap.insert(identity.to_string(), pep1.1.to_string());
+        let expected = Proteome {
+            map: base_hashmap.clone(),
+        };
 
-        protein.add_peptide(second.0, second.1);
-        assert_eq!(
-            protein,
-            Protein {
-                identity: String::from("Gag_180_209"),
-                sequence: String::from("TPQDLNTMLNT")
-            }
-        );
+        let mut proteome = Proteome::new(identity);
 
-        protein.add_peptide(third.0, third.1);
-        assert_eq!(
-            protein,
-            Protein {
-                identity: String::from("Gag_180_209"),
-                sequence: String::from("TPQDLNTMLNTVGGHQAAMQML")
-            }
-        );
+        proteome.add_peptide(identity, pep1.0, pep1.1);
+        assert_eq!(proteome, expected);
+
+        proteome.add_peptide(identity, pep2.0, pep2.1);
+        assert_eq!(proteome, expected);
+
+        let expected_seq = base_hashmap
+            .entry(identity.to_string())
+            .or_insert(String::new());
+        expected_seq.push_str(pep3.1);
+        let expected = Proteome { map: base_hashmap };
+
+        proteome.add_peptide(identity, pep3.0, pep3.1);
+        assert_eq!(proteome, expected);
     }
 
     #[test]

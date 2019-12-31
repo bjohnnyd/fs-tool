@@ -48,24 +48,24 @@ fn get_usize(input: &str) -> IResult<&str, usize> {
     Ok((i, digit.unwrap()))
 }
 
-fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32, &'a str)> {
+fn get_bind_level(input: &str) -> IResult<&str, Option<&str>> {
+    let get_non_alpha = take_till(&AsChar::is_alpha);
     let get_bind_level = opt(alt((tag("WB"), tag("SB"))));
+    let (i, (_, mut bind_level)) = tuple((get_non_alpha, get_bind_level))(input)?;
+    if bind_level.is_none() {
+        bind_level = Some("NB")
+    }
 
+    Ok((i, bind_level))
+}
+
+fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32, &'a str)> {
     let (i, (score, measure1, measure2, mut bind_level)) = tuple((
         opt(get_number),
         opt(get_number),
         opt(get_number),
         get_bind_level,
     ))(input)?;
-
-    dbg!(&score);
-    dbg!(&measure1);
-    dbg!(&measure2);
-    dbg!(&bind_level);
-
-    if bind_level.is_none() {
-        bind_level = Some("NB")
-    }
 
     if measure2.is_none() {
         Ok(((
@@ -100,6 +100,10 @@ pub fn process_netmhcpan_record<'a>(
         tuple((get_usize, get_usize, get_usize, get_usize, get_usize))(i)?;
     let (i, (icore, identity)) = tuple((get_element, get_element))(i)?;
     let (i, (score, aff, rank, bind_level)) = process_measures(i)?;
+
+    let pep_info = (pos, pep_seq, core_seq, icore, identity);
+    let variation_info = (offset, del_gp, del_gl, ins_gp, ins_gl);
+    let binding_info = (hla, score, aff, rank, bind_level);
 
     Ok((i, (pos, hla, del_gp, del_gl)))
 }

@@ -49,4 +49,8 @@ pub mod prelude {
         pub use nom::combinator::{map_res, opt};
         pub use nom::{AsChar, IResult};
     }
+
+    pub mod collections {
+        pub use std::collections::{HashMap, HashSet};
+    }
 }

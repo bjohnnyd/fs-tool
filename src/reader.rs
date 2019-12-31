@@ -16,7 +16,11 @@ pub struct Opt {
 
 /* Need to deal nom error */
 fn read_netmhcpan<T: AsRef<str>>(input: T) -> Result<(), Box<dyn std::error::Error>> {
-    let iter = input.as_ref().lines().filter(|line| !line.is_empty()).map(str::trim);
+    let iter = input
+        .as_ref()
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(str::trim);
     let mut netmhcpan_summary = NetMHCpanSummary::new();
 
     iter.for_each(|line| {
@@ -34,9 +38,13 @@ fn read_netmhcpan<T: AsRef<str>>(input: T) -> Result<(), Box<dyn std::error::Err
         if line.as_bytes()[0].is_ascii_digit() {
             if let Ok((_, (pep_info, variant_info, binding_info))) = process_netmhcpan_record(line)
             {
-                dbg!(pep_info);
-                dbg!(variant_info);
-                dbg!(binding_info);
+                netmhcpan_summary.add_sequence(
+                    pep_info.4.clone(),
+                    pep_info.0.clone(),
+                    pep_info.1.clone(),
+                );
+                let peptide = Peptide::from((pep_info, variant_info));
+                netmhcpan_summary.add_peptide(peptide);
             }
         }
 

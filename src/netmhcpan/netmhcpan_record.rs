@@ -73,9 +73,9 @@ impl<'a> NetMHCpanRecord<'a> {
 #[derive(Debug)]
 pub struct NetMHCpanSummary<'a> {
     alleles: HashSet<NearestNeighbour>,
-    records: HashMap<&'a HLA, Vec<&'a Peptide<'a>>>,
+    records: HashMap<HLA, Vec<&'a Peptide<'a>>>,
     proteome: Proteome,
-    peptides: HashMap<PeptideIdentity<'a>, Peptide<'a>>,
+    peptides: HashMap<PeptideIdentity, Peptide<'a>>,
     pub weak_threshold: Option<f32>,
     pub strong_threshold: Option<f32>,
 }
@@ -84,7 +84,7 @@ impl<'a> NetMHCpanSummary<'a> {
     pub(crate) fn new() -> Self {
         Self {
             alleles: HashSet::<NearestNeighbour>::new(),
-            records: HashMap::<&HLA, Vec<&Peptide>>::new(),
+            records: HashMap::<HLA, Vec<&Peptide>>::new(),
             proteome: Proteome::new(),
             peptides: HashMap::<PeptideIdentity, Peptide>::new(),
             weak_threshold: None,
@@ -96,8 +96,9 @@ impl<'a> NetMHCpanSummary<'a> {
         self.alleles.insert(nn)
     }
 
-    pub fn add_peptide(&mut self, id: PeptideIdentity<'a>, pep: Peptide<'a>) -> Option<Peptide> {
-        self.peptides.insert(id, pep)
+    pub fn add_peptide(&mut self, pep: Peptide<'a>) -> Option<Peptide> {
+        let peptide_identity = PeptideIdentity::from(&pep);
+        self.peptides.insert(peptide_identity, pep)
     }
 
     pub fn add_sequence(&mut self, id: &'a str, pos: usize, seq: &'a str) {

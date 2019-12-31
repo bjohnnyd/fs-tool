@@ -1,3 +1,4 @@
+use crate::prelude::fs_tool::{BindingInfo, PepInfo, VariantInfo};
 use nom::lib::std::collections::HashMap;
 
 pub const MAX_PEPTIDE_LEN: usize = 12;
@@ -53,21 +54,54 @@ impl std::ops::AddAssign<usize> for PeptideDifference {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct PeptideIdentity<'a> {
+pub struct PeptideIdentity {
     pub pos: usize,
-    pub identity: &'a str,
+    pub identity: String,
+}
+
+impl<'a> From<&'a Peptide<'a>> for PeptideIdentity {
+    fn from(pep: &'a Peptide<'a>) -> Self {
+        let pos = pep.pos;
+        let identity = pep.protein.to_string();
+
+        Self { pos, identity }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Peptide<'a> {
     pos: usize,
-    length: usize,
+    pep_length: usize,
     core: Vec<PeptideDifference>,
     interaction_core: Vec<PeptideDifference>,
     core_start_offset: usize,
     deletion: Deletion,
     insertion: Insertion,
     protein: &'a str,
+}
+
+impl<'a> From<(PepInfo<'a>, VariantInfo)> for Peptide<'a> {
+    fn from(info: (PepInfo<'a>, VariantInfo)) -> Self {
+        let PepInfo(pos, pep_seq, core_seq, icore_seq, protein) = info.0;
+        let VariantInfo(core_start_offset, del_gp, del_gl, ins_gp, ins_gl) = info.1;
+
+        let core = edit_distance(pep_seq, core_seq);
+        let interaction_core = edit_distance(pep_seq, icore_seq);
+        let pep_length = pep_seq.len();
+        let deletion = Deletion(del_gp, del_gl);
+        let insertion = Insertion(ins_gp, ins_gl);
+
+        Self {
+            pos,
+            pep_length,
+            core,
+            interaction_core,
+            core_start_offset,
+            deletion,
+            insertion,
+            protein,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

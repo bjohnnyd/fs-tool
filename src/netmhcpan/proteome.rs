@@ -54,8 +54,8 @@ impl std::ops::AddAssign<usize> for PeptideDifference {
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct PeptideIdentity<'a> {
-    pos: usize,
-    identity: &'a str,
+    pub pos: usize,
+    pub identity: &'a str,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -76,13 +76,12 @@ pub struct Proteome {
 }
 
 impl Proteome {
-    fn new<T: AsRef<str>>(identity: T) -> Self {
-        let mut map = HashMap::new();
-        map.insert(identity.as_ref().to_string(), String::new());
+    pub(crate) fn new() -> Self {
+        let map = HashMap::<String, String>::new();
         Self { map }
     }
 
-    fn add_peptide<T>(&mut self, identity: T, pos: usize, pep: T)
+    pub(crate) fn add_peptide<T>(&mut self, identity: T, pos: usize, pep: T)
     where
         T: AsRef<str>,
     {
@@ -159,7 +158,7 @@ mod tests {
             map: base_hashmap.clone(),
         };
 
-        let mut proteome = Proteome::new(identity);
+        let mut proteome = Proteome::new();
 
         proteome.add_peptide(identity, pep1.0, pep1.1);
         assert_eq!(proteome, expected);

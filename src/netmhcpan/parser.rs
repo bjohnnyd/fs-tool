@@ -1,4 +1,6 @@
-use crate::prelude::fs_tool::{BindLevel, Deletion, Insertion, NetMHCpanRecord, Peptide};
+use crate::prelude::fs_tool::{
+    BindLevel, Deletion, Insertion, NearestNeighbour, NetMHCpanRecord, Peptide, HLA,
+};
 use crate::prelude::nom_tools::*;
 
 mod helpers {
@@ -7,12 +9,14 @@ mod helpers {
     }
 }
 
-fn get_hla(input: &str) -> IResult<&str, &str> {
+/* Need to deal with error */
+fn get_hla(input: &str) -> IResult<&str, HLA> {
     let find_hla = take_until("HLA-");
     let extract_hla = take_while(|c: char| c.is_alphanum() || c == '-' || c == '*' || c == ':');
 
     let (i, (_, hla)) = nom::sequence::tuple((find_hla, extract_hla))(input)?;
-    Ok((i, hla))
+
+    Ok((i, hla.parse::<HLA>().expect("could not parse HLA")))
 }
 
 fn get_number(input: &str) -> IResult<&str, f32> {
@@ -29,9 +33,9 @@ pub fn get_rank_threshold(input: &str) -> IResult<&str, (&str, f32)> {
     Ok((i, (threshold_type, threshold)))
 }
 
-pub fn get_nn(input: &str) -> IResult<&str, (&str, f32, &str)> {
-    let (i, (index, distance, nn)) = nom::sequence::tuple((get_hla, get_number, get_hla))(input)?;
-    Ok((i, (index, distance, nn)))
+pub fn get_nn(input: &str) -> IResult<&str, NearestNeighbour> {
+    let (i, nn) = nom::sequence::tuple((get_hla, get_number, get_hla))(input)?;
+    Ok((i, NearestNeighbour::from(nn)))
 }
 
 fn get_element(input: &str) -> IResult<&str, &str> {
@@ -70,6 +74,7 @@ fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32,
     }
 }
 
+#[derive(Debug)]
 pub struct PepInfo<'a>(
     pub usize,
     pub &'a str,
@@ -77,7 +82,11 @@ pub struct PepInfo<'a>(
     pub &'a str,
     pub &'a str,
 );
+
+#[derive(Debug)]
 pub struct VariantInfo(pub usize, pub usize, pub usize, pub usize, pub usize);
+
+#[derive(Debug)]
 pub struct BindingInfo<'a>(
     pub &'a str,
     pub f32,
@@ -123,9 +132,7 @@ mod tests {
 
         hla.lines().map(|line| line.trim()).for_each(|line| {
             if line.starts_with("HLA-") {
-                let (_, (index, distance, nn)) = get_nn(line).unwrap();
-                dbg!(index);
-                dbg!(distance);
+                let (_, nn) = get_nn(line).unwrap();
                 dbg!(nn);
             }
             if line.starts_with("# Rank") {

@@ -2,7 +2,7 @@ use crate::prelude::error::HLAError;
 use crate::prelude::fs_tool::LigandInfo;
 use crate::prelude::traits::*;
 
-type Result<T> = std::result::Result<T, HLAError>;
+type HLAResult<T> = std::result::Result<T, HLAError>;
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct HLA {
     pub gene: Gene,
@@ -42,7 +42,7 @@ pub enum LigandGroup {
 impl FromStr for LigandGroup {
     type Err = HLAError;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> HLAResult<Self> {
         let s = s
             .chars()
             .filter(|c| !c.is_ascii_whitespace())
@@ -70,7 +70,7 @@ pub enum IPDFrequency {
 impl FromStr for IPDFrequency {
     type Err = HLAError;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> HLAResult<Self> {
         match s.trim() {
             "Common or Well Defined" => Ok(IPDFrequency::Common),
             "Rare" => Ok(IPDFrequency::Rare),
@@ -131,7 +131,7 @@ impl FromIterator<char> for Gene {
 }
 
 impl HLA {
-    pub fn new<T: AsRef<str>>(s: T) -> Result<Self> {
+    pub fn new<T: AsRef<str>>(s: T) -> HLAResult<Self> {
         let hla_name = s.as_ref().trim_start_matches("HLA-");
         hla_name.parse::<HLA>()
     }
@@ -150,7 +150,7 @@ macro_rules! to_option {
 impl std::str::FromStr for HLA {
     type Err = HLAError;
 
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> HLAResult<Self> {
         let hla = s
             .trim_start_matches("HLA-")
             .replace("*", "")
@@ -190,7 +190,7 @@ impl std::str::FromStr for HLA {
 impl TryFrom<LigandInfo> for HLA {
     type Error = HLAError;
 
-    fn try_from(ligand_info: LigandInfo) -> Result<Self> {
+    fn try_from(ligand_info: LigandInfo) -> HLAResult<Self> {
         let mut hla = ligand_info.0.parse::<HLA>()?;
         let lg = ligand_info.1.parse::<LigandGroup>()?;
         let freq = ligand_info.2.parse::<IPDFrequency>()?;

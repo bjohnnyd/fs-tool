@@ -16,7 +16,7 @@ pub struct Opt {
 
 /* Need to deal nom error */
 fn read_netmhcpan<T: AsRef<str>>(input: T) -> Result<(), Box<dyn std::error::Error>> {
-    let iter = input.as_ref().lines().map(str::trim);
+    let iter = input.as_ref().lines().filter(|line| !line.is_empty()).map(str::trim);
     let mut netmhcpan_summary = NetMHCpanSummary::new();
 
     iter.for_each(|line| {
@@ -56,8 +56,8 @@ mod tests {
     use crate::reader::read_netmhcpan;
 
     const netmhcpan: &str =
-    "HLA-A03:01 : Distance to training data  0.000 (using nearest neighbor HLA-A03:01)\n\
-
+            "HLA-A03:01 : Distance to training data  0.000 (using nearest neighbor HLA-A03:01)\n\
+            \n\
             # Rank Threshold for Strong binding peptides   0.500\n\
             # Rank Threshold for Weak binding peptides   2.000\n\
             -----------------------------------------------------------------------------------\n\
@@ -70,6 +70,6 @@ mod tests {
 
     #[test]
     fn nn_line() {
-        read_netmhcpan(netmhcpan);
+        read_netmhcpan(netmhcpan).unwrap();
     }
 }

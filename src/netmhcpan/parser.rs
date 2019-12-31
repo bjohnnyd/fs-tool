@@ -1,6 +1,5 @@
 use crate::prelude::fs_tool::{BindLevel, Deletion, Insertion, NetMHCpanRecord, Peptide};
 use crate::prelude::nom_tools::*;
-use nom::sequence::tuple;
 
 mod helpers {
     pub fn to_float(input: &str) -> Result<f32, std::num::ParseFloatError> {
@@ -22,7 +21,7 @@ fn get_number(input: &str) -> IResult<&str, f32> {
     map_res(take_digits, self::helpers::to_float)(i)
 }
 
-fn get_rank_threshold(input: &str) -> IResult<&str, (&str, f32)> {
+pub fn get_rank_threshold(input: &str) -> IResult<&str, (&str, f32)> {
     let find_threshold_type = alt((take_until("Strong"), take_until("Weak")));
     let threshold_type = alt((tag("Strong"), tag("Weak")));
     let (i, (_, threshold_type, threshold)) =
@@ -30,7 +29,7 @@ fn get_rank_threshold(input: &str) -> IResult<&str, (&str, f32)> {
     Ok((i, (threshold_type, threshold)))
 }
 
-fn get_nn(input: &str) -> IResult<&str, (&str, f32, &str)> {
+pub fn get_nn(input: &str) -> IResult<&str, (&str, f32, &str)> {
     let (i, (index, distance, nn)) = nom::sequence::tuple((get_hla, get_number, get_hla))(input)?;
     Ok((i, (index, distance, nn)))
 }
@@ -48,18 +47,15 @@ fn get_usize(input: &str) -> IResult<&str, usize> {
     Ok((i, digit.unwrap()))
 }
 
-fn get_bind_level(input: &str) -> IResult<&str, Option<&str>> {
+fn get_bind_level(input: &str) -> IResult<&str, BindLevel> {
     let get_non_alpha = take_till(&AsChar::is_alpha);
     let get_bind_level = opt(alt((tag("WB"), tag("SB"))));
     let (i, (_, mut bind_level)) = tuple((get_non_alpha, get_bind_level))(input)?;
-    if bind_level.is_none() {
-        bind_level = Some("NB")
-    }
 
-    Ok((i, bind_level))
+    Ok((i, BindLevel::from(bind_level)))
 }
 
-fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32, &'a str)> {
+fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32, BindLevel)> {
     let (i, (score, measure1, measure2, mut bind_level)) = tuple((
         opt(get_number),
         opt(get_number),
@@ -68,32 +64,30 @@ fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32,
     ))(input)?;
 
     if measure2.is_none() {
-        Ok(((
-            i,
-            (
-                score.unwrap(),
-                measure2,
-                measure1.unwrap(),
-                bind_level.unwrap(),
-            ),
-        )))
+        Ok(((i, (score.unwrap(), measure2, measure1.unwrap(), bind_level))))
     } else {
-        Ok(((
-            i,
-            (
-                score.unwrap(),
-                measure1,
-                measure2.unwrap(),
-                bind_level.unwrap(),
-            ),
-        )))
+        Ok(((i, (score.unwrap(), measure1, measure2.unwrap(), bind_level))))
     }
 }
 
+pub struct PepInfo<'a>(
+    pub usize,
+    pub &'a str,
+    pub &'a str,
+    pub &'a str,
+    pub &'a str,
+);
+pub struct VariantInfo(pub usize, pub usize, pub usize, pub usize, pub usize);
+pub struct BindingInfo<'a>(
+    pub &'a str,
+    pub f32,
+    pub Option<f32>,
+    pub f32,
+    pub BindLevel,
+);
+
 /* Need to add creation of Netmhcpan record */
-pub fn process_netmhcpan_record<'a>(
-    input: &'a str,
-) -> IResult<&'a str, (usize, &'a str, usize, usize)> {
+pub fn process_netmhcpan_record(input: &str) -> IResult<&str, (PepInfo, VariantInfo, BindingInfo)> {
     let (i, (pos, hla, pep_seq, core_seq)) =
         tuple((get_usize, get_element, get_element, get_element))(input)?;
     let (i, (offset, del_gp, del_gl, ins_gp, ins_gl)) =
@@ -101,11 +95,11 @@ pub fn process_netmhcpan_record<'a>(
     let (i, (icore, identity)) = tuple((get_element, get_element))(i)?;
     let (i, (score, aff, rank, bind_level)) = process_measures(i)?;
 
-    let pep_info = (pos, pep_seq, core_seq, icore, identity);
-    let variation_info = (offset, del_gp, del_gl, ins_gp, ins_gl);
-    let binding_info = (hla, score, aff, rank, bind_level);
+    let pep_info = PepInfo(pos, pep_seq, core_seq, icore, identity);
+    let variation_info = VariantInfo(offset, del_gp, del_gl, ins_gp, ins_gl);
+    let binding_info = BindingInfo(hla, score, aff, rank, bind_level);
 
-    Ok((i, (pos, hla, del_gp, del_gl)))
+    Ok((i, (pep_info, variation_info, binding_info)))
 }
 #[cfg(test)]
 mod tests {

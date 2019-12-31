@@ -1,8 +1,8 @@
-mod cmd_opts;
 mod data;
 mod error;
 mod mhc;
 mod netmhcpan;
+mod reader;
 
 pub mod prelude {
 
@@ -26,11 +26,12 @@ pub mod prelude {
         pub use crate::data::retrieve_ligands::*;
         pub use crate::mhc::hla::*;
         pub use crate::netmhcpan::netmhcpan_record::*;
+        pub use crate::netmhcpan::parser::*;
         pub use crate::netmhcpan::proteome::*;
     }
 
     pub mod external {
-        pub use crate::cmd_opts::Opt;
+        pub use crate::reader::Opt;
         pub use scraper::{Html, Selector};
         pub use structopt::StructOpt;
     }
@@ -47,6 +48,7 @@ pub mod prelude {
         pub use nom::character::complete::space0;
         pub use nom::character::is_space;
         pub use nom::combinator::{map_res, opt};
+        pub use nom::sequence::tuple;
         pub use nom::{AsChar, IResult};
     }
 

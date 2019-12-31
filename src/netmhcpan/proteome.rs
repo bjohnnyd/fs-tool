@@ -14,6 +14,17 @@ pub enum BindLevel {
     NB,
 }
 
+impl From<Option<&str>> for BindLevel {
+    fn from(bind_level: Option<&str>) -> Self {
+        match bind_level {
+            Some("WB") => BindLevel::WB,
+            Some("SB") => BindLevel::SB,
+            Some("NB") => BindLevel::NB,
+            _ => BindLevel::NB,
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum PeptideDifference {
     Match(usize),

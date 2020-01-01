@@ -4,3 +4,6 @@
 /build/
 /out/
 /tmp
+/resources/netmhcout_large_el.txt
+/resources/netmhcout_large_ba.txt
+/resources/netmhcout.txt

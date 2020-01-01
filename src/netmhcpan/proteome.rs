@@ -79,14 +79,14 @@ impl<'a> From<&'a PepInfo<'a>> for PeptideIdentity {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Peptide {
-    pos: usize,
-    pep_length: usize,
+    pub pos: usize,
+    pub length: usize,
     core: Vec<PeptideDifference>,
     interaction_core: Vec<PeptideDifference>,
     core_start_offset: usize,
     deletion: Deletion,
     insertion: Insertion,
-    protein: String,
+    pub protein: String,
 }
 
 impl<'a> From<(PepInfo<'a>, VariantInfo)> for Peptide {
@@ -96,13 +96,13 @@ impl<'a> From<(PepInfo<'a>, VariantInfo)> for Peptide {
 
         let core = edit_distance(pep_seq, core_seq);
         let interaction_core = edit_distance(pep_seq, icore_seq);
-        let pep_length = pep_seq.len();
+        let length = pep_seq.len();
         let deletion = Deletion(del_gp, del_gl);
         let insertion = Insertion(ins_gp, ins_gl);
 
         Self {
             pos,
-            pep_length,
+            length,
             core,
             interaction_core,
             core_start_offset,
@@ -115,13 +115,13 @@ impl<'a> From<(PepInfo<'a>, VariantInfo)> for Peptide {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Proteome {
-    map: HashMap<String, String>,
+    pub proteins: HashMap<String, String>,
 }
 
 impl Proteome {
     pub(crate) fn new() -> Self {
-        let map = HashMap::<String, String>::new();
-        Self { map }
+        let proteins = HashMap::<String, String>::new();
+        Self { proteins }
     }
 
     pub(crate) fn add_peptide<T>(&mut self, identity: T, pos: usize, pep: T)
@@ -129,7 +129,7 @@ impl Proteome {
         T: AsRef<str>,
     {
         let sequence = self
-            .map
+            .proteins
             .entry(identity.as_ref().to_string())
             .or_insert(String::new());
         if sequence.is_empty() || pos == sequence.len() {
@@ -198,7 +198,7 @@ mod tests {
         let mut base_hashmap = HashMap::new();
         base_hashmap.insert(identity.to_string(), pep1.1.to_string());
         let expected = Proteome {
-            map: base_hashmap.clone(),
+            proteins: base_hashmap.clone(),
         };
 
         let mut proteome = Proteome::new();
@@ -213,7 +213,9 @@ mod tests {
             .entry(identity.to_string())
             .or_insert(String::new());
         expected_seq.push_str(pep3.1);
-        let expected = Proteome { map: base_hashmap };
+        let expected = Proteome {
+            proteins: base_hashmap,
+        };
 
         proteome.add_peptide(identity, pep3.0, pep3.1);
         assert_eq!(proteome, expected);

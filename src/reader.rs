@@ -14,8 +14,10 @@ const NN_TAG: &str = "HLA-";
 pub struct Opt {
     #[structopt(long)]
     pub update_ligand_groups: bool,
+
     #[structopt(short, long, default_value = "4")]
     pub threads: usize,
+
     #[structopt(short, long, parse(from_os_str))]
     pub netmhcpan: Option<PathBuf>,
 

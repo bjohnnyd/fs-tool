@@ -66,6 +66,24 @@ impl NetMHCpanRecord {
             bind_level,
         }
     }
+
+    fn bound(&self) -> bool {
+        match self.bind_level {
+            BindLevel::NB => false,
+            _ => true,
+        }
+    }
+
+    fn strong_bound(&self) -> bool {
+        match self.bind_level {
+            BindLevel::SB => true,
+            _ => false,
+        }
+    }
+
+    fn rank_less_than(&self, val: f32) -> bool {
+        self.rank < val
+    }
 }
 
 #[derive(Debug)]
@@ -126,8 +144,43 @@ impl NetMHCpanSummary {
 
         let netmhcpan_record =
             NetMHCpanRecord::new(peptide_identity, (score, aff, rank, bind_level));
+
         let records = self.records.entry(hla).or_insert(Vec::new());
         records.push(netmhcpan_record);
+    }
+
+    pub fn get_bound(&self, hla: &HLA) -> Vec<&Peptide> {
+        let mut peptides = Vec::<&Peptide>::new();
+
+        if let Some(records) = self.records.get(hla) {
+            records
+                .iter()
+                .filter(|record| record.bound())
+                .for_each(|record| {
+                    if let Some(peptide) = self.peptides.get(&record.peptide_identity) {
+                        peptides.push(peptide)
+                    }
+                });
+        }
+        peptides
+    }
+
+    pub fn get_motifs(&self, peptides: &Vec<&Peptide>, motif_pos: Vec<usize>) -> Vec<String> {
+        let mut slices = Vec::<String>::new();
+        peptides.iter().for_each(|pep| {
+            if let Some(protein_seq) = self.proteome.proteins.get(&pep.protein) {
+                let slice = protein_seq.as_bytes()[pep.pos..pep.length]
+                    .iter()
+                    .enumerate()
+                    .filter(|(pep_pos, aa)| motif_pos.contains(&(pep_pos + 1)))
+                    .map(|(_, aa)| *aa as char)
+                    .collect::<String>();
+
+                slices.push(slice);
+            }
+        });
+
+        slices
     }
 }
 

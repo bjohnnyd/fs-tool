@@ -1,42 +1,77 @@
 use crate::prelude::fs_tool::*;
-use std::env::var;
+use crate::prelude::io::{BufReader, Cursor, File, PathBuf, Read};
+use std::io::BufRead;
 use structopt::StructOpt;
 
 const RANK_TAG: &str = "# Rank";
 const NN_TAG: &str = "HLA-";
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "fs-tool")]
+#[structopt(
+    name = "fs-tool",
+    about = "Calculates fraction of shared peptides between HLA alleles based on NetMHCpan predictions"
+)]
 pub struct Opt {
     #[structopt(long)]
     pub update_ligand_groups: bool,
     #[structopt(short, long, default_value = "4")]
     pub threads: usize,
+    #[structopt(short, long, parse(from_os_str))]
+    pub netmhcpan: Option<PathBuf>,
+
+    #[structopt(short, long, parse(from_os_str))]
+    pub output: Option<PathBuf>,
+}
+
+pub trait ToRead {
+    type ToRead: Read;
+    fn to_read(self) -> Self::ToRead;
+}
+
+impl<'a, T> ToRead for &'a T
+where
+    T: AsRef<str>,
+{
+    type ToRead = Cursor<&'a [u8]>;
+
+    fn to_read(self) -> Self::ToRead {
+        Cursor::new(self.as_ref().as_bytes())
+    }
+}
+
+impl ToRead for File {
+    type ToRead = File;
+
+    fn to_read(self) -> File {
+        self
+    }
 }
 
 /* Need to deal nom error */
-fn read_netmhcpan<T: AsRef<str>>(input: T) -> Result<(), Box<dyn std::error::Error>> {
-    let iter = input
-        .as_ref()
+pub fn read_netmhcpan<T: ToRead>(input: T) -> Result<NetMHCpanSummary, Box<dyn std::error::Error>> {
+    let reader = BufReader::new(input.to_read());
+    let iter = reader
         .lines()
-        .filter(|line| !line.is_empty())
-        .map(str::trim);
+        .filter_map(|line| line.ok())
+        .filter(|line| !line.is_empty());
+
     let mut netmhcpan_summary = NetMHCpanSummary::new();
 
-    iter.for_each(|line| {
+    iter.for_each(|mut line| {
+        line = line.trim().to_string();
         if line.starts_with(NN_TAG) {
-            let (_, nn) = get_nn(line).unwrap();
+            let (_, nn) = get_nn(&line).unwrap();
             netmhcpan_summary.add_hla(nn);
         }
 
         if !netmhcpan_summary.is_threshold_set() && line.starts_with(RANK_TAG) {
-            let (_, (mut rank_type, threshold)) = get_rank_threshold(line).unwrap();
+            let (_, (mut rank_type, threshold)) = get_rank_threshold(&line).unwrap();
             netmhcpan_summary.add_threshold(rank_type, threshold);
         }
 
         /* bytes version */
         if line.as_bytes()[0].is_ascii_digit() {
-            if let Ok((_, (pep_info, variant_info, binding_info))) = process_netmhcpan_record(line)
+            if let Ok((_, (pep_info, variant_info, binding_info))) = process_netmhcpan_record(&line)
             {
                 if netmhcpan_summary.alleles.len() <= 1 {
                     netmhcpan_summary.add_sequence(pep_info.4, pep_info.0, pep_info.1);
@@ -50,16 +85,9 @@ fn read_netmhcpan<T: AsRef<str>>(input: T) -> Result<(), Box<dyn std::error::Err
                 netmhcpan_summary.insert_hla_record(peptide_identity, binding_info);
             }
         }
-
-        /* ascii compatible */
-        //if line.chars().take(1).all(false, |mut a,c| {a = c.is_ascii_digit(); a}) {}
-
-        /* Could be done on bytes and this one works only on acii */
-        //            if let Some(_) = line.chars().next().filter(|c| c.is_dec_digit()) {}
     });
 
-    dbg!(netmhcpan_summary);
-    Ok(())
+    Ok(netmhcpan_summary)
 }
 
 #[cfg(test)]
@@ -91,6 +119,6 @@ mod tests {
 
     #[test]
     fn nn_line() {
-        read_netmhcpan(netmhcpan).unwrap();
+        read_netmhcpan(&netmhcpan).unwrap();
     }
 }

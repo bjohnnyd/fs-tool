@@ -8,7 +8,7 @@ pub mod prelude {
 
     pub mod io {
         pub use std::fs::{self, File};
-        pub use std::io::{Read, Write};
+        pub use std::io::{BufReader, Cursor, Read, Write};
         pub use std::path::PathBuf;
     }
 
@@ -28,6 +28,7 @@ pub mod prelude {
         pub use crate::netmhcpan::netmhcpan_record::*;
         pub use crate::netmhcpan::parser::*;
         pub use crate::netmhcpan::proteome::*;
+        pub use crate::reader::read_netmhcpan;
     }
 
     pub mod external {

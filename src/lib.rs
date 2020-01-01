@@ -1,3 +1,4 @@
+mod calc;
 mod data;
 mod error;
 mod mhc;
@@ -28,7 +29,7 @@ pub mod prelude {
         pub use crate::netmhcpan::netmhcpan_record::*;
         pub use crate::netmhcpan::parser::*;
         pub use crate::netmhcpan::proteome::*;
-        pub use crate::reader::read_netmhcpan;
+        pub use crate::reader::*;
     }
 
     pub mod external {

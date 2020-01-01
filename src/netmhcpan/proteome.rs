@@ -132,8 +132,12 @@ impl Proteome {
             .proteins
             .entry(identity.as_ref().to_string())
             .or_insert(String::new());
-        if sequence.is_empty() || pos == sequence.len() {
-            sequence.push_str(pep.as_ref())
+        if sequence.is_empty() {
+            sequence.push_str(pep.as_ref());
+        } else {
+            if let Some(end) = pep.as_ref().chars().last() {
+                sequence.push(end);
+            }
         }
     }
 }

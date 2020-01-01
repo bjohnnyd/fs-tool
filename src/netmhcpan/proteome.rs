@@ -59,8 +59,8 @@ pub struct PeptideIdentity {
     pub identity: String,
 }
 
-impl<'a> From<&'a Peptide<'a>> for PeptideIdentity {
-    fn from(pep: &'a Peptide<'a>) -> Self {
+impl<'a> From<&'a Peptide> for PeptideIdentity {
+    fn from(pep: &'a Peptide) -> Self {
         let pos = pep.pos;
         let identity = pep.protein.to_string();
 
@@ -68,8 +68,17 @@ impl<'a> From<&'a Peptide<'a>> for PeptideIdentity {
     }
 }
 
+impl<'a> From<&'a PepInfo<'a>> for PeptideIdentity {
+    fn from(pep_info: &'a PepInfo<'a>) -> Self {
+        let pos = pep_info.0;
+        let identity = pep_info.4.to_string();
+
+        Self { pos, identity }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
-pub struct Peptide<'a> {
+pub struct Peptide {
     pos: usize,
     pep_length: usize,
     core: Vec<PeptideDifference>,
@@ -77,10 +86,10 @@ pub struct Peptide<'a> {
     core_start_offset: usize,
     deletion: Deletion,
     insertion: Insertion,
-    protein: &'a str,
+    protein: String,
 }
 
-impl<'a> From<(PepInfo<'a>, VariantInfo)> for Peptide<'a> {
+impl<'a> From<(PepInfo<'a>, VariantInfo)> for Peptide {
     fn from(info: (PepInfo<'a>, VariantInfo)) -> Self {
         let PepInfo(pos, pep_seq, core_seq, icore_seq, protein) = info.0;
         let VariantInfo(core_start_offset, del_gp, del_gl, ins_gp, ins_gl) = info.1;
@@ -99,7 +108,7 @@ impl<'a> From<(PepInfo<'a>, VariantInfo)> for Peptide<'a> {
             core_start_offset,
             deletion,
             insertion,
-            protein,
+            protein: protein.to_string(),
         }
     }
 }
@@ -123,7 +132,7 @@ impl Proteome {
             .map
             .entry(identity.as_ref().to_string())
             .or_insert(String::new());
-        if sequence.is_empty() || pos == sequence.len() + 1 {
+        if sequence.is_empty() || pos == sequence.len() {
             sequence.push_str(pep.as_ref())
         }
     }

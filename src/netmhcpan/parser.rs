@@ -74,7 +74,7 @@ fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32,
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct PepInfo<'a>(
     pub usize,
     pub &'a str,
@@ -104,7 +104,7 @@ pub fn process_netmhcpan_record(input: &str) -> IResult<&str, (PepInfo, VariantI
     let (i, (icore, identity)) = tuple((get_element, get_element))(i)?;
     let (i, (score, aff, rank, bind_level)) = process_measures(i)?;
 
-    let pep_info = PepInfo(pos, pep_seq, core_seq, icore, identity);
+    let pep_info = PepInfo(pos - 1, pep_seq, core_seq, icore, identity);
     let variation_info = VariantInfo(offset, del_gp, del_gl, ins_gp, ins_gl);
     let binding_info = BindingInfo(hla, score, aff, rank, bind_level);
 

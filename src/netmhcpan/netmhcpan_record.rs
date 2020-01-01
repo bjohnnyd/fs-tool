@@ -1,3 +1,4 @@
+use crate::netmhcpan::parser::{BindingInfo, PepInfo};
 use crate::prelude::collections::{HashMap, HashSet};
 /// # TODO
 /// 1. Implement conversion from Vec<&str>
@@ -42,26 +43,23 @@ impl From<(HLA, f32, HLA)> for NearestNeighbour {
     }
 }
 #[derive(Debug)]
-pub struct NetMHCpanRecord<'a> {
-    hla: &'a HLA,
-    peptide: &'a Peptide<'a>,
+pub struct NetMHCpanRecord {
+    peptide_identity: PeptideIdentity,
     score: f32,
     aff: Option<f32>,
     rank: f32,
     bind_level: BindLevel,
 }
 
-impl<'a> NetMHCpanRecord<'a> {
+impl NetMHCpanRecord {
     fn new(
-        hla: &'a HLA,
-        peptide: &'a Peptide<'a>,
+        peptide_identity: PeptideIdentity,
         bind_data: (f32, Option<f32>, f32, BindLevel),
     ) -> Self {
         let (score, aff, rank, bind_level) = bind_data;
 
         Self {
-            hla,
-            peptide,
+            peptide_identity,
             score,
             aff,
             rank,
@@ -71,20 +69,20 @@ impl<'a> NetMHCpanRecord<'a> {
 }
 
 #[derive(Debug)]
-pub struct NetMHCpanSummary<'a> {
-    alleles: HashSet<NearestNeighbour>,
-    records: HashMap<HLA, Vec<&'a Peptide<'a>>>,
+pub struct NetMHCpanSummary {
+    pub alleles: HashSet<NearestNeighbour>,
+    records: HashMap<HLA, Vec<NetMHCpanRecord>>,
     proteome: Proteome,
-    peptides: HashMap<PeptideIdentity, Peptide<'a>>,
+    peptides: HashMap<PeptideIdentity, Peptide>,
     pub weak_threshold: Option<f32>,
     pub strong_threshold: Option<f32>,
 }
 
-impl<'a> NetMHCpanSummary<'a> {
+impl NetMHCpanSummary {
     pub(crate) fn new() -> Self {
         Self {
             alleles: HashSet::<NearestNeighbour>::new(),
-            records: HashMap::<HLA, Vec<&Peptide>>::new(),
+            records: HashMap::<HLA, Vec<NetMHCpanRecord>>::new(),
             proteome: Proteome::new(),
             peptides: HashMap::<PeptideIdentity, Peptide>::new(),
             weak_threshold: None,
@@ -96,13 +94,14 @@ impl<'a> NetMHCpanSummary<'a> {
         self.alleles.insert(nn)
     }
 
-    pub fn add_peptide(&mut self, pep: Peptide<'a>) -> Option<Peptide> {
+    pub fn add_peptide(&mut self, pep: Peptide) -> Option<Peptide> {
         let peptide_identity = PeptideIdentity::from(&pep);
         self.peptides.insert(peptide_identity, pep)
     }
 
-    pub fn add_sequence(&mut self, id: &'a str, pos: usize, seq: &'a str) {
-        self.proteome.add_peptide(id, pos, seq)
+    pub fn add_sequence<T: AsRef<str>>(&mut self, id: T, pos: usize, seq: T) {
+        self.proteome
+            .add_peptide(id.as_ref().to_string(), pos, seq.as_ref().to_string())
     }
 
     pub fn is_threshold_set(&self) -> bool {
@@ -115,6 +114,20 @@ impl<'a> NetMHCpanSummary<'a> {
         } else if rank_type.trim() == "Weak" {
             self.weak_threshold = Some(threshold)
         }
+    }
+
+    /* Need to deal with error */
+    pub fn insert_hla_record(
+        &mut self,
+        peptide_identity: PeptideIdentity,
+        BindingInfo(hla_id, score, aff, rank, bind_level): BindingInfo,
+    ) {
+        let hla = hla_id.parse::<HLA>().expect("could not parse hla");
+
+        let netmhcpan_record =
+            NetMHCpanRecord::new(peptide_identity, (score, aff, rank, bind_level));
+        let records = self.records.entry(hla).or_insert(Vec::new());
+        records.push(netmhcpan_record);
     }
 }
 

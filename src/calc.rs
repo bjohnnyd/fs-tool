@@ -1,12 +1,69 @@
+use crate::prelude::collections::HashMap;
+use crate::prelude::fs_tool::{NetMHCpanSummary, HLA};
 use crate::prelude::traits::FromStr;
-#[derive(Debug, PartialEq, Eq)]
+
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Measure {
     pub name: String,
     pub pos: Vec<usize>,
 }
 
+#[derive(Debug)]
+pub struct Calculator<'a> {
+    pub netmhcpan_summary: &'a NetMHCpanSummary,
+    pub measures: Vec<Measure>,
+    pub results: HashMap<String, Vec<(&'a HLA, &'a HLA, f32)>>,
+}
+
+impl<'a> Calculator<'a> {
+    pub fn new(netmhcpan_summary: &'a NetMHCpanSummary, measures: Vec<Measure>) -> Self {
+        Self {
+            netmhcpan_summary,
+            measures,
+            results: HashMap::<String, Vec<(&'a HLA, &'a HLA, f32)>>::new(),
+        }
+    }
+
+    pub fn process_measures(&mut self) {
+        let mut tmp_results = HashMap::<String, Vec<(&'a HLA, &'a HLA, f32)>>::new();
+
+        self.measures
+            .iter()
+            .filter(|measure| !self.results.contains_key(&measure.name))
+            .for_each(|measure| {
+                let mut calcs = self
+                    .netmhcpan_summary
+                    .combinations
+                    .iter()
+                    .map(|comb| {
+                        let bound_motifs_1 =
+                            self.netmhcpan_summary
+                                .get_bound_motifs(&comb.0, None, &measure.pos);
+                        let bound_motifs_2 =
+                            self.netmhcpan_summary
+                                .get_bound_motifs(&comb.1, None, &measure.pos);
+
+                        let fs = calc_fs(&bound_motifs_1, &bound_motifs_2);
+
+                        vec![(&comb.0, &comb.1, fs.0), (&comb.1, &comb.0, fs.1)]
+                    })
+                    .flatten()
+                    .collect::<Vec<(&HLA, &HLA, f32)>>();
+
+                let current_calcs = tmp_results
+                    .entry(measure.name.to_string())
+                    .or_insert(Vec::<(&HLA, &HLA, f32)>::new());
+                current_calcs.append(&mut calcs)
+            });
+
+        self.results = tmp_results;
+    }
+}
+
+/* Need to deal with Error */
 impl FromStr for Measure {
     type Err = &'static str;
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let name_pos = s.split(':').collect::<Vec<&str>>();
         let mut name = String::new();
@@ -42,6 +99,22 @@ pub fn intersection_count_sorted_motifs(a: &[String], b: &[String]) -> u32 {
         }
     }
     count
+}
+
+pub fn calc_fs(a: &[String], b: &[String]) -> (f32, f32) {
+    let intersection_count = intersection_count_sorted_motifs(a, b) as f32;
+    let mut fs1 = 0_f32;
+    let mut fs2 = 0_f32;
+
+    if !a.is_empty() {
+        fs1 = intersection_count / a.len() as f32;
+    }
+
+    if !b.is_empty() {
+        fs2 = intersection_count / b.len() as f32;
+    }
+
+    (fs1, fs2)
 }
 
 #[cfg(test)]
@@ -100,20 +173,48 @@ mod tests {
     #[test]
     fn test_get_motifs() {
         let mut f = std::fs::File::open("resources/netmhcout.txt").unwrap();
-        //        let mut netmhcpan_summary = read_netmhcpan(&netmhcpan).unwrap();
+        let measure_cd8 = "CD8:2,3,4,5,6,9".parse::<Measure>().unwrap();
+        let measure_nk = "NK:2,7,8,9".parse::<Measure>().unwrap();
+
         let mut netmhcpan_summary = read_netmhcpan(f).unwrap();
         let hla1 = "HLA-C03:04".parse::<HLA>().unwrap();
         let hla2 = "HLA-C08:01".parse::<HLA>().unwrap();
 
-        let cd8 = vec![2, 3, 4, 5, 6, 9];
         let hla1_bound = netmhcpan_summary.get_bound(&hla1, Some(10_f32));
         let hla2_bound = netmhcpan_summary.get_bound(&hla2, Some(10_f32));
-        let motifs1 = netmhcpan_summary.get_motifs(&hla1_bound, &cd8);
-        let motifs2 = netmhcpan_summary.get_motifs(&hla2_bound, &cd8);
 
-        assert_eq!(
-            intersection_count_sorted_motifs(&motifs1, &motifs2) as f32 / motifs1.len() as f32,
-            1f32
+        let motifs1_cd8 = netmhcpan_summary.get_motifs(&hla1_bound, &measure_cd8.pos);
+        let motifs2_cd8 = netmhcpan_summary.get_motifs(&hla2_bound, &measure_cd8.pos);
+
+        let motifs1_nk = netmhcpan_summary.get_motifs(&hla1_bound, &measure_nk.pos);
+        let motifs2_nk = netmhcpan_summary.get_motifs(&hla2_bound, &measure_nk.pos);
+
+        dbg!(
+            intersection_count_sorted_motifs(&motifs1_cd8, &motifs2_cd8) as f32
+                / motifs1_cd8.len() as f32
         );
+        dbg!(
+            intersection_count_sorted_motifs(&motifs1_nk, &motifs2_nk) as f32
+                / motifs1_nk.len() as f32
+        );
+    }
+
+    #[test]
+    fn test_calculator() {
+        let mut f = std::fs::File::open("resources/netmhcout.txt").unwrap();
+
+        let measures = "CD8:2,3,4,5,6,9 NK:2,7,8,9"
+            .split_whitespace()
+            .filter_map(|measure| measure.parse::<Measure>().ok())
+            .collect::<Vec<Measure>>();
+        let mut netmhcpan_summary = read_netmhcpan(f).unwrap();
+
+        let mut calc = Calculator::new(&netmhcpan_summary, measures);
+        calc.process_measures();
+        println!(
+            "Combination Length is {}",
+            &calc.netmhcpan_summary.combinations.len()
+        );
+        println!("Results Length is {}", &calc.results.len());
     }
 }

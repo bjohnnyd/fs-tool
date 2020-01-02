@@ -4,7 +4,7 @@ use crate::prelude::collections::{HashMap, HashSet};
 /// 1. Implement conversion from Vec<&str>
 /// 2. Add addition of Ligand Info using some sort of matching
 /// 3. Implement comparison between/Retreiving motifs as Vec of strings
-use crate::prelude::fs_tool::{BindLevel, Peptide, PeptideIdentity, Proteome, HLA};
+use crate::prelude::fs_tool::{BindLevel, Measure, Peptide, PeptideIdentity, Proteome, HLA};
 use crate::prelude::traits::FromStr;
 
 pub struct StrongThreshold(f32);
@@ -108,6 +108,20 @@ impl NetMHCpanSummary {
     }
 
     pub fn add_hla(&mut self, nn: NearestNeighbour) -> bool {
+        let mut combinations = self
+            .alleles
+            .iter()
+            .filter_map(|other_nn| {
+                let other_hla = other_nn.index.clone();
+
+                if nn.index != other_hla {
+                    return Some((nn.index.clone(), other_hla));
+                }
+                None
+            })
+            .collect::<Vec<(HLA, HLA)>>();
+
+        self.combinations.append(&mut combinations);
         self.alleles.insert(nn)
     }
 
@@ -140,20 +154,6 @@ impl NetMHCpanSummary {
         BindingInfo(hla_id, score, aff, rank, bind_level): BindingInfo,
     ) {
         let hla = hla_id.parse::<HLA>().expect("could not parse hla");
-        let mut combinations = self
-            .alleles
-            .iter()
-            .filter_map(|nn| {
-                let other_hla = nn.index.clone();
-
-                if hla != other_hla {
-                    return Some((hla.clone(), other_hla));
-                }
-                None
-            })
-            .collect::<Vec<(HLA, HLA)>>();
-
-        self.combinations.append(&mut combinations);
 
         let netmhcpan_record =
             NetMHCpanRecord::new(peptide_identity, (score, aff, rank, bind_level));
@@ -195,6 +195,16 @@ impl NetMHCpanSummary {
 
         slices.sort();
         slices
+    }
+
+    pub fn get_bound_motifs(
+        &self,
+        hla: &HLA,
+        threshold: Option<f32>,
+        motif_pos: &[usize],
+    ) -> Vec<String> {
+        let peptides_bound = self.get_bound(hla, threshold);
+        self.get_motifs(&peptides_bound, motif_pos)
     }
 }
 

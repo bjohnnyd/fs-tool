@@ -2,6 +2,62 @@ use crate::prelude::error::HLAError;
 use crate::prelude::fs_tool::LigandInfo;
 use crate::prelude::traits::*;
 
+trait ToDisplay {
+    type CanDisplay: std::fmt::Display;
+    fn to_display(&self) -> Self::CanDisplay;
+}
+
+impl<T> ToDisplay for Option<T>
+where
+    T: std::fmt::Display,
+{
+    type CanDisplay = String;
+
+    fn to_display(&self) -> String {
+        match self {
+            Some(val) => format!("{}", val),
+            None => String::from(""),
+        }
+    }
+}
+
+impl ToDisplay for ExpressionChange {
+    type CanDisplay = &'static str;
+
+    fn to_display(&self) -> &'static str {
+        self.into()
+    }
+}
+
+impl ToDisplay for Gene {
+    type CanDisplay = &'static str;
+
+    fn to_display(&self) -> &'static str {
+        self.into()
+    }
+}
+impl ToDisplay for HLA {
+    type CanDisplay = String;
+
+    fn to_display(&self) -> String {
+        format!(
+            "{}*{}{}{}{}{}",
+            self.gene.to_display(),
+            self.allele_group,
+            self.hla_protein.to_display(),
+            self.cds_synonymous_sub.to_display(),
+            self.non_coding_diff.to_display(),
+            self.expression_change.to_display()
+        )
+    }
+}
+
+impl std::fmt::Display for HLA {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.to_display())
+    }
+}
+
 type HLAResult<T> = std::result::Result<T, HLAError>;
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct HLA {
@@ -26,6 +82,22 @@ pub enum Gene {
     DQ,
     DR,
     Unknown,
+}
+
+impl From<&Gene> for &str {
+    fn from(g: &Gene) -> Self {
+        match g {
+            Gene::A => "A",
+            Gene::B => "B",
+            Gene::C => "C",
+            Gene::DP => "DP",
+            Gene::DM => "DM",
+            Gene::DO => "DO",
+            Gene::DQ => "DQ",
+            Gene::DR => "DR",
+            Gene::Unknown => "",
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -106,6 +178,20 @@ impl From<char> for ExpressionChange {
             'A' => ExpressionChange::A,
             'Q' => ExpressionChange::Q,
             _ => ExpressionChange::Unknown,
+        }
+    }
+}
+
+impl From<&ExpressionChange> for &str {
+    fn from(e: &ExpressionChange) -> &'static str {
+        match e {
+            ExpressionChange::N => "N",
+            ExpressionChange::L => "L",
+            ExpressionChange::S => "S",
+            ExpressionChange::C => "C",
+            ExpressionChange::A => "A",
+            ExpressionChange::Q => "Q",
+            ExpressionChange::Unknown => "",
         }
     }
 }
@@ -263,5 +349,12 @@ mod tests {
         };
 
         assert_eq!(hla, expected);
+    }
+
+    #[test]
+    fn test_display_hla() {
+        let hla1 = HLA::new("A01").unwrap();
+        let hla2 = HLA::new("A01:102").unwrap();
+        println!("{}{}", hla1, hla2);
     }
 }

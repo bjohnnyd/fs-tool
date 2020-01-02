@@ -1,6 +1,7 @@
 use crate::prelude::collections::HashMap;
 use crate::prelude::fs_tool::{NetMHCpanSummary, HLA};
 use crate::prelude::traits::FromStr;
+use nom::lib::std::fmt::{Error, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Measure {
@@ -80,6 +81,21 @@ impl FromStr for Measure {
         }
     }
 }
+
+impl<'a> std::fmt::Display for Calculator<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        let mut description = "Measure\tIndex\tNonIndex\tFS".to_string();
+        self.results.iter().for_each(|(measure, values)| {
+            values.iter().for_each(|(index, non_index, fs)| {
+                description
+                    .push_str(format!("\n{}\t{}\t{}\t{}", measure, index, non_index, fs).as_str());
+            })
+        });
+
+        write!(f, "{}", description)
+    }
+}
+
 pub fn intersection_count_sorted_motifs(a: &[String], b: &[String]) -> u32 {
     let mut count = 0;
     let mut b_iter = b.iter().map(String::as_bytes);
@@ -209,11 +225,8 @@ mod tests {
         let mut netmhcpan_summary = read_netmhcpan(f).unwrap();
 
         let mut calc = Calculator::new(&netmhcpan_summary, measures);
+        println!("{}", calc);
         calc.process_measures();
-        println!(
-            "Combination Length is {}",
-            &calc.netmhcpan_summary.combinations.len()
-        );
-        println!("Results Length is {}", &calc.results.len());
+        println!("{}", calc);
     }
 }

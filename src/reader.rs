@@ -1,6 +1,6 @@
 use crate::prelude::fs_tool::*;
 use crate::prelude::io::{BufReader, Cursor, File, PathBuf, Read};
-use std::io::BufRead;
+use std::io::{self, BufRead, Write};
 use structopt::StructOpt;
 
 const RANK_TAG: &str = "# Rank";
@@ -29,6 +29,15 @@ pub struct Opt {
 
     #[structopt(long)]
     pub drop_default_measures: bool,
+}
+
+impl Opt {
+    pub fn get_output(&self) -> Result<Box<dyn Write>, std::io::Error> {
+        match &self.output {
+            Some(path) => File::create(path).map(|f| Box::new(f) as Box<dyn Write>),
+            None => Ok(Box::new(io::stdout())),
+        }
+    }
 }
 
 pub trait ToRead {

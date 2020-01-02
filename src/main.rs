@@ -40,6 +40,8 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         .filter_map(|lg| HLA::try_from(lg).ok())
         .collect::<Vec<HLA>>();
 
+    let mut output = opt.get_output()?;
+
     if let Some(netmhcout) = opt.netmhcpan {
         let f = File::open(netmhcout)?;
         let netmhcpan_summary = read_netmhcpan(f)?;
@@ -57,14 +59,7 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
         let mut calculations = Calculator::new(&netmhcpan_summary, measures);
         calculations.process_measures();
-
-        if let Some(output) = opt.output {
-            let mut output = File::create(output)?;
-            calculations.write_calculations(&mut output);
-        } else {
-            let mut output = io::stdout();
-            calculations.write_calculations(&mut output);
-        }
+        calculations.write_calculations(&mut output)?;
     }
 
     Ok(())

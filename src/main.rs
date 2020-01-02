@@ -5,6 +5,7 @@ use ::fs_tool::prelude::fs_tool::{
 };
 use ::fs_tool::prelude::io::*;
 use ::fs_tool::prelude::traits::TryFrom;
+use fs_tool::prelude::fs_tool::Calculator;
 use std::io::BufRead;
 
 pub const LIGAND_TABLE: &str = include_str!("resources/2019-12-29_lg.tsv");
@@ -41,7 +42,7 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
     if let Some(netmhcout) = opt.netmhcpan {
         let f = File::open(netmhcout)?;
-        let netmhcpan_summary = read_netmhcpan(f);
+        let netmhcpan_summary = read_netmhcpan(f)?;
 
         if opt.drop_default_measures {
             measures = Vec::<Measure>::new();
@@ -52,6 +53,17 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 .iter()
                 .filter_map(|measure| measure.parse::<Measure>().ok())
                 .for_each(|measure| measures.push(measure))
+        }
+
+        let mut calculations = Calculator::new(&netmhcpan_summary, measures);
+        calculations.process_measures();
+
+        if let Some(output) = opt.output {
+            let mut output = File::create(output)?;
+            calculations.write_calculations(&mut output);
+        } else {
+            let mut output = io::stdout();
+            calculations.write_calculations(&mut output);
         }
     }
 

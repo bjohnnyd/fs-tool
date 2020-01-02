@@ -9,7 +9,7 @@ pub mod prelude {
 
     pub mod io {
         pub use std::fs::{self, File};
-        pub use std::io::{BufReader, Cursor, Read, Write};
+        pub use std::io::{self, BufReader, Cursor, Read, Write};
         pub use std::path::PathBuf;
     }
 

@@ -1,7 +1,7 @@
 use crate::prelude::collections::HashMap;
 use crate::prelude::fs_tool::{NetMHCpanSummary, HLA};
+use crate::prelude::io::Write;
 use crate::prelude::traits::FromStr;
-use nom::lib::std::fmt::{Error, Formatter};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Measure {
@@ -58,6 +58,10 @@ impl<'a> Calculator<'a> {
             results
         });
     }
+
+    pub fn write_calculations(&self, out: &mut impl Write) -> Result<usize, std::io::Error> {
+        out.write(format!("{}", self).as_ref())
+    }
 }
 
 /* Need to deal with Error */
@@ -83,7 +87,7 @@ impl FromStr for Measure {
 }
 
 impl<'a> std::fmt::Display for Calculator<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let mut description = "Measure\tIndex\tNonIndex\tFS".to_string();
         self.results.iter().for_each(|(measure, values)| {
             values.iter().for_each(|(index, non_index, fs)| {
@@ -225,7 +229,6 @@ mod tests {
         let mut netmhcpan_summary = read_netmhcpan(f).unwrap();
 
         let mut calc = Calculator::new(&netmhcpan_summary, measures);
-        println!("{}", calc);
         calc.process_measures();
         println!("{}", calc);
     }

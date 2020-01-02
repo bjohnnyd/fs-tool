@@ -25,12 +25,9 @@ impl<'a> Calculator<'a> {
     }
 
     pub fn process_measures(&mut self) {
-        let mut tmp_results = HashMap::<String, Vec<(&'a HLA, &'a HLA, f32)>>::new();
-
-        self.measures
-            .iter()
-            .filter(|measure| !self.results.contains_key(&measure.name))
-            .for_each(|measure| {
+        let results = std::mem::take(&mut self.results);
+        self.results = self.measures.iter().fold(results, |mut results, measure| {
+            if !results.contains_key(&measure.name) {
                 let mut calcs = self
                     .netmhcpan_summary
                     .combinations
@@ -50,13 +47,15 @@ impl<'a> Calculator<'a> {
                     .flatten()
                     .collect::<Vec<(&HLA, &HLA, f32)>>();
 
-                let current_calcs = tmp_results
-                    .entry(measure.name.to_string())
-                    .or_insert(Vec::<(&HLA, &HLA, f32)>::new());
-                current_calcs.append(&mut calcs)
-            });
+                let current_calcs =
+                    results
+                        .entry(measure.name.to_string())
+                        .or_insert(Vec::<(&HLA, &HLA, f32)>::new());
+                current_calcs.append(&mut calcs);
+            }
 
-        self.results = tmp_results;
+            results
+        });
     }
 }
 

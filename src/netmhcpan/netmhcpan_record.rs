@@ -13,7 +13,7 @@ pub struct Distance(f32);
 
 #[derive(Debug)]
 pub struct NearestNeighbour {
-    index: HLA,
+    pub index: HLA,
     distance: f32,
     nearest_neighbour: HLA,
 }
@@ -89,6 +89,7 @@ pub struct NetMHCpanSummary {
     records: HashMap<HLA, Vec<NetMHCpanRecord>>,
     proteome: Proteome,
     peptides: HashMap<PeptideIdentity, Peptide>,
+    pub(crate) combinations: Vec<(HLA, HLA)>,
     pub weak_threshold: Option<f32>,
     pub strong_threshold: Option<f32>,
 }
@@ -98,6 +99,7 @@ impl NetMHCpanSummary {
         Self {
             alleles: HashSet::<NearestNeighbour>::new(),
             records: HashMap::<HLA, Vec<NetMHCpanRecord>>::new(),
+            combinations: Vec::<(HLA, HLA)>::new(),
             proteome: Proteome::new(),
             peptides: HashMap::<PeptideIdentity, Peptide>::new(),
             weak_threshold: None,
@@ -138,6 +140,20 @@ impl NetMHCpanSummary {
         BindingInfo(hla_id, score, aff, rank, bind_level): BindingInfo,
     ) {
         let hla = hla_id.parse::<HLA>().expect("could not parse hla");
+        let mut combinations = self
+            .alleles
+            .iter()
+            .filter_map(|nn| {
+                let other_hla = nn.index.clone();
+
+                if hla != other_hla {
+                    return Some((hla.clone(), other_hla));
+                }
+                None
+            })
+            .collect::<Vec<(HLA, HLA)>>();
+
+        self.combinations.append(&mut combinations);
 
         let netmhcpan_record =
             NetMHCpanRecord::new(peptide_identity, (score, aff, rank, bind_level));
@@ -162,7 +178,7 @@ impl NetMHCpanSummary {
         peptides
     }
 
-    pub fn get_motifs(&self, peptides: &Vec<&Peptide>, motif_pos: Vec<usize>) -> Vec<String> {
+    pub fn get_motifs(&self, peptides: &Vec<&Peptide>, motif_pos: &[usize]) -> Vec<String> {
         let mut slices = Vec::<String>::new();
         peptides.iter().for_each(|pep| {
             if let Some(protein_seq) = self.proteome.proteins.get(&pep.protein) {
@@ -225,6 +241,6 @@ mod tests {
 
         let cd8 = vec![2, 3, 4, 5, 6, 9];
         let hla_bound = netmhcpan_summary.get_bound(&hla, Some(10_f32));
-        dbg!(netmhcpan_summary.get_motifs(&hla_bound, cd8));
+        dbg!(netmhcpan_summary.get_motifs(&hla_bound, &cd8));
     }
 }

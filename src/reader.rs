@@ -23,6 +23,12 @@ pub struct Opt {
 
     #[structopt(short, long, parse(from_os_str))]
     pub output: Option<PathBuf>,
+
+    #[structopt(short, long)]
+    pub measures: Option<Vec<String>>,
+
+    #[structopt(long)]
+    pub drop_default_measures: bool,
 }
 
 pub trait ToRead {

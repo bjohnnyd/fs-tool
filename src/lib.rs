@@ -24,6 +24,7 @@ pub mod prelude {
     }
 
     pub mod fs_tool {
+        pub use crate::calc::*;
         pub use crate::data::retrieve_ligands::*;
         pub use crate::mhc::hla::*;
         pub use crate::netmhcpan::netmhcpan_record::*;

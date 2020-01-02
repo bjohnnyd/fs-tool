@@ -3,7 +3,7 @@ use crate::prelude::fs_tool::LigandInfo;
 use crate::prelude::traits::*;
 
 type HLAResult<T> = std::result::Result<T, HLAError>;
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct HLA {
     pub gene: Gene,
     pub allele_group: String,
@@ -15,7 +15,7 @@ pub struct HLA {
     pub ipd_frequency: Option<IPDFrequency>,
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum Gene {
     A,
     B,
@@ -28,7 +28,7 @@ pub enum Gene {
     Unknown,
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum LigandGroup {
     A11,
     A3,
@@ -60,7 +60,7 @@ impl FromStr for LigandGroup {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum IPDFrequency {
     Rare,
     Common,
@@ -85,7 +85,7 @@ impl Gene {
         self.eq(&Gene::Unknown)
     }
 }
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum ExpressionChange {
     N,
     L,

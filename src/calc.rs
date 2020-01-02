@@ -1,3 +1,29 @@
+use crate::prelude::traits::FromStr;
+#[derive(Debug, PartialEq, Eq)]
+pub struct Measure {
+    pub name: String,
+    pub pos: Vec<usize>,
+}
+
+impl FromStr for Measure {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let name_pos = s.split(':').collect::<Vec<&str>>();
+        let mut name = String::new();
+        let mut pos = Vec::<usize>::new();
+
+        if name_pos.len() < 2 {
+            return Err("Incorrect measure speicifier");
+        } else {
+            let name = name_pos[0].to_string();
+            let pos = name_pos[1]
+                .split(',')
+                .filter_map(|digit| digit.parse::<usize>().ok())
+                .collect::<Vec<usize>>();
+            Ok(Self { name, pos })
+        }
+    }
+}
 pub fn intersection_count_sorted_motifs(a: &[String], b: &[String]) -> u32 {
     let mut count = 0;
     let mut b_iter = b.iter().map(String::as_bytes);
@@ -59,17 +85,35 @@ mod tests {
                 ";
 
     #[test]
-    fn test_get_motifs() {
-        let mut netmhcpan_summary = read_netmhcpan(&netmhcpan).unwrap();
-        let hla = "HLA-A03:01".parse::<HLA>().unwrap();
-
-        let cd8 = vec![2, 3, 4, 5, 6, 9];
-        let hla_bound = netmhcpan_summary.get_bound(&hla, Some(10_f32));
-        let motifs = netmhcpan_summary.get_motifs(&hla_bound, cd8);
+    fn test_measure() {
+        let input_measure = "CD8:2,3,4,5,6,9";
+        let measure = input_measure.parse::<Measure>().unwrap();
 
         assert_eq!(
-            intersection_count_sorted_motifs(&motifs, &motifs) as f32 / motifs.len() as f32,
-            1f32
+            measure,
+            Measure {
+                name: "CD8".to_string(),
+                pos: vec![2, 3, 4, 5, 6, 9]
+            }
         )
+    }
+    #[test]
+    fn test_get_motifs() {
+        let mut f = std::fs::File::open("resources/netmhcout.txt").unwrap();
+        //        let mut netmhcpan_summary = read_netmhcpan(&netmhcpan).unwrap();
+        let mut netmhcpan_summary = read_netmhcpan(f).unwrap();
+        let hla1 = "HLA-C03:04".parse::<HLA>().unwrap();
+        let hla2 = "HLA-C08:01".parse::<HLA>().unwrap();
+
+        let cd8 = vec![2, 3, 4, 5, 6, 9];
+        let hla1_bound = netmhcpan_summary.get_bound(&hla1, Some(10_f32));
+        let hla2_bound = netmhcpan_summary.get_bound(&hla2, Some(10_f32));
+        let motifs1 = netmhcpan_summary.get_motifs(&hla1_bound, &cd8);
+        let motifs2 = netmhcpan_summary.get_motifs(&hla2_bound, &cd8);
+
+        assert_eq!(
+            intersection_count_sorted_motifs(&motifs1, &motifs2) as f32 / motifs1.len() as f32,
+            1f32
+        );
     }
 }

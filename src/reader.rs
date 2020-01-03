@@ -8,8 +8,8 @@ use structopt::StructOpt;
 pub const LIGAND_TABLE: &str = include_str!("resources/2019-12-29_lg.tsv");
 const RANK_TAG: &str = "# Rank";
 const NN_TAG: &str = "HLA-";
-const DEFAULT_KIR: &str = "KIR:2,7,8,9";
-const DEFAULT_TCR: &str = "TCR:2,7,8,9";
+const KIR_DEFAULT: &str = "KIR:2,7,8,9";
+const TCR_DEFAULT: &str = "TCR:2,7,8,9";
 
 #[derive(StructOpt, Debug)]
 #[structopt(
@@ -34,6 +34,9 @@ pub struct Opt {
 
     #[structopt(long)]
     pub drop_default_measures: bool,
+
+    #[structopt(short, long, default_value = "8 9 10 11")]
+    pub peptide_length: Vec<usize>,
 }
 
 impl Opt {
@@ -46,8 +49,8 @@ impl Opt {
 
     pub fn set_measures(&mut self) {
         let mut default_measures = vec![
-            DEFAULT_TCR.parse::<Measure>().unwrap(),
-            DEFAULT_KIR.parse::<Measure>().unwrap(),
+            TCR_DEFAULT.parse::<Measure>().unwrap(),
+            KIR_DEFAULT.parse::<Measure>().unwrap(),
         ];
 
         if !self.drop_default_measures {
@@ -133,6 +136,7 @@ pub fn read_netmhcpan<T: ToRead>(input: T) -> Result<NetMHCpanSummary, Box<dyn s
             if let Ok((_, (pep_info, variant_info, binding_info))) = process_netmhcpan_record(&line)
             {
                 if netmhcpan_summary.alleles.len() <= 1 {
+                    netmhcpan_summary.peptide_lengths.insert(pep_info.1.len());
                     netmhcpan_summary.add_sequence(pep_info.4, pep_info.0, pep_info.1);
                     let peptide = Peptide::from((pep_info, variant_info));
                     netmhcpan_summary.add_peptide(peptide);

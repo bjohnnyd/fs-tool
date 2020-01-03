@@ -59,7 +59,7 @@ fn get_bind_level(input: &str) -> IResult<&str, BindLevel> {
     Ok((i, BindLevel::from(bind_level)))
 }
 
-fn process_measures<'a>(input: &'a str) -> IResult<&str, (f32, Option<f32>, f32, BindLevel)> {
+fn process_measures(input: &str) -> IResult<&str, (f32, Option<f32>, f32, BindLevel)> {
     let (i, (score, measure1, measure2, mut bind_level)) = tuple((
         opt(get_number),
         opt(get_number),

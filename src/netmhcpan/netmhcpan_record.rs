@@ -89,7 +89,8 @@ pub struct NetMHCpanSummary {
     records: HashMap<HLA, Vec<NetMHCpanRecord>>,
     proteome: Proteome,
     peptides: HashMap<PeptideIdentity, Peptide>,
-    pub(crate) combinations: Vec<(HLA, HLA)>,
+    pub peptide_lengths: HashSet<usize>,
+    pub combinations: Vec<(HLA, HLA)>,
     pub weak_threshold: Option<f32>,
     pub strong_threshold: Option<f32>,
 }
@@ -102,6 +103,7 @@ impl NetMHCpanSummary {
             combinations: Vec::<(HLA, HLA)>::new(),
             proteome: Proteome::new(),
             peptides: HashMap::<PeptideIdentity, Peptide>::new(),
+            peptide_lengths: HashSet::<usize>::new(),
             weak_threshold: None,
             strong_threshold: None,
         }
@@ -162,7 +164,7 @@ impl NetMHCpanSummary {
         records.push(netmhcpan_record);
     }
 
-    pub fn get_bound(&self, hla: &HLA, threshold: Option<f32>) -> Vec<&Peptide> {
+    pub fn get_bound(&self, hla: &HLA, threshold: Option<f32>, pep_length: usize) -> Vec<&Peptide> {
         let mut peptides = Vec::<&Peptide>::new();
 
         if let Some(records) = self.records.get(hla) {
@@ -170,8 +172,10 @@ impl NetMHCpanSummary {
                 .iter()
                 .filter(|record| record.bound_by_rank(threshold))
                 .for_each(|record| {
-                    if let Some(peptide) = self.peptides.get(&record.peptide_identity) {
-                        peptides.push(peptide)
+                    if record.peptide_identity.length == pep_length {
+                        if let Some(peptide) = self.peptides.get(&record.peptide_identity) {
+                            peptides.push(peptide);
+                        }
                     }
                 });
         }
@@ -202,8 +206,9 @@ impl NetMHCpanSummary {
         hla: &HLA,
         threshold: Option<f32>,
         motif_pos: &[usize],
+        pep_length: usize,
     ) -> Vec<String> {
-        let peptides_bound = self.get_bound(hla, threshold);
+        let peptides_bound = self.get_bound(hla, threshold, pep_length);
         self.get_motifs(&peptides_bound, motif_pos)
     }
 }
@@ -250,7 +255,7 @@ mod tests {
         let hla = "HLA-A03:01".parse::<HLA>().unwrap();
 
         let cd8 = vec![2, 3, 4, 5, 6, 9];
-        let hla_bound = netmhcpan_summary.get_bound(&hla, Some(10_f32));
+        let hla_bound = netmhcpan_summary.get_bound(&hla, Some(10_f32), 9usize);
         dbg!(netmhcpan_summary.get_motifs(&hla_bound, &cd8));
     }
 }

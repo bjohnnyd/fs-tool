@@ -21,7 +21,8 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let netmhcpan_summary = read_netmhcpan(f)?;
 
         if let Some(measures) = opt.measures {
-            let mut calculations = Calculator::new(&netmhcpan_summary, measures);
+            let mut calculations =
+                Calculator::new(&netmhcpan_summary, measures, opt.peptide_length);
             calculations.process_measures();
             calculations.write_calculations(&mut output)?;
         }

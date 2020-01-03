@@ -56,6 +56,7 @@ impl std::ops::AddAssign<usize> for PeptideDifference {
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct PeptideIdentity {
     pub pos: usize,
+    pub length: usize,
     pub identity: String,
 }
 
@@ -63,8 +64,13 @@ impl<'a> From<&'a Peptide> for PeptideIdentity {
     fn from(pep: &'a Peptide) -> Self {
         let pos = pep.pos;
         let identity = pep.protein.to_string();
+        let length = pep.length;
 
-        Self { pos, identity }
+        Self {
+            pos,
+            identity,
+            length,
+        }
     }
 }
 
@@ -72,8 +78,13 @@ impl<'a> From<&'a PepInfo<'a>> for PeptideIdentity {
     fn from(pep_info: &'a PepInfo<'a>) -> Self {
         let pos = pep_info.0;
         let identity = pep_info.4.to_string();
+        let length = pep_info.1.len();
 
-        Self { pos, identity }
+        Self {
+            pos,
+            identity,
+            length,
+        }
     }
 }
 

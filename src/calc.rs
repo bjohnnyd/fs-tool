@@ -13,20 +13,27 @@ pub struct Measure {
 pub struct Calculator<'a> {
     pub netmhcpan_summary: &'a NetMHCpanSummary,
     pub measures: Vec<Measure>,
-    pub results: HashMap<String, Vec<(&'a HLA, &'a HLA, f32)>>,
+    pub results: HashMap<String, Vec<(&'a HLA, &'a HLA, f32, usize)>>,
+    pub peptide_lengths: Vec<usize>,
 }
 
 impl<'a> Calculator<'a> {
-    pub fn new(netmhcpan_summary: &'a NetMHCpanSummary, measures: Vec<Measure>) -> Self {
+    pub fn new(
+        netmhcpan_summary: &'a NetMHCpanSummary,
+        measures: Vec<Measure>,
+        peptide_lengths: Vec<usize>,
+    ) -> Self {
         Self {
             netmhcpan_summary,
             measures,
-            results: HashMap::<String, Vec<(&'a HLA, &'a HLA, f32)>>::new(),
+            results: HashMap::<String, Vec<(&'a HLA, &'a HLA, f32, usize)>>::new(),
+            peptide_lengths,
         }
     }
 
     pub fn process_measures(&mut self) {
         let results = std::mem::take(&mut self.results);
+        let peptide_lengths = &self.peptide_lengths;
         self.results = self.measures.iter().fold(results, |mut results, measure| {
             if !results.contains_key(&measure.name) {
                 let mut calcs = self
@@ -34,32 +41,51 @@ impl<'a> Calculator<'a> {
                     .combinations
                     .iter()
                     .map(|comb| {
-                        let bound_motifs_1 =
-                            self.netmhcpan_summary
-                                .get_bound_motifs(&comb.0, None, &measure.pos);
-                        let bound_motifs_2 =
-                            self.netmhcpan_summary
-                                .get_bound_motifs(&comb.1, None, &measure.pos);
+                        peptide_lengths
+                            .iter()
+                            .map(|pep_length| {
+                                let bound_motifs_1 = self.netmhcpan_summary.get_bound_motifs(
+                                    &comb.0,
+                                    None,
+                                    &measure.pos,
+                                    *pep_length,
+                                );
+                                let bound_motifs_2 = self.netmhcpan_summary.get_bound_motifs(
+                                    &comb.1,
+                                    None,
+                                    &measure.pos,
+                                    *pep_length,
+                                );
 
-                        let fs = calc_fs(&bound_motifs_1, &bound_motifs_2);
+                                let fs = calc_fs(&bound_motifs_1, &bound_motifs_2);
+                                //                                println!("HLA-{} / HLA- {} has {} / {} bound peptides at length {}", &comb.0, &comb.1, bound_motifs_1.len(), bound_motifs_2.len(), pep_length);
 
-                        vec![(&comb.0, &comb.1, fs.0), (&comb.1, &comb.0, fs.1)]
+                                vec![
+                                    (&comb.0, &comb.1, fs.0, *pep_length),
+                                    (&comb.1, &comb.0, fs.1, *pep_length),
+                                ]
+                            })
+                            .flatten()
+                            .collect::<Vec<(&HLA, &HLA, f32, usize)>>()
                     })
                     .flatten()
-                    .collect::<Vec<(&HLA, &HLA, f32)>>();
+                    .collect::<Vec<(&HLA, &HLA, f32, usize)>>();
 
-                let current_calcs =
-                    results
-                        .entry(measure.name.to_string())
-                        .or_insert(Vec::<(&HLA, &HLA, f32)>::new());
+                let current_calcs = results.entry(measure.name.to_string()).or_insert(Vec::<(
+                    &HLA,
+                    &HLA,
+                    f32,
+                    usize,
+                )>::new(
+                ));
                 current_calcs.append(&mut calcs);
             }
-
             results
         });
     }
 
     pub fn write_calculations(&self, out: &mut impl Write) -> Result<usize, std::io::Error> {
+        out.write("Measure\tIndex\tNonIndex\tFS\tPeptideLength\n".as_ref());
         out.write(format!("{}", self).as_ref())
     }
 }
@@ -88,12 +114,19 @@ impl FromStr for Measure {
 
 impl<'a> std::fmt::Display for Calculator<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let mut description = "Measure\tIndex\tNonIndex\tFS".to_string();
+        let mut description = String::new();
         self.results.iter().for_each(|(measure, values)| {
-            values.iter().for_each(|(index, non_index, fs)| {
-                description
-                    .push_str(format!("\n{}\t{}\t{}\t{}", measure, index, non_index, fs).as_str());
-            })
+            values
+                .iter()
+                .for_each(|(index, non_index, fs, pep_length)| {
+                    description.push_str(
+                        format!(
+                            "{}\t{}\t{}\t{}\t{}\n",
+                            measure, index, non_index, fs, pep_length
+                        )
+                        .as_str(),
+                    );
+                })
         });
 
         write!(f, "{}", description)
@@ -199,8 +232,8 @@ mod tests {
         let hla1 = "HLA-C03:04".parse::<HLA>().unwrap();
         let hla2 = "HLA-C08:01".parse::<HLA>().unwrap();
 
-        let hla1_bound = netmhcpan_summary.get_bound(&hla1, Some(10_f32));
-        let hla2_bound = netmhcpan_summary.get_bound(&hla2, Some(10_f32));
+        let hla1_bound = netmhcpan_summary.get_bound(&hla1, Some(10_f32), 9usize);
+        let hla2_bound = netmhcpan_summary.get_bound(&hla2, Some(10_f32), 9usize);
 
         let motifs1_cd8 = netmhcpan_summary.get_motifs(&hla1_bound, &measure_cd8.pos);
         let motifs2_cd8 = netmhcpan_summary.get_motifs(&hla2_bound, &measure_cd8.pos);
@@ -228,7 +261,7 @@ mod tests {
             .collect::<Vec<Measure>>();
         let mut netmhcpan_summary = read_netmhcpan(f).unwrap();
 
-        let mut calc = Calculator::new(&netmhcpan_summary, measures);
+        let mut calc = Calculator::new(&netmhcpan_summary, measures, vec![8, 9, 10, 11]);
         calc.process_measures();
         println!("{}", calc);
     }

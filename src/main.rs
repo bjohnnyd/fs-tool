@@ -6,60 +6,25 @@ use ::fs_tool::prelude::fs_tool::{
 use ::fs_tool::prelude::io::*;
 use ::fs_tool::prelude::traits::TryFrom;
 use fs_tool::prelude::fs_tool::Calculator;
-use std::io::BufRead;
-
-pub const LIGAND_TABLE: &str = include_str!("resources/2019-12-29_lg.tsv");
 
 fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let opt = Opt::from_args();
-    let mut ligand_data = Vec::<LigandInfo>::new();
-    let mut measures = vec![
-        Measure {
-            name: "CD8".to_string(),
-            pos: vec![2, 3, 4, 5, 6, 9],
-        },
-        Measure {
-            name: "NK".to_string(),
-            pos: vec![2, 7, 8, 9],
-        },
-    ];
+    let mut opt = Opt::from_args();
 
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(opt.threads)
-        .build_global()
-        .unwrap();
-
-    if let Ok(ligand_table) = get_ligand_table(opt.update_ligand_groups) {
-        ligand_data = parse_ligand_table(ligand_table);
-    } else {
-        ligand_data = parse_ligand_table(LIGAND_TABLE)
-    }
-
-    let hla = ligand_data
-        .into_iter()
-        .filter_map(|lg| HLA::try_from(lg).ok())
-        .collect::<Vec<HLA>>();
-
+    let ligand_hla = opt.get_ligand_data();
     let mut output = opt.get_output()?;
+
+    opt.set_measures();
+    opt.set_threads();
 
     if let Some(netmhcout) = opt.netmhcpan {
         let f = File::open(netmhcout)?;
         let netmhcpan_summary = read_netmhcpan(f)?;
 
-        if opt.drop_default_measures {
-            measures = Vec::<Measure>::new();
+        if let Some(measures) = opt.measures {
+            let mut calculations = Calculator::new(&netmhcpan_summary, measures);
+            calculations.process_measures();
+            calculations.write_calculations(&mut output)?;
         }
-
-        if let Some(custom_measures) = opt.measures {
-            custom_measures
-                .iter()
-                .filter_map(|measure| measure.parse::<Measure>().ok())
-                .for_each(|measure| measures.push(measure))
-        }
-
-        let mut calculations = Calculator::new(&netmhcpan_summary, measures);
-        calculations.process_measures();
-        calculations.write_calculations(&mut output)?;
     }
 
     Ok(())

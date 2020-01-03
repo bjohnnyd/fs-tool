@@ -1,10 +1,15 @@
 use crate::prelude::fs_tool::*;
 use crate::prelude::io::{BufReader, Cursor, File, PathBuf, Read};
+use crate::prelude::traits::TryFrom;
+use rayon::prelude::*;
 use std::io::{self, BufRead, Write};
 use structopt::StructOpt;
 
+pub const LIGAND_TABLE: &str = include_str!("resources/2019-12-29_lg.tsv");
 const RANK_TAG: &str = "# Rank";
 const NN_TAG: &str = "HLA-";
+const DEFAULT_KIR: &str = "KIR:2,7,8,9";
+const DEFAULT_TCR: &str = "TCR:2,7,8,9";
 
 #[derive(StructOpt, Debug)]
 #[structopt(
@@ -25,7 +30,7 @@ pub struct Opt {
     pub output: Option<PathBuf>,
 
     #[structopt(short, long)]
-    pub measures: Option<Vec<String>>,
+    pub measures: Option<Vec<Measure>>,
 
     #[structopt(long)]
     pub drop_default_measures: bool,
@@ -37,6 +42,43 @@ impl Opt {
             Some(path) => File::create(path).map(|f| Box::new(f) as Box<dyn Write>),
             None => Ok(Box::new(io::stdout())),
         }
+    }
+
+    pub fn set_measures(&mut self) {
+        let mut default_measures = vec![
+            DEFAULT_TCR.parse::<Measure>().unwrap(),
+            DEFAULT_KIR.parse::<Measure>().unwrap(),
+        ];
+
+        if !self.drop_default_measures {
+            if let Some(mut measures) = self.measures.as_mut() {
+                measures.append(&mut default_measures)
+            } else {
+                self.measures = Some(default_measures);
+            }
+        }
+    }
+
+    pub fn set_threads(&self) {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(self.threads)
+            .build_global()
+            .unwrap();
+    }
+
+    pub fn get_ligand_data(&self) -> Vec<HLA> {
+        let mut ligand_data = Vec::<LigandInfo>::new();
+
+        if let Ok(ligand_table) = get_ligand_table(self.update_ligand_groups) {
+            ligand_data = parse_ligand_table(ligand_table);
+        } else {
+            ligand_data = parse_ligand_table(LIGAND_TABLE)
+        }
+
+        ligand_data
+            .into_iter()
+            .filter_map(|lg| HLA::try_from(lg).ok())
+            .collect::<Vec<HLA>>()
     }
 }
 

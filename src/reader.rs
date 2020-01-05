@@ -35,7 +35,7 @@ pub struct Opt {
     #[structopt(long)]
     pub drop_default_measures: bool,
 
-    #[structopt(short, long, default_value = "9")]
+    #[structopt(short, long, value_delimiter = " ", default_value = "9 10 11")]
     pub peptide_length: Vec<usize>,
 }
 

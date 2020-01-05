@@ -1,7 +1,5 @@
-use snafu::{ensure, Backtrace, ErrorCompat, ResultExt, Snafu};
-
-mod mhc {
-    use super::*;
+pub mod mhc {
+    use crate::prelude::snafu_error::*;
 
     #[derive(Debug, Snafu)]
     pub enum Error {
@@ -29,10 +27,11 @@ mod mhc {
     }
 }
 
-mod retrieve_ligands {
-    use super::*;
+pub mod retrieve_ligands {
+    use crate::prelude::snafu_error::*;
 
     #[derive(Debug, Snafu)]
+    #[snafu(visibility = "pub(crate)")]
     pub enum Error {
         #[snafu(display(
             r#"\
@@ -44,11 +43,17 @@ mod retrieve_ligands {
 
         #[snafu(display(r#"Could Not Access IPD website at "{}": "{}""#, url, source))]
         WebsiteAccessError {
-            url: String,
             source: attohttpc::Error,
+            url: String,
         },
 
         #[snafu(display(r#"No Ligand Table found at {}"#, url))]
         NoLigandTableFound { url: String },
+
+        #[snafu(display(r#"Could not read respocnse from "{}" : "{}""#, url, source))]
+        CouldNotReadResponse {
+            source: attohttpc::Error,
+            url: String,
+        },
     }
 }

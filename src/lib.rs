@@ -17,10 +17,15 @@ pub mod prelude {
         pub use crate::data::errors as data_errors;
         pub use crate::mhc::errors as mhc_errors;
         pub use crate::netmhcpan::errors as netmhcpan_errors;
+        pub use snafu::{ensure, Backtrace, ErrorCompat, ResultExt, Snafu};
 
         pub use data_errors::RetrieveLigandError;
         pub use mhc_errors::HLAError;
         pub use netmhcpan_errors::*;
+    }
+
+    pub mod snafu_error {
+        pub use snafu::{ensure, Backtrace, ErrorCompat, ResultExt, Snafu};
     }
 
     pub mod fs_tool {

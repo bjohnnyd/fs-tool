@@ -1,10 +1,16 @@
-use crate::prelude::error::*;
+use crate::error::retrieve_ligands::Error;
+use crate::error::retrieve_ligands::{
+    CouldNotReadResponse, IncorrectHLAInURL, NoLigandTableFound, WebsiteAccessError,
+};
 use crate::prelude::external::{Html, Selector};
 use crate::prelude::io::*;
+use crate::prelude::snafu_error::*;
 use rayon::prelude::*;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
 const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
+
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Converts `cssparser::ParseError` to a RetrieveLigandError
 macro_rules! selector_error_convert {
@@ -66,13 +72,16 @@ fn is_ipd_search_safe<T: AsRef<str>>(hla: T) -> bool {
     }
 }
 
-fn clean_hla<T: AsRef<str>>(hla: &T) -> Result<&str, RetrieveLigandError> {
+//fn clean_hla<T: AsRef<str>>(hla: &T) -> Result<&str, RetrieveLigandError> {
+fn clean_hla<T: AsRef<str>>(hla: &T) -> Result<&str> {
     let non_prefix_hla = hla.as_ref().trim_start_matches("HLA-");
 
     if is_ipd_search_safe(non_prefix_hla) {
         Ok(non_prefix_hla)
     } else {
-        Err(RetrieveLigandError::InvalidHLA(hla.as_ref().to_string()))
+        Err(Error::IncorrectHLAInURL {
+            hla: hla.as_ref().to_string(),
+        })
     }
 }
 
@@ -95,18 +104,30 @@ fn parse_ipd_response(response_html: String) -> Result<Vec<LigandInfo>, Retrieve
     }
 }
 
-fn get_ipd_website(url: &str) -> Result<String, RetrieveLigandError> {
-    let res = attohttpc::get(url).send()?;
-    Ok(res.text()?)
+fn get_ipd_website(url: &str) -> Result<String, Error> {
+    let res = attohttpc::get(url).send().context(WebsiteAccessError {
+        url: url.to_string(),
+    })?;
+    Ok(res.text().context(CouldNotReadResponse {
+        url: url.to_string(),
+    })?)
 }
 
-pub fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>, RetrieveLigandError>
+pub fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>, Error>
 where
     T: AsRef<str>,
 {
-    let url = format!("{}{}", IPD_KIR_URL, &clean_hla(&hla)?);
+    let url = format!(
+        "{}{}",
+        IPD_KIR_URL,
+        &clean_hla(&hla).context(IncorrectHLAInURL {
+            hla: hla.as_ref().to_string()
+        })
+    );
     let resp = get_ipd_website(url.as_ref())?;
-    Ok(parse_ipd_response(resp)?)
+    Ok(parse_ipd_response(resp).context(NoLigandTableFound {
+        url: url.as_ref().to_string(),
+    })?)
 }
 
 fn get_ligand_db_file() -> Result<PathBuf, RetrieveLigandError> {

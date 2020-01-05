@@ -1,6 +1,8 @@
 use crate::error::retrieve_ligands::Error;
 use crate::error::retrieve_ligands::{
-    CouldNotReadResponse, IncorrectHLAInURL, NoLigandTableFound, WebsiteAccessError,
+    CouldNotCreateDirectory, CouldNotOpenFile, CouldNotReadFile, CouldNotReadResponse,
+    IncorrectHLAInURL, NoLigandInformation, NoLigandTableFound, NoLocalData, WebsiteAccessError,
+    WebsiteParsingError, WriteLigandInformationToFile,
 };
 use crate::prelude::external::{Html, Selector};
 use crate::prelude::io::*;
@@ -19,10 +21,8 @@ macro_rules! selector_error_convert {
             Ok(selector) => Ok(selector),
             Err(err) => {
                 let line = err.location.line + 1;
-                Err(RetrieveLigandError::CSSParseError(
-                    line,
-                    err.location.column,
-                ))
+                let column = err.location.column;
+                Err(Error::WebsiteParsingError { line, column })
             }
         }
     }};
@@ -85,7 +85,7 @@ fn clean_hla<T: AsRef<str>>(hla: &T) -> Result<&str> {
     }
 }
 
-fn parse_ipd_response(response_html: String) -> Result<Vec<LigandInfo>, RetrieveLigandError> {
+fn parse_ipd_response(response_html: String) -> Result<Vec<LigandInfo>> {
     let mut result = Vec::<LigandInfo>::new();
     let table_selector = selector_error_convert!("table")?;
     let row_selector = selector_error_convert!("tr")?;
@@ -100,11 +100,12 @@ fn parse_ipd_response(response_html: String) -> Result<Vec<LigandInfo>, Retrieve
         }
         Ok(result)
     } else {
-        Err(RetrieveLigandError::NoLigandTableFound(response_html))
+        let response = response_html.to_string();
+        Err(Error::NoLigandTableFound { response })
     }
 }
 
-fn get_ipd_website(url: &str) -> Result<String, Error> {
+fn get_ipd_website(url: &str) -> Result<String> {
     let res = attohttpc::get(url).send().context(WebsiteAccessError {
         url: url.to_string(),
     })?;
@@ -113,36 +114,30 @@ fn get_ipd_website(url: &str) -> Result<String, Error> {
     })?)
 }
 
-pub fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>, Error>
+pub fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>>
 where
     T: AsRef<str>,
 {
-    let url = format!(
-        "{}{}",
-        IPD_KIR_URL,
-        &clean_hla(&hla).context(IncorrectHLAInURL {
-            hla: hla.as_ref().to_string()
-        })
-    );
+    let url = format!("{}{}", IPD_KIR_URL, &clean_hla(&hla)?);
     let resp = get_ipd_website(url.as_ref())?;
-    Ok(parse_ipd_response(resp).context(NoLigandTableFound {
-        url: url.as_ref().to_string(),
-    })?)
+    Ok(parse_ipd_response(resp)?)
 }
 
-fn get_ligand_db_file() -> Result<PathBuf, RetrieveLigandError> {
+fn get_ligand_db_file() -> Result<PathBuf> {
     if let Some(proj_dirs) = directories::ProjectDirs::from("", "", "fs-tool") {
         let out_dir = proj_dirs.data_local_dir();
         if !out_dir.exists() {
-            fs::create_dir_all(&out_dir)?;
+            fs::create_dir_all(&out_dir).context(CouldNotCreateDirectory {
+                out_dir: out_dir.to_string_lossy(),
+            });
         }
         Ok(out_dir.join("ligand_groups.tsv"))
     } else {
-        Err(RetrieveLigandError::CouldNotAccessData)
+        Err(Error::NoLocalData {})
     }
 }
 
-fn save_ligand_groups(p: &PathBuf) -> Result<(), RetrieveLigandError> {
+fn save_ligand_groups(p: &PathBuf) -> Result<()> {
     let ligands = GENE_LOCI
         .par_iter()
         .filter_map(|gene| retrieve_ligand_group(gene).ok())
@@ -150,31 +145,42 @@ fn save_ligand_groups(p: &PathBuf) -> Result<(), RetrieveLigandError> {
         .collect::<Vec<LigandInfo>>();
 
     if ligands.is_empty() {
-        return Err(RetrieveLigandError::ErrorWithIPDWebsite(
-            IPD_KIR_URL.to_string(),
-        ));
+        return Err(Error::NoLigandInformation {
+            url: IPD_KIR_URL.to_string(),
+        });
     }
     {
-        let mut f = File::create(p)?;
+        let mut f = File::create(p).context(CouldNotOpenFile {
+            ligand_db_file: p.clone(),
+        })?;
         for ligand_info in &ligands {
             f.write_all(
                 format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
-            )?
+            )
+            .context(WriteLigandInformationToFile {
+                p: p.clone(),
+                info_1: ligand_info.0.clone(),
+                info_2: ligand_info.1.clone(),
+                info_3: ligand_info.2.clone(),
+            });
         }
     }
     Ok(())
 }
 
-pub fn get_ligand_table(
-    update_ligand_groups: bool,
-) -> Result<impl AsRef<str>, RetrieveLigandError> {
+pub fn get_ligand_table(update_ligand_groups: bool) -> Result<impl AsRef<str>> {
     let mut ligand_table = String::new();
     let ligand_db_file = get_ligand_db_file()?;
     if update_ligand_groups || !ligand_db_file.exists() {
         save_ligand_groups(&ligand_db_file)?;
     }
-    let mut f = File::open(ligand_db_file)?;
-    f.read_to_string(&mut ligand_table)?;
+    let mut f = File::open(&ligand_db_file).context(CouldNotOpenFile {
+        ligand_db_file: ligand_db_file.clone(),
+    })?;
+    f.read_to_string(&mut ligand_table)
+        .context(CouldNotReadFile {
+            ligand_db_file: ligand_db_file.clone(),
+        })?;
 
     Ok(ligand_table)
 }

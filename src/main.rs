@@ -10,11 +10,15 @@ use fs_tool::prelude::fs_tool::Calculator;
 fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let mut opt = Opt::from_args();
 
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(opt.threads)
+        .build_global()
+        .unwrap();
+
     let ligand_hla = opt.get_ligand_data();
     let mut output = opt.get_output()?;
 
     opt.set_measures();
-    opt.set_threads();
 
     if let Some(netmhcout) = opt.netmhcpan {
         let f = File::open(netmhcout)?;

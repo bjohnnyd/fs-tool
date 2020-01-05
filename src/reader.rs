@@ -35,7 +35,7 @@ pub struct Opt {
     #[structopt(long)]
     pub drop_default_measures: bool,
 
-    #[structopt(short, long, default_value = "8 9 10 11")]
+    #[structopt(short, long, default_value = "9")]
     pub peptide_length: Vec<usize>,
 }
 
@@ -62,12 +62,12 @@ impl Opt {
         }
     }
 
-    pub fn set_threads(&self) {
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(self.threads)
-            .build_global()
-            .unwrap();
-    }
+    //    pub fn set_threads(&self) {
+    //        rayon::ThreadPoolBuilder::new()
+    //            .num_threads(self.threads)
+    //            .build_global()
+    //            .unwrap();
+    //    }
 
     pub fn get_ligand_data(&self) -> Vec<HLA> {
         let mut ligand_data = Vec::<LigandInfo>::new();

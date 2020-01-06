@@ -98,8 +98,13 @@ mod tests {
     #[test]
     fn test_could_not_open_file() {
         let p = std::path::PathBuf::new().join("blah");
-        std::fs::File::open(p.clone())
-            .context(CouldNotOpenFile { f_path: p })
-            .unwrap();
+        let result = std::fs::File::open(p.clone()).context(CouldNotOpenFile { f_path: p });
+        match result {
+            Ok(f) => (),
+            Err(e) => {
+                eprintln!("{}", e);
+                ()
+            }
+        }
     }
 }

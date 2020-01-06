@@ -1,12 +1,6 @@
-use crate::error::retrieve_ligands::Error;
-use crate::error::retrieve_ligands::{
-    CouldNotCreateDirectory, CouldNotOpenFile, CouldNotReadFile, CouldNotReadResponse,
-    IncorrectHLAInURL, NoLigandInformation, NoLigandTableFound, NoLocalData, WebsiteAccessError,
-    WebsiteParsingError, WriteLigandInformationToFile,
-};
+use crate::error::*;
 use crate::prelude::external::{Html, Selector};
 use crate::prelude::io::*;
-use crate::prelude::snafu_error::*;
 use rayon::prelude::*;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
@@ -68,7 +62,7 @@ fn is_ipd_search_safe<T: AsRef<str>>(hla: T) -> bool {
             _ => false,
         }
     } else {
-        query.contains('*') && query.len() <= 3 || query.contains('*') && query.contains(':')
+        query.contains('*') && query.len() <= 4 || query.contains('*') && query.contains(':')
     }
 }
 
@@ -79,7 +73,7 @@ fn clean_hla<T: AsRef<str>>(hla: &T) -> Result<&str> {
     if is_ipd_search_safe(non_prefix_hla) {
         Ok(non_prefix_hla)
     } else {
-        Err(Error::IncorrectHLAInURL {
+        Err(Error::IncorrectHLA {
             hla: hla.as_ref().to_string(),
         })
     }
@@ -128,7 +122,7 @@ fn get_ligand_db_file() -> Result<PathBuf> {
         let out_dir = proj_dirs.data_local_dir();
         if !out_dir.exists() {
             fs::create_dir_all(&out_dir).context(CouldNotCreateDirectory {
-                out_dir: out_dir.to_string_lossy(),
+                out_dir: out_dir.to_string_lossy().to_string(),
             });
         }
         Ok(out_dir.join("ligand_groups.tsv"))
@@ -151,14 +145,14 @@ fn save_ligand_groups(p: &PathBuf) -> Result<()> {
     }
     {
         let mut f = File::create(p).context(CouldNotOpenFile {
-            ligand_db_file: p.clone(),
+            f_path: p.clone().to_owned(),
         })?;
         for ligand_info in &ligands {
             f.write_all(
                 format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
             )
             .context(WriteLigandInformationToFile {
-                p: p.clone(),
+                p: p.clone().to_owned(),
                 info_1: ligand_info.0.clone(),
                 info_2: ligand_info.1.clone(),
                 info_3: ligand_info.2.clone(),
@@ -175,10 +169,10 @@ pub fn get_ligand_table(update_ligand_groups: bool) -> Result<impl AsRef<str>> {
         save_ligand_groups(&ligand_db_file)?;
     }
     let mut f = File::open(&ligand_db_file).context(CouldNotOpenFile {
-        ligand_db_file: ligand_db_file.clone(),
+        f_path: ligand_db_file.clone(),
     })?;
     f.read_to_string(&mut ligand_table)
-        .context(CouldNotReadFile {
+        .context(CouldNotReadLigandFile {
             ligand_db_file: ligand_db_file.clone(),
         })?;
 
@@ -194,12 +188,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn invalid_hla() {
-        let hla = "C*01:02";
-        clean_hla(&hla).unwrap();
+    fn test_valid_hla() {
+        let hla = "HLA-A*01";
+        let cleaned_hla = clean_hla(&hla).unwrap();
+
+        assert_eq!(cleaned_hla, "A*01");
     }
 
-    async fn test_reqwest() {
+    #[test]
+    fn test_reqwest() {
         let hla = "C*01:102";
         let result = retrieve_ligand_group(&hla).unwrap();
 

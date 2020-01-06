@@ -1,6 +1,6 @@
 mod calc;
 mod data;
-mod error;
+pub mod error;
 mod mhc;
 mod netmhcpan;
 mod reader;

@@ -1,4 +1,4 @@
-use crate::prelude::error::HLAError;
+use crate::error::*;
 use crate::prelude::fs_tool::LigandInfo;
 use crate::prelude::traits::*;
 
@@ -36,11 +36,10 @@ impl ToDisplay for Gene {
         self.into()
     }
 }
-impl ToDisplay for HLA {
-    type CanDisplay = String;
 
-    fn to_display(&self) -> String {
-        format!(
+impl std::fmt::Display for HLA {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let description = format!(
             "{}*{}{}{}{}{}",
             self.gene.to_display(),
             self.allele_group,
@@ -48,17 +47,13 @@ impl ToDisplay for HLA {
             self.cds_synonymous_sub.to_display(),
             self.non_coding_diff.to_display(),
             self.expression_change.to_display()
-        )
+        );
+        write!(f, "{}", description)
     }
 }
 
-impl std::fmt::Display for HLA {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.to_display())
-    }
-}
+type Result<T, E = Error> = std::result::Result<T, E>;
 
-type HLAResult<T> = std::result::Result<T, HLAError>;
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct HLA {
     pub gene: Gene,
@@ -112,9 +107,9 @@ pub enum LigandGroup {
 }
 
 impl FromStr for LigandGroup {
-    type Err = HLAError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> HLAResult<Self> {
+    fn from_str(s: &str) -> Result<Self> {
         let s = s
             .chars()
             .filter(|c| !c.is_ascii_whitespace())
@@ -127,7 +122,9 @@ impl FromStr for LigandGroup {
             "C1" => Ok(LigandGroup::C1),
             "C2" => Ok(LigandGroup::C2),
             "Unclassified" => Ok(LigandGroup::Unclassified),
-            _ => Err(HLAError::UnknownLigandGroup(s.to_string())),
+            _ => Err(Error::UnknownLigandGroup {
+                ligand_group: s.to_string(),
+            }),
         }
     }
 }
@@ -140,14 +137,16 @@ pub enum IPDFrequency {
 }
 
 impl FromStr for IPDFrequency {
-    type Err = HLAError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> HLAResult<Self> {
+    fn from_str(s: &str) -> Result<Self> {
         match s.trim() {
             "Common or Well Defined" => Ok(IPDFrequency::Common),
             "Rare" => Ok(IPDFrequency::Rare),
             "Unknown" => Ok(IPDFrequency::Unknown),
-            _ => Err(HLAError::IPDFrequencyIncorrect(s.to_string())),
+            _ => Err(Error::IPDFrequencyIncorrect {
+                ipd_frequency: s.to_string(),
+            }),
         }
     }
 }
@@ -217,7 +216,7 @@ impl FromIterator<char> for Gene {
 }
 
 impl HLA {
-    pub fn new<T: AsRef<str>>(s: T) -> HLAResult<Self> {
+    pub fn new<T: AsRef<str>>(s: T) -> Result<Self> {
         let hla_name = s.as_ref().trim_start_matches("HLA-");
         hla_name.parse::<HLA>()
     }
@@ -234,9 +233,9 @@ macro_rules! to_option {
 }
 
 impl std::str::FromStr for HLA {
-    type Err = HLAError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> HLAResult<Self> {
+    fn from_str(s: &str) -> Result<Self> {
         let hla = s
             .trim_start_matches("HLA-")
             .replace("*", "")
@@ -245,13 +244,15 @@ impl std::str::FromStr for HLA {
         let gene: Gene = hla.chars().take(2).collect::<Gene>();
 
         if gene.is_unknown() {
-            return Err(HLAError::IncorrectGeneLocus(
-                hla.chars().take(2).collect::<String>(),
-            ));
+            return Err(Error::IncorrectGeneLocus {
+                locus: hla.chars().take(2).collect::<String>(),
+            });
         }
 
         let expression_change =
-            ExpressionChange::from(s.chars().last().ok_or(HLAError::GeneNameTooShort)?);
+            ExpressionChange::from(s.chars().last().ok_or(Error::GeneNameTooShort {
+                gene_name: s.to_string(),
+            })?);
 
         let mut nomenclature_digits = hla.chars().filter(|c| c.is_numeric());
 
@@ -274,9 +275,9 @@ impl std::str::FromStr for HLA {
 }
 
 impl TryFrom<LigandInfo> for HLA {
-    type Error = HLAError;
+    type Error = Error;
 
-    fn try_from(ligand_info: LigandInfo) -> HLAResult<Self> {
+    fn try_from(ligand_info: LigandInfo) -> Result<Self> {
         let mut hla = ligand_info.0.parse::<HLA>()?;
         let lg = ligand_info.1.parse::<LigandGroup>()?;
         let freq = ligand_info.2.parse::<IPDFrequency>()?;
@@ -355,6 +356,6 @@ mod tests {
     fn test_display_hla() {
         let hla1 = HLA::new("A01").unwrap();
         let hla2 = HLA::new("A01:102").unwrap();
-        println!("{}{}", hla1, hla2);
+        println!("{}\n{}", hla1, hla2);
     }
 }

@@ -1,6 +1,9 @@
+use crate::error::*;
 use crate::prelude::fs_tool::*;
 use crate::prelude::io::{BufReader, Cursor, File, PathBuf, Read};
+use crate::prelude::logging::*;
 use crate::prelude::traits::TryFrom;
+
 use rayon::prelude::*;
 use std::io::{self, BufRead, Write};
 use structopt::StructOpt;
@@ -44,7 +47,7 @@ pub struct Opt {
 }
 
 impl Opt {
-    pub fn get_output(&self) -> Result<Box<dyn Write>, std::io::Error> {
+    pub fn get_output(&self) -> std::result::Result<Box<dyn Write>, std::io::Error> {
         match &self.output {
             Some(path) => File::create(path).map(|f| Box::new(f) as Box<dyn Write>),
             None => Ok(Box::new(io::stdout())),
@@ -67,9 +70,9 @@ impl Opt {
     }
 
     /* Need to deal with error */
-    pub fn set_logging(&self) -> std::result::Result<(), log::SetLoggerError> {
+    pub fn set_logging(&self) -> std::result::Result<(), Error> {
         let mut verbosity = 2;
-        dbg!(verbosity);
+
         if self.debug {
             verbosity = 3;
         }
@@ -79,6 +82,7 @@ impl Opt {
             .verbosity(verbosity)
             .timestamp(stderrlog::Timestamp::Second)
             .init()
+            .context(CouldNotStartLogging {})
     }
 
     pub fn get_ligand_data(&self) -> Vec<HLA> {
@@ -87,6 +91,7 @@ impl Opt {
         if let Ok(ligand_table) = get_ligand_table(self.update_ligand_groups) {
             ligand_data = parse_ligand_table(ligand_table);
         } else {
+            info!("Ligand data will cannot be updated and the current local version will be used");
             ligand_data = parse_ligand_table(LIGAND_TABLE)
         }
 

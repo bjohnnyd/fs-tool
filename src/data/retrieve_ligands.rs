@@ -1,6 +1,6 @@
 use crate::error::*;
 use crate::prelude::external::{Html, Selector};
-use crate::prelude::io::*;
+use crate::prelude::{io::*, logging::*};
 use rayon::prelude::*;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
@@ -80,32 +80,40 @@ fn clean_hla<T: AsRef<str>>(hla: &T) -> Result<&str> {
 }
 
 fn parse_ipd_response(response_html: String) -> Result<Vec<LigandInfo>> {
+    info!("Parsing response...");
     let mut result = Vec::<LigandInfo>::new();
     let table_selector = selector_error_convert!("table")?;
     let row_selector = selector_error_convert!("tr")?;
     let document = Html::parse_document(&response_html);
 
     if let Some(table) = document.select(&table_selector).next() {
+        info!("Ligand table found");
         let rows = table.select(&row_selector).skip(1);
 
+        info!("Parsing ligand table rows...");
         for row in rows {
             let hla_info: LigandInfo = row.text().collect::<Vec<&str>>().into();
             result.push(hla_info);
         }
+        info!("Finished parsing ligand table");
         Ok(result)
     } else {
+        error!("Unable to find ligand table");
         let response = response_html.to_string();
         Err(Error::NoLigandTableFound { response })
     }
 }
 
 fn get_ipd_website(url: &str) -> Result<String> {
+    info!("Accessing IPD data at {}...", &url);
     let res = attohttpc::get(url).send().context(WebsiteAccessError {
         url: url.to_string(),
     })?;
-    Ok(res.text().context(CouldNotReadResponse {
+    let result = Ok(res.text().context(CouldNotReadResponse {
         url: url.to_string(),
-    })?)
+    })?);
+    info!("Obtained data from {}", &url);
+    result
 }
 
 pub fn retrieve_ligand_group<T>(hla: &T) -> Result<Vec<LigandInfo>>
@@ -121,12 +129,15 @@ fn get_ligand_db_file() -> Result<PathBuf> {
     if let Some(proj_dirs) = directories::ProjectDirs::from("", "", "fs-tool") {
         let out_dir = proj_dirs.data_local_dir();
         if !out_dir.exists() {
+            info!("{} does not exist and will be created", out_dir.display());
             fs::create_dir_all(&out_dir).context(CouldNotCreateDirectory {
                 out_dir: out_dir.to_string_lossy().to_string(),
             });
         }
-        Ok(out_dir.join("ligand_groups.tsv"))
+        let out_file = out_dir.join("ligand_groups.tsv");
+        Ok(out_file)
     } else {
+        error!("Could not find/create local ligand information data");
         Err(Error::NoLocalData {})
     }
 }
@@ -139,14 +150,14 @@ fn save_ligand_groups(p: &PathBuf) -> Result<()> {
         .collect::<Vec<LigandInfo>>();
 
     if ligands.is_empty() {
+        error!("No ligand information found");
         return Err(Error::NoLigandInformation {
             url: IPD_KIR_URL.to_string(),
         });
     }
     {
-        let mut f = File::create(p).context(CouldNotOpenFile {
-            f_path: p.clone().to_owned(),
-        })?;
+        let mut f = File::create(p).context(CouldNotOpenFile { f_path: p.clone() })?;
+        info!("Ligand information obtained and saved in {}", p.display());
         for ligand_info in &ligands {
             f.write_all(
                 format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
@@ -166,7 +177,13 @@ pub fn get_ligand_table(update_ligand_groups: bool) -> Result<impl AsRef<str>> {
     let mut ligand_table = String::new();
     let ligand_db_file = get_ligand_db_file()?;
     if update_ligand_groups || !ligand_db_file.exists() {
+        info!("Ligand data will be downloaded");
         save_ligand_groups(&ligand_db_file)?;
+    } else {
+        info!(
+            r#"Using ligand data stored at "{}""#,
+            ligand_db_file.display()
+        );
     }
     let mut f = File::open(&ligand_db_file).context(CouldNotOpenFile {
         f_path: ligand_db_file.clone(),

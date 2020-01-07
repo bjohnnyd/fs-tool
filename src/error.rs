@@ -89,6 +89,9 @@ pub enum Error {
         out_dir: std::path::PathBuf,
         source: std::io::Error,
     },
+
+    #[snafu(display(r#"Could not start logging : "{}""#, source))]
+    CouldNotStartLogging { source: log::SetLoggerError },
 }
 
 #[cfg(test)]

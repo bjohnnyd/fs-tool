@@ -1,14 +1,13 @@
 use ::fs_tool::error::CouldNotOpenFile;
 use ::fs_tool::prelude::external::{Opt, StructOpt};
 use ::fs_tool::prelude::fs_tool::{
-    get_ligand_table, parse_ligand_table, read_netmhcpan, LigandInfo, Measure, NetMHCpanSummary,
-    HLA,
+    get_ligand_table, parse_ligand_table, read_netmhcpan, Calculator, LigandInfo, Measure,
+    NetMHCpanSummary, HLA,
 };
 use ::fs_tool::prelude::io::*;
 use ::fs_tool::prelude::logging::*;
 use ::fs_tool::prelude::snafu_error::ResultExt;
 use ::fs_tool::prelude::traits::TryFrom;
-use fs_tool::prelude::fs_tool::Calculator;
 
 fn main() -> std::result::Result<(), ()> {
     match main_try() {
@@ -37,7 +36,7 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(netmhcout) = opt.netmhcpan {
         info!("Reading Netmhcpan output");
         let f = File::open(netmhcout.clone()).context(CouldNotOpenFile { f_path: netmhcout })?;
-        let netmhcpan_summary = read_netmhcpan(f)?;
+        let netmhcpan_summary = read_netmhcpan(f, Some(&ligand_hla))?;
 
         if let Some(measures) = opt.measures {
             let mut calculations =

@@ -22,7 +22,7 @@ macro_rules! selector_error_convert {
     }};
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct LigandInfo(pub String, pub String, pub String);
 
 impl From<Vec<&str>> for LigandInfo {
@@ -33,13 +33,18 @@ impl From<Vec<&str>> for LigandInfo {
         } else {
             frequency = info[2].to_string();
         }
-        LigandInfo(info[0].to_string(), info[1].to_string(), frequency)
+
+        LigandInfo(
+            info[0].chars().filter(|c| !c.is_whitespace()).collect(),
+            info[1].chars().filter(|c| !c.is_whitespace()).collect(),
+            frequency,
+        )
     }
 }
 
 impl From<&str> for LigandInfo {
     fn from(s: &str) -> Self {
-        LigandInfo::from(s.split_ascii_whitespace().collect::<Vec<&str>>())
+        LigandInfo::from(s.split("\t").collect::<Vec<&str>>())
     }
 }
 
@@ -163,7 +168,7 @@ fn save_ligand_groups(p: &PathBuf) -> Result<()> {
                 format!("{}\t{}\t{}\n", ligand_info.0, ligand_info.1, ligand_info.2).as_ref(),
             )
             .context(WriteLigandInformationToFile {
-                p: p.clone().to_owned(),
+                p: p.clone(),
                 info_1: ligand_info.0.clone(),
                 info_2: ligand_info.1.clone(),
                 info_3: ligand_info.2.clone(),

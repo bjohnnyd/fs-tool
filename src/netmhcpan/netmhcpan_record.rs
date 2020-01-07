@@ -18,6 +18,37 @@ pub struct NearestNeighbour {
     nearest_neighbour: HLA,
 }
 
+trait FindSimilarHLA {
+    fn get_hla(&self, query: &HLA) -> Option<HLA>;
+}
+
+impl FindSimilarHLA for Vec<HLA> {
+    fn get_hla(&self, query_hla: &HLA) -> Option<HLA> {
+        let query = query_hla.to_string();
+
+        if let Some((match_idx, _)) = self
+            .iter()
+            .enumerate()
+            .filter(|hla| hla.1.to_string().starts_with(query.as_str()))
+            .next()
+        {
+            Some(self[match_idx].clone())
+        } else {
+            None
+        }
+    }
+}
+impl NearestNeighbour {
+    /* Need to deal with error */
+    pub fn update_ligand_info(&mut self, ligand_info: &Vec<HLA>) {
+        if let Some(index_hla) = ligand_info.get_hla(&self.index) {
+            self.index = index_hla;
+        }
+        if let Some(nn_hla) = ligand_info.get_hla(&self.nearest_neighbour) {
+            self.nearest_neighbour = nn_hla;
+        }
+    }
+}
 impl PartialEq for NearestNeighbour {
     fn eq(&self, other: &Self) -> bool {
         self.index == other.index && self.nearest_neighbour == other.nearest_neighbour
@@ -211,6 +242,10 @@ impl NetMHCpanSummary {
         let peptides_bound = self.get_bound(hla, threshold, pep_length);
         self.get_motifs(&peptides_bound, motif_pos)
     }
+
+    pub fn update_hla_info(&mut self, ligand_info: HashSet<String>) {
+        self.alleles.iter().map(|hla| {});
+    }
 }
 
 #[cfg(test)]
@@ -251,7 +286,7 @@ mod tests {
 
     #[test]
     fn test_get_motifs() {
-        let mut netmhcpan_summary = read_netmhcpan(&netmhcpan).unwrap();
+        let mut netmhcpan_summary = read_netmhcpan(&netmhcpan, None).unwrap();
         let hla = "HLA-A03:01".parse::<HLA>().unwrap();
 
         let cd8 = vec![2, 3, 4, 5, 6, 9];

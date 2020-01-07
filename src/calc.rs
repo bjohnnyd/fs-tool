@@ -228,7 +228,7 @@ mod tests {
         let measure_cd8 = "CD8:2,3,4,5,6,9".parse::<Measure>().unwrap();
         let measure_nk = "NK:2,7,8,9".parse::<Measure>().unwrap();
 
-        let mut netmhcpan_summary = read_netmhcpan(f).unwrap();
+        let mut netmhcpan_summary = read_netmhcpan(f, None).unwrap();
         let hla1 = "HLA-C03:04".parse::<HLA>().unwrap();
         let hla2 = "HLA-C08:01".parse::<HLA>().unwrap();
 
@@ -259,7 +259,7 @@ mod tests {
             .split_whitespace()
             .filter_map(|measure| measure.parse::<Measure>().ok())
             .collect::<Vec<Measure>>();
-        let mut netmhcpan_summary = read_netmhcpan(f).unwrap();
+        let mut netmhcpan_summary = read_netmhcpan(f, None).unwrap();
 
         let mut calc = Calculator::new(&netmhcpan_summary, measures, vec![8, 9, 10, 11]);
         calc.process_measures();

@@ -1,8 +1,9 @@
 use crate::error::*;
+use crate::prelude::collections::*;
 use crate::prelude::fs_tool::*;
 use crate::prelude::io::{BufReader, Cursor, File, PathBuf, Read};
 use crate::prelude::logging::*;
-use crate::prelude::traits::TryFrom;
+use crate::prelude::traits::*;
 
 use rayon::prelude::*;
 use std::io::{self, BufRead, Write};
@@ -95,10 +96,29 @@ impl Opt {
             ligand_data = parse_ligand_table(LIGAND_TABLE)
         }
 
+        //        HashSet::from_iter(ligand_data
+        //            .into_iter()
+        //            .filter_map(|lg| HLA::try_from(lg).ok())
+        //            .map(|hla| hla.to_string()))
+
+        //        ligand_data
+        //            .into_iter()
+        //            .filter_map(|lg| HLA::try_from(lg).ok())
+        //            .collect()
+
         ligand_data
             .into_iter()
-            .filter_map(|lg| HLA::try_from(lg).ok())
-            .collect::<Vec<HLA>>()
+            .map(|lg| {
+                if let Ok(hla) = HLA::try_from(lg.clone()) {
+                    info!("successfuly parsed {}", &hla);
+                    Some(hla)
+                } else {
+                    error!("Could not parse {:?}", &lg);
+                    None
+                }
+            })
+            .filter_map(|hla| hla)
+            .collect()
     }
 }
 
@@ -127,7 +147,10 @@ impl ToRead for File {
 }
 
 /* Need to deal nom error */
-pub fn read_netmhcpan<T: ToRead>(input: T) -> Result<NetMHCpanSummary, Box<dyn std::error::Error>> {
+pub fn read_netmhcpan<T: ToRead>(
+    input: T,
+    ligand_info: Option<&Vec<HLA>>,
+) -> std::result::Result<NetMHCpanSummary, Box<dyn std::error::Error>> {
     let reader = BufReader::new(input.to_read());
     let iter = reader
         .lines()
@@ -139,7 +162,10 @@ pub fn read_netmhcpan<T: ToRead>(input: T) -> Result<NetMHCpanSummary, Box<dyn s
     iter.for_each(|mut line| {
         line = line.trim().to_string();
         if line.starts_with(NN_TAG) {
-            let (_, nn) = get_nn(&line).unwrap();
+            let (_, mut nn) = get_nn(&line).unwrap();
+            if let Some(ligand_info) = ligand_info {
+                nn.update_ligand_info(ligand_info);
+            }
             netmhcpan_summary.add_hla(nn);
         }
 
@@ -199,6 +225,6 @@ mod tests {
 
     #[test]
     fn nn_line() {
-        read_netmhcpan(&netmhcpan).unwrap();
+        read_netmhcpan(&netmhcpan, None).unwrap();
     }
 }

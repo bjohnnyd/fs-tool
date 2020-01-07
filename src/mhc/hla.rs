@@ -101,6 +101,7 @@ pub enum LigandGroup {
     A3,
     Bw4_80T,
     Bw4_80I,
+    Bw6,
     C1,
     C2,
     Unclassified,
@@ -110,15 +111,14 @@ impl FromStr for LigandGroup {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let s = s
-            .chars()
-            .filter(|c| !c.is_ascii_whitespace())
-            .collect::<String>();
+        let s = s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
+
         match s.as_str() {
             "A11" => Ok(LigandGroup::A11),
             "A3" => Ok(LigandGroup::A3),
             "Bw4-80T" => Ok(LigandGroup::Bw4_80T),
             "Bw4-80I" => Ok(LigandGroup::Bw4_80I),
+            "Bw6" => Ok(LigandGroup::Bw6),
             "C1" => Ok(LigandGroup::C1),
             "C2" => Ok(LigandGroup::C2),
             "Unclassified" => Ok(LigandGroup::Unclassified),
@@ -141,7 +141,7 @@ impl FromStr for IPDFrequency {
 
     fn from_str(s: &str) -> Result<Self> {
         match s.trim() {
-            "Common or Well Defined" => Ok(IPDFrequency::Common),
+            _match if _match.contains("Common") => Ok(IPDFrequency::Common),
             "Rare" => Ok(IPDFrequency::Rare),
             "Unknown" => Ok(IPDFrequency::Unknown),
             _ => Err(Error::IPDFrequencyIncorrect {
@@ -274,10 +274,12 @@ impl std::str::FromStr for HLA {
     }
 }
 
+/* IMPORTANT: Need more precise error */
 impl TryFrom<LigandInfo> for HLA {
     type Error = Error;
 
     fn try_from(ligand_info: LigandInfo) -> Result<Self> {
+        //        if let Ok(hla) =
         let mut hla = ligand_info.0.parse::<HLA>()?;
         let lg = ligand_info.1.parse::<LigandGroup>()?;
         let freq = ligand_info.2.parse::<IPDFrequency>()?;
@@ -303,6 +305,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mhc::errors::HLAError::IPDFrequencyIncorrect;
 
     #[test]
     fn expression_change_from_char() {
@@ -357,5 +360,22 @@ mod tests {
         let hla1 = HLA::new("A01").unwrap();
         let hla2 = HLA::new("A01:102").unwrap();
         println!("{}\n{}", hla1, hla2);
+    }
+
+    #[test]
+    fn test_to_ipd_freq() {
+        let ipd_frequency = "Common or Well Defined".parse::<IPDFrequency>().unwrap();
+        assert_eq!(ipd_frequency, IPDFrequency::Common);
+    }
+
+    #[test]
+    fn test_lg_to_hla() {
+        let lg = LigandInfo(
+            "C*16:01:01:01".to_string(),
+            "C1".to_string(),
+            "Common".to_string(),
+        );
+        let hla = HLA::try_from(lg).unwrap();
+        println!("{}", hla);
     }
 }

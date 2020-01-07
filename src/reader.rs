@@ -10,6 +10,7 @@ const RANK_TAG: &str = "# Rank";
 const NN_TAG: &str = "HLA-";
 const KIR_DEFAULT: &str = "KIR:2,7,8,9";
 const TCR_DEFAULT: &str = "TCR:2,7,8,9";
+const LOGGING_MODULE: &str = "fs_tool";
 
 #[derive(StructOpt, Debug)]
 #[structopt(
@@ -37,6 +38,9 @@ pub struct Opt {
 
     #[structopt(short, long, value_delimiter = " ", default_value = "9 10 11")]
     pub peptide_length: Vec<usize>,
+
+    #[structopt(short, long)]
+    pub debug: bool,
 }
 
 impl Opt {
@@ -62,12 +66,20 @@ impl Opt {
         }
     }
 
-    //    pub fn set_threads(&self) {
-    //        rayon::ThreadPoolBuilder::new()
-    //            .num_threads(self.threads)
-    //            .build_global()
-    //            .unwrap();
-    //    }
+    /* Need to deal with error */
+    pub fn set_logging(&self) -> std::result::Result<(), log::SetLoggerError> {
+        let mut verbosity = 2;
+        dbg!(verbosity);
+        if self.debug {
+            verbosity = 3;
+        }
+
+        stderrlog::new()
+            .module(LOGGING_MODULE)
+            .verbosity(verbosity)
+            .timestamp(stderrlog::Timestamp::Second)
+            .init()
+    }
 
     pub fn get_ligand_data(&self) -> Vec<HLA> {
         let mut ligand_data = Vec::<LigandInfo>::new();

@@ -5,6 +5,7 @@ use ::fs_tool::prelude::fs_tool::{
     HLA,
 };
 use ::fs_tool::prelude::io::*;
+use ::fs_tool::prelude::logging::*;
 use ::fs_tool::prelude::snafu_error::ResultExt;
 use ::fs_tool::prelude::traits::TryFrom;
 use fs_tool::prelude::fs_tool::Calculator;
@@ -13,7 +14,7 @@ fn main() -> std::result::Result<(), ()> {
     match main_try() {
         Ok(()) => Ok(()),
         Err(e) => {
-            eprintln!("Error: {}", e);
+            eprintln!("{}", e);
             Err(())
         }
     }
@@ -21,6 +22,7 @@ fn main() -> std::result::Result<(), ()> {
 
 fn main_try() -> Result<(), Box<dyn std::error::Error>> {
     let mut opt = Opt::from_args();
+    opt.set_logging();
 
     rayon::ThreadPoolBuilder::new()
         .num_threads(opt.threads)
@@ -33,6 +35,7 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
     opt.set_measures();
 
     if let Some(netmhcout) = opt.netmhcpan {
+        info!("Reading Netmhcpan output");
         let f = File::open(netmhcout.clone()).context(CouldNotOpenFile { f_path: netmhcout })?;
         let netmhcpan_summary = read_netmhcpan(f)?;
 

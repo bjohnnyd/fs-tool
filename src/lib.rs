@@ -63,4 +63,8 @@ pub mod prelude {
     pub mod collections {
         pub use std::collections::{HashMap, HashSet};
     }
+
+    pub mod logging {
+        pub use log::{debug, error, info, trace, warn};
+    }
 }

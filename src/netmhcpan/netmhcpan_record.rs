@@ -5,7 +5,10 @@ use crate::prelude::collections::{HashMap, HashSet};
 /// 2. Add addition of Ligand Info using some sort of matching
 /// 3. Implement comparison between/Retreiving motifs as Vec of strings
 use crate::prelude::fs_tool::{BindLevel, Measure, Peptide, PeptideIdentity, Proteome, HLA};
+use crate::prelude::logging::*;
 use crate::prelude::traits::FromStr;
+use crate::prelude::traits::ToDisplay;
+use nom::lib::std::fmt::{Error, Formatter};
 
 pub struct StrongThreshold(f32);
 pub struct WeakThreshold(f32);
@@ -42,10 +45,10 @@ impl NearestNeighbour {
     /* Need to deal with error */
     pub fn update_ligand_info(&mut self, ligand_info: &Vec<HLA>) {
         if let Some(index_hla) = ligand_info.get_hla(&self.index) {
-            self.index = index_hla;
+            self.index.set_ligand_info(&index_hla);
         }
         if let Some(nn_hla) = ligand_info.get_hla(&self.nearest_neighbour) {
-            self.nearest_neighbour = nn_hla;
+            self.nearest_neighbour.set_ligand_info(&nn_hla);
         }
     }
 }
@@ -126,6 +129,26 @@ pub struct NetMHCpanSummary {
     pub strong_threshold: Option<f32>,
 }
 
+impl ToDisplay for HashMap<HLA, Vec<NetMHCpanRecord>> {
+    type CanDisplay = String;
+
+    fn to_display(&self) -> Self::CanDisplay {
+        let mut description = String::new();
+        let mut iter = self.iter().peekable();
+
+        while let Some((hla, peptides)) = iter.next() {
+            description.push_str(
+                format!("{} (number of netmhcpan records: {})", hla, peptides.len()).as_str(),
+            );
+            if let Some(_) = iter.peek() {
+                description.push_str(", ")
+            }
+        }
+
+        format!("{}", description)
+    }
+}
+
 impl NetMHCpanSummary {
     pub(crate) fn new() -> Self {
         Self {
@@ -184,10 +207,8 @@ impl NetMHCpanSummary {
     pub fn insert_hla_record(
         &mut self,
         peptide_identity: PeptideIdentity,
-        BindingInfo(hla_id, score, aff, rank, bind_level): BindingInfo,
+        BindingInfo(mut hla, score, aff, rank, bind_level): BindingInfo,
     ) {
-        let hla = hla_id.parse::<HLA>().expect("could not parse hla");
-
         let netmhcpan_record =
             NetMHCpanRecord::new(peptide_identity, (score, aff, rank, bind_level));
 
@@ -209,7 +230,11 @@ impl NetMHCpanSummary {
                         }
                     }
                 });
+        } else {
+            warn!("Could not find {} in netmhcpan output", hla);
+            warn!("Current hla records are {}", self.records.to_display());
         }
+
         peptides
     }
 
@@ -241,10 +266,6 @@ impl NetMHCpanSummary {
     ) -> Vec<String> {
         let peptides_bound = self.get_bound(hla, threshold, pep_length);
         self.get_motifs(&peptides_bound, motif_pos)
-    }
-
-    pub fn update_hla_info(&mut self, ligand_info: HashSet<String>) {
-        self.alleles.iter().map(|hla| {});
     }
 }
 

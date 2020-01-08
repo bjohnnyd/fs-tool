@@ -45,6 +45,7 @@ pub mod prelude {
     }
 
     pub mod traits {
+        pub use crate::mhc::hla::ToDisplay;
         pub use std::convert::TryFrom;
         pub use std::iter::FromIterator;
         pub use std::str::FromStr;

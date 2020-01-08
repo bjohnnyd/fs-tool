@@ -87,18 +87,12 @@ pub struct PepInfo<'a>(
 pub struct VariantInfo(pub usize, pub usize, pub usize, pub usize, pub usize);
 
 #[derive(Debug)]
-pub struct BindingInfo<'a>(
-    pub &'a str,
-    pub f32,
-    pub Option<f32>,
-    pub f32,
-    pub BindLevel,
-);
+pub struct BindingInfo(pub HLA, pub f32, pub Option<f32>, pub f32, pub BindLevel);
 
 /* Need to add creation of Netmhcpan record */
 pub fn process_netmhcpan_record(input: &str) -> IResult<&str, (PepInfo, VariantInfo, BindingInfo)> {
     let (i, (pos, hla, pep_seq, core_seq)) =
-        tuple((get_usize, get_element, get_element, get_element))(input)?;
+        tuple((get_usize, get_hla, get_element, get_element))(input)?;
     let (i, (offset, del_gp, del_gl, ins_gp, ins_gl)) =
         tuple((get_usize, get_usize, get_usize, get_usize, get_usize))(i)?;
     let (i, (icore, identity)) = tuple((get_element, get_element))(i)?;

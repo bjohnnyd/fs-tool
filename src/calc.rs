@@ -1,5 +1,5 @@
 use crate::prelude::collections::HashMap;
-use crate::prelude::fs_tool::{NetMHCpanSummary, HLA};
+use crate::prelude::fs_tool::{LigandGroup, NetMHCpanSummary, HLA};
 use crate::prelude::io::Write;
 use crate::prelude::traits::FromStr;
 
@@ -13,7 +13,7 @@ pub struct Measure {
 pub struct Calculator<'a> {
     pub netmhcpan_summary: &'a NetMHCpanSummary,
     pub measures: Vec<Measure>,
-    pub results: HashMap<String, Vec<(&'a HLA, &'a HLA, f32, usize)>>,
+    pub results: HashMap<String, Vec<(&'a HLA, &'a HLA, f32, usize, usize, usize)>>,
     pub peptide_lengths: Vec<usize>,
 }
 
@@ -26,7 +26,7 @@ impl<'a> Calculator<'a> {
         Self {
             netmhcpan_summary,
             measures,
-            results: HashMap::<String, Vec<(&'a HLA, &'a HLA, f32, usize)>>::new(),
+            results: HashMap::<String, Vec<(&'a HLA, &'a HLA, f32, usize, usize, usize)>>::new(),
             peptide_lengths,
         }
     }
@@ -61,20 +61,36 @@ impl<'a> Calculator<'a> {
                                 //                                println!("HLA-{} / HLA- {} has {} / {} bound peptides at length {}", &comb.0, &comb.1, bound_motifs_1.len(), bound_motifs_2.len(), pep_length);
 
                                 vec![
-                                    (&comb.0, &comb.1, fs.0, *pep_length),
-                                    (&comb.1, &comb.0, fs.1, *pep_length),
+                                    (
+                                        &comb.0,
+                                        &comb.1,
+                                        fs.0,
+                                        *pep_length,
+                                        bound_motifs_1.len(),
+                                        bound_motifs_2.len(),
+                                    ),
+                                    (
+                                        &comb.1,
+                                        &comb.0,
+                                        fs.1,
+                                        *pep_length,
+                                        bound_motifs_2.len(),
+                                        bound_motifs_1.len(),
+                                    ),
                                 ]
                             })
                             .flatten()
-                            .collect::<Vec<(&HLA, &HLA, f32, usize)>>()
+                            .collect::<Vec<(&HLA, &HLA, f32, usize, usize, usize)>>()
                     })
                     .flatten()
-                    .collect::<Vec<(&HLA, &HLA, f32, usize)>>();
+                    .collect::<Vec<(&HLA, &HLA, f32, usize, usize, usize)>>();
 
                 let current_calcs = results.entry(measure.name.to_string()).or_insert(Vec::<(
                     &HLA,
                     &HLA,
                     f32,
+                    usize,
+                    usize,
                     usize,
                 )>::new(
                 ));
@@ -85,7 +101,9 @@ impl<'a> Calculator<'a> {
     }
 
     pub fn write_calculations(&self, out: &mut impl Write) -> Result<usize, std::io::Error> {
-        out.write("Measure\tIndex\tNonIndex\tFS\tPeptideLength\n".as_ref());
+        out.write(
+            "Measure\tIndex\tNonIndex\tFS\tPeptideLength\tIndexBound\tNonIndexBound\n".as_ref(),
+        )?;
         out.write(format!("{}", self).as_ref())
     }
 }
@@ -116,17 +134,25 @@ impl<'a> std::fmt::Display for Calculator<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let mut description = String::new();
         self.results.iter().for_each(|(measure, values)| {
-            values
-                .iter()
-                .for_each(|(index, non_index, fs, pep_length)| {
+            values.iter().for_each(
+                |(index, non_index, fs, pep_length, index_bound, non_index_bound)| {
                     description.push_str(
                         format!(
-                            "{}\t{}\t{}\t{}\t{}\n",
-                            measure, index, non_index, fs, pep_length
+                            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                            measure,
+                            index,
+                            non_index,
+                            fs,
+                            pep_length,
+                            index_bound,
+                            index.lg_as_str(),
+                            non_index_bound,
+                            non_index.lg_as_str()
                         )
                         .as_str(),
                     );
-                })
+                },
+            )
         });
 
         write!(f, "{}", description)

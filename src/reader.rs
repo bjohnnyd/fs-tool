@@ -1,5 +1,4 @@
 use crate::error::*;
-use crate::prelude::collections::*;
 use crate::prelude::fs_tool::*;
 use crate::prelude::io::{BufReader, Cursor, File, PathBuf, Read};
 use crate::prelude::logging::*;
@@ -110,7 +109,6 @@ impl Opt {
             .into_iter()
             .map(|lg| {
                 if let Ok(hla) = HLA::try_from(lg.clone()) {
-                    info!("successfuly parsed {}", &hla);
                     Some(hla)
                 } else {
                     error!("Could not parse {:?}", &lg);
@@ -158,6 +156,7 @@ pub fn read_netmhcpan<T: ToRead>(
         .filter(|line| !line.is_empty());
 
     let mut netmhcpan_summary = NetMHCpanSummary::new();
+    let mut current_hla = Vec::<HLA>::with_capacity(1);
 
     iter.for_each(|mut line| {
         line = line.trim().to_string();
@@ -166,6 +165,7 @@ pub fn read_netmhcpan<T: ToRead>(
             if let Some(ligand_info) = ligand_info {
                 nn.update_ligand_info(ligand_info);
             }
+            current_hla.insert(0, nn.index.clone());
             netmhcpan_summary.add_hla(nn);
         }
 
@@ -176,7 +176,8 @@ pub fn read_netmhcpan<T: ToRead>(
 
         /* bytes version */
         if line.as_bytes()[0].is_ascii_digit() {
-            if let Ok((_, (pep_info, variant_info, binding_info))) = process_netmhcpan_record(&line)
+            if let Ok((_, (pep_info, variant_info, mut binding_info))) =
+                process_netmhcpan_record(&line)
             {
                 if netmhcpan_summary.alleles.len() <= 1 {
                     netmhcpan_summary.peptide_lengths.insert(pep_info.1.len());
@@ -188,6 +189,7 @@ pub fn read_netmhcpan<T: ToRead>(
                 /* Need to deal with this error */
                 let peptide_identity = PeptideIdentity::from(&pep_info);
 
+                binding_info.0 = current_hla[0].clone();
                 netmhcpan_summary.insert_hla_record(peptide_identity, binding_info);
             }
         }

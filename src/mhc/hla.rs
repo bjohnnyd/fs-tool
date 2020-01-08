@@ -1,8 +1,9 @@
 use crate::error::*;
 use crate::prelude::fs_tool::LigandInfo;
 use crate::prelude::traits::*;
+use nom::lib::std::fmt::Formatter;
 
-trait ToDisplay {
+pub trait ToDisplay {
     type CanDisplay: std::fmt::Display;
     fn to_display(&self) -> Self::CanDisplay;
 }
@@ -105,6 +106,23 @@ pub enum LigandGroup {
     C1,
     C2,
     Unclassified,
+}
+
+impl std::fmt::Display for LigandGroup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let lg = match self {
+            LigandGroup::A11 => "A11",
+            LigandGroup::A3 => "A3",
+            LigandGroup::Bw4_80T => "Bw4-80T",
+            LigandGroup::Bw4_80I => "Bw4-80I",
+            LigandGroup::Bw6 => "Bw6",
+            LigandGroup::C1 => "C1",
+            LigandGroup::C2 => "C2",
+            LigandGroup::Unclassified => "Unknown/Unclassified",
+        };
+
+        write!(f, "{}", lg)
+    }
 }
 
 impl FromStr for LigandGroup {
@@ -221,8 +239,17 @@ impl HLA {
         hla_name.parse::<HLA>()
     }
 
-    pub fn set_ligand_group(&mut self, lg: LigandGroup) {
-        self.ligand_group = Some(lg)
+    pub fn set_ligand_info(&mut self, hla: &HLA) {
+        self.ligand_group = hla.ligand_group.clone();
+        self.ipd_frequency = hla.ipd_frequency.clone();
+    }
+
+    pub fn lg_as_str(&self) -> impl std::fmt::Display {
+        if let Some(lg) = &self.ligand_group {
+            lg.to_string()
+        } else {
+            String::from("NA")
+        }
     }
 }
 

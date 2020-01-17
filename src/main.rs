@@ -1,7 +1,8 @@
 use ::fs_tool::error::CouldNotOpenFile;
 use ::fs_tool::prelude::external::{Opt, StructOpt};
 use ::fs_tool::prelude::fs_tool::{
-    get_ligand_table, parse_ligand_table, read_netmhcpan, Calculator, LigandInfo, Measure,
+    get_ligand_table, parse_ligand_table, read_netmhcpan,
+    Calculator, LigandInfo, Measure,
     NetMHCpanSummary, HLA,
 };
 use ::fs_tool::prelude::io::*;

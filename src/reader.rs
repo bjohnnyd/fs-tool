@@ -95,16 +95,6 @@ impl Opt {
             ligand_data = parse_ligand_table(LIGAND_TABLE)
         }
 
-        //        HashSet::from_iter(ligand_data
-        //            .into_iter()
-        //            .filter_map(|lg| HLA::try_from(lg).ok())
-        //            .map(|hla| hla.to_string()))
-
-        //        ligand_data
-        //            .into_iter()
-        //            .filter_map(|lg| HLA::try_from(lg).ok())
-        //            .collect()
-
         ligand_data
             .into_iter()
             .map(|lg| {

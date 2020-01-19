@@ -21,7 +21,7 @@ pub struct NearestNeighbour {
     nearest_neighbour: HLA,
 }
 
-trait FindSimilarHLA {
+pub trait FindSimilarHLA {
     fn get_hla(&self, query: &HLA) -> Option<HLA>;
 }
 

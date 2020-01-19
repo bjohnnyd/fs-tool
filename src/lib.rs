@@ -1,4 +1,5 @@
 mod calc;
+mod cohort;
 mod data;
 pub mod error;
 mod mhc;
@@ -36,6 +37,10 @@ pub mod prelude {
         pub use crate::netmhcpan::parser::*;
         pub use crate::netmhcpan::proteome::*;
         pub use crate::reader::*;
+    }
+
+    pub mod fs_trait {
+        pub use crate::netmhcpan::netmhcpan_record::FindSimilarHLA;
     }
 
     pub mod external {

@@ -6,7 +6,7 @@ use crate::prelude::traits::TryFrom;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Genotype {
+pub struct Genotype<'a> {
     #[serde(
         with = "serde_with::rust::display_fromstr",
         alias = "A1",
@@ -49,6 +49,7 @@ pub struct Genotype {
         alias = "c.2"
     )]
     pub c2: HLA,
+    pub kir: Vec<KIR<'a>>,
     #[serde(skip)]
     pub ligand_groups: Option<LigandGroup>,
 }
@@ -62,11 +63,27 @@ macro_rules! update_if_present {
    }};
 }
 
-impl Genotype {
+impl<'a> Genotype<'a> {
     fn update_ligand_groups(&mut self, ligand_info: &Vec<HLA>) {
         update_if_present!(self, a1 a2 b1 b2 c1 c2, ligand_info);
     }
 }
+
+#[derive(Debug)]
+pub enum Tail<'a> {
+    Long(&'a str),
+    Short(&'a str),
+    Pseudo(&'a str),
+}
+
+#[derive(Debug)]
+pub enum Domain {
+    Two,
+    Three,
+}
+
+#[derive(Debug)]
+pub struct KIR<'a>(pub Domain, pub Tail<'a>);
 
 #[cfg(test)]
 mod tests {

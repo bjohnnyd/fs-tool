@@ -1,12 +1,20 @@
 use crate::prelude::fs_tool::{LigandGroup, HLA};
 use crate::prelude::fs_trait::FindSimilarHLA;
-use crate::prelude::traits::TryFrom;
+use crate::prelude::traits::{FromStr, TryFrom};
 
 //use serde::{Serialize, Deserialize};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Genotype<'a> {
+    #[serde(
+        alias = "ID",
+        alias = "Individual",
+        alias = "Genotype",
+        alias = "id",
+        borrow
+    )]
+    pub id: Option<&'a str>,
     #[serde(
         with = "serde_with::rust::display_fromstr",
         alias = "A1",
@@ -49,6 +57,8 @@ pub struct Genotype<'a> {
         alias = "c.2"
     )]
     pub c2: HLA,
+    /* Need to implement desearializer for KIR genotype */
+    #[serde(skip)]
     pub kir: Vec<KIR<'a>>,
     #[serde(skip)]
     pub ligand_groups: Option<LigandGroup>,
@@ -74,6 +84,18 @@ pub enum Tail<'a> {
     Long(&'a str),
     Short(&'a str),
     Pseudo(&'a str),
+    Unknown(&'a str),
+}
+
+impl<'a> From<&'a str> for Tail<'a> {
+    fn from(s: &'a str) -> Self {
+        match s.chars().next() {
+            Some('L') => Tail::Long(s[1..].as_ref()),
+            Some('S') => Tail::Short(s[1..].as_ref()),
+            Some('P') => Tail::Pseudo(s[1..].as_ref()),
+            _ => Tail::Unknown(s),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -82,9 +104,32 @@ pub enum Domain {
     Three,
 }
 
+impl FromStr for Domain {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.chars().next() {
+            Some('2') => Ok(Domain::Two),
+            Some('3') => Ok(Domain::Three),
+            None => Err("KIR name not complete missing domain information"),
+            _ => Err(format!("KIR domain type not known {} expected 2/3", s).as_ref()),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct KIR<'a>(pub Domain, pub Tail<'a>);
 
+impl<'a> FromStr for KIR<'a> {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim_start_matches("KIR").trim_start_matches("kir");
+        let domain = s[0..2].parse::<Domain>()?;
+        let tail = Tail::from(s[2..].as_ref());
+        Ok(KIR(domain, tail))
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

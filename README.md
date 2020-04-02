@@ -1,4 +1,4 @@
-# fs-tool
+# fs-tool 
 
 [![Software License][ico-license]](LICENSE.md)
 
@@ -96,11 +96,15 @@ will result in:
 
  to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` can be used.
 
-## Credits
+## Authors and Citation
+
+Please cite [eLife 2020;9:e54558](https://doi.org/10.7554/eLife.54558).
 
 - [Bisrat Johnathan Debebe][link-author]
 - [Becca Asquith][link-author1]
 - [Lies Boelen][link-author2]
+
+## Citation
 
 ## License
 

@@ -99,7 +99,8 @@ will result in:
 ## Credits
 
 - [Bisrat Johnathan Debebe][link-author]
-- [Becca Asquith][link-author2]
+- [Becca Asquith][link-author1]
+- [Lies Boelen][link-author2]
 
 ## License
 
@@ -118,4 +119,5 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 [link-code-quality]: https://scrutinizer-ci.com/g/:vendor/fs-tool
 [link-downloads]: https://packagist.org/packages/:vendor/fs-tool
 [link-author]: https://github.com/bjohnnyd
-[link-author2]: https://github.com/becca-asquith
+[link-author1]: https://github.com/becca-asquith
+[link-author2]: https://github.com/liesb

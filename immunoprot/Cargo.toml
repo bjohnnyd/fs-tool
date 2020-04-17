@@ -10,3 +10,4 @@ publish = false
 
 [dependencies]
 log = "0.4.8"
+directories = "2.0.2"

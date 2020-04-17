@@ -1,7 +1,11 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+pub mod error;
+
+pub mod mhc {
+    pub mod hla;
+    pub mod mhc_I;
+}
+
+pub mod ig_like {
+    pub mod kir;
+    pub mod lilrb;
 }

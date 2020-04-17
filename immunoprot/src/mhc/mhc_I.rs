@@ -1,11 +1,12 @@
 use log::{debug, error, info, warn};
 
-use crate::error::MHCIError;
+use crate::error::HLAError;
 use crate::mhc::hla::Gene;
 use std::fmt::Formatter;
 use std::str::FromStr;
+use std::process::id;
 
-type Result<T> = std::result::Result<T, MHCIError>;
+type Result<T> = std::result::Result<T, HLAError>;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum ExpressionChange {
@@ -53,7 +54,7 @@ impl std::fmt::Display for ExpressionChange {
 }
 
 impl FromStr for ExpressionChange {
-    type Err = MHCIError;
+    type Err = HLAError;
 
     fn from_str(s: &str) -> Result<Self> {
         use ExpressionChange::*;
@@ -65,7 +66,7 @@ impl FromStr for ExpressionChange {
             "A" => Ok(A),
             "Q" => Ok(Q),
             "" => Ok(Unknown),
-            s => Err(MHCIError::UnknownExpressionChangeTag(s.to_string())),
+            s => Err(HLAError::UnknownExpressionChangeTag(s.to_string())),
         }
     }
 }
@@ -83,7 +84,7 @@ pub enum LigandGroup {
 }
 
 impl FromStr for LigandGroup {
-    type Err = MHCIError;
+    type Err = HLAError;
 
     fn from_str(s: &str) -> Result<Self> {
         let s = s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
@@ -97,7 +98,7 @@ impl FromStr for LigandGroup {
             "C1" | "C01" => Ok(LigandGroup::C1),
             "C2" | "C02" => Ok(LigandGroup::C2),
             "Unclassified" => Ok(LigandGroup::Unclassified),
-            s => Err(MHCIError::UnknownLigandGroup(s.to_string())),
+            s => Err(HLAError::UnknownLigandGroup(s.to_string())),
         }
     }
 }
@@ -113,66 +114,57 @@ pub struct MHCI {
     pub ligand_group: Option<LigandGroup>,
 }
 
-#[inline]
-fn string_to_option<T: AsRef<str>>(s: T) -> Option<String> {
-    Some(s.as_ref().to_string()).filter(|s| !s.is_empty())
-}
-
-#[inline]
-fn extract<I>(it: I, count: usize) -> String
-where
-    I: IntoIterator<Item = char>,
-{
-    it.into_iter().take(count).collect()
-}
-
 impl std::str::FromStr for MHCI {
-    type Err = MHCIError;
+    type Err = HLAError;
 
     fn from_str(s: &str) -> Result<Self> {
-        if !s.contains(':') && s.len() > 3 {
-            error!("MHCI allele {} is longer than 3 characters but does not contain colons which are required", s);
-            return Err(MHCIError::CouldNotParseMHCI(s.to_string()));
-        }
-
         let hla = s
             .trim_start_matches("HLA-")
-            .replace("*", "")
-            .replace(":", "");
+            .replace("*", "");
 
-        let gene: Gene = hla.chars().take(2).collect::<Gene>();
-        if gene.is_unknown() {
-            return Err(MHCIError::GeneUnknown(s.to_string()));
+        if !hla.contains(':') && hla.len() > 3 {
+            error!("MHCI allele {} is longer than 3 characters but does not contain colons which are required", s);
+            Err(HLAError::CouldNotParseMHCI(s.to_string()))
+        } else {
+
+            let mut hla_parts =  hla
+                        .split(':');
+
+            let gene = hla_parts
+                .next()
+                .map(|gene| gene.chars().collect::<Gene>())
+                .ok_or_else(|| HLAError::GeneUnknown(s.to_string()))?;
+
+            let allele_group = hla_parts
+                .next()
+                .ok_or_else(|| HLAError::NoAlleleGroup(s.to_string()))?
+                .to_string();
+
+            let expression_change = hla
+                .chars()
+                .last()
+                .map(ExpressionChange::from)
+                .unwrap_or_else(|| ExpressionChange::Unknown);
+
+            Ok(
+                Self {
+                    gene,
+                    allele_group,
+                    hla_protein: hla_parts.next().map(String::from),
+                    cds_synonymous: hla_parts.next().map(String::from),
+                    non_coding: hla_parts.next().map(String::from),
+                    expression_change,
+                    ligand_group: None,
+                }
+            )
+
         }
-
-        let expression_change = s
-            .chars()
-            .last()
-            .map(ExpressionChange::from)
-            .unwrap_or_else(|| ExpressionChange::Unknown);
-
-        let mut nomenclature_digits = hla.chars().filter(|c| c.is_numeric());
-
-        let second_field_size = match nomenclature_digits.clone().count() % 2 {
-            0 => 2usize,
-            _ => 3usize,
-        };
-
-        Ok(Self {
-            gene,
-            allele_group: extract(&mut nomenclature_digits, 2),
-            hla_protein: string_to_option(extract(&mut nomenclature_digits, second_field_size)),
-            cds_synonymous: string_to_option(extract(&mut nomenclature_digits, 2)),
-            non_coding: string_to_option(extract(&mut nomenclature_digits, 2)),
-            expression_change,
-            ligand_group: None,
-        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::mhc::mhc_I::{ExpressionChange, LigandGroup};
+    use crate::mhc::mhc_I::{ExpressionChange, LigandGroup, MHCI};
 
     #[test]
     fn test_expression_change() {
@@ -186,5 +178,12 @@ mod tests {
     fn test_known_ligands() {
         let lg_group = "A03".parse::<LigandGroup>().unwrap();
         assert_eq!(LigandGroup::A3, lg_group)
+    }
+    #[test]
+    fn test_mhcI_parse() {
+        let mhc_I = "A03:02".parse::<MHCI>().unwrap();
+        dbg!(mhc_I);
+        let mhc_I = "A03:02:101".parse::<MHCI>().unwrap();
+        dbg!(mhc_I);
     }
 }

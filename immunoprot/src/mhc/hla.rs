@@ -1,4 +1,5 @@
 use std::iter::FromIterator;
+use std::str::FromStr;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum Gene {
@@ -54,3 +55,26 @@ impl FromIterator<char> for Gene {
         }
     }
 }
+
+impl std::fmt::Display for Gene {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Gene::*;
+
+        let s = match self {
+            A => "A",
+            B => "B",
+            C => "C",
+            DP => "DP",
+            DM => "DM",
+            DO => "DO",
+            DQ => "DQ",
+            DR => "DR",
+            Unknown => "Unknown",
+        }
+            .to_string();
+
+        write!(f, "{}", s)
+    }
+}
+
+

@@ -3,7 +3,6 @@ use std::collections::HashSet;
 
 use crate::error::HLAError;
 use crate::mhc::mhc_I::MHCI;
-use scraper::{Html, Selector};
 
 type Result<T> = std::result::Result<T, HLAError>;
 
@@ -11,29 +10,62 @@ const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligand
 const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
 
 
-// #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-// pub struct KirLigandMap {
-//     alleles: HashSet,
-//     :
-//
-//
-// }
+#[derive(Debug, Eq, PartialEq)]
+pub struct LigandInfo(pub MHCI, pub LigandMotif, pub AlleleFreq);
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum AlleleFreq {
+    Rare,
+    Common,
+    Unknown
+}
+
+impl<T> From<T> for AlleleFreq
+where T: AsRef<str>  {
+    fn from(s: T) -> Self {
+        use AlleleFreq::*;
+        match s.as_ref().trim() {
+            _match if _match.contains("Common") => Common,
+            "Rare" => Rare,
+            _ => Unknown
+        }
+    }
+}
 
 // TODO: Create struct for IPD information storage that implements can be create from vec of strings,
 // written to file etc.
 // TODO: Need to create appropriate errors and split function into one that gets HTML and one that
 // parses the tables and creates IPD info struct
-pub fn connect_to_ipd<T>(gene_locus: T)
-where T: AsRef<str> + std::fmt::Display {
-    let resp = attohttpc::get(format!("https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?{}", gene_locus));
-    let text = resp.send().unwrap().text().unwrap();
+mod reader {
+    use scraper::{Html, Selector};
+    use crate::ig_like::kir_ligand::{LigandInfo, AlleleFreq, LigandMotif};
+    use crate::mhc::mhc_I::MHCI;
 
-    let page = Html::parse_document(&text);
-    let selector = Selector::parse("tr").unwrap();
+    pub fn get_ipd_html<T>(gene_locus: T) -> Html
+        where T: AsRef<str> + std::fmt::Display {
+        let resp = attohttpc::get(format!("https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?{}", gene_locus));
+        let text = resp.send().unwrap().text().unwrap();
 
-    for row in page.select(&selector).skip(1) {
-        let row_text = row.text().collect::<Vec<&str>>();
-        let ligand_motif: LigandMotif = row_text[1].parse().unwrap();
+        Html::parse_document(&text)
+    }
+
+    pub fn read_table(html: &Html, skip_rows: usize) -> Vec<LigandInfo> {
+        let mut result = Vec::<LigandInfo>::new();
+
+        let selector = Selector::parse("tr").unwrap();
+
+        for row in html.select(&selector).skip(skip_rows) {
+            let table_row = row.text().collect::<Vec<&str>>();
+            let ligand_info = LigandInfo(
+                table_row[0].parse::<MHCI>().unwrap(),
+                table_row[1].parse::<LigandMotif>().unwrap(),
+                table_row[2].into()
+            );
+
+            result.push(ligand_info);
+        }
+
+        result
     }
 }
 
@@ -90,7 +122,7 @@ impl std::fmt::Display for LigandMotif {
 #[cfg(test)]
 mod tests {
     use crate::mhc::mhc_I::{ExpressionChange, MHCI};
-    use crate::ig_like::kir_ligand::{LigandMotif, connect_to_ipd};
+    use crate::ig_like::kir_ligand::{LigandMotif, reader::get_ipd_html, reader::read_table};
 
     #[test]
     fn test_known_ligands() {
@@ -111,7 +143,8 @@ mod tests {
 
     #[test]
     fn test_connect_to_ipd() {
-        // let lg_info = include_str!("../resources/2019-12-29_lg.tsv");
-        connect_to_ipd("C*01:02");
+        let html = get_ipd_html("C*01:02");
+        let ligand_info = read_table(&html, 1);
+        dbg!(ligand_info);
     }
 }

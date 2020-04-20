@@ -11,3 +11,5 @@ publish = false
 [dependencies]
 log = "0.4.8"
 directories = "2.0.2"
+attohttpc = "0.12.0"
+scraper = "0.11.0"

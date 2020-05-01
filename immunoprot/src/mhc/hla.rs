@@ -2,13 +2,21 @@ use std::iter::FromIterator;
 use std::str::FromStr;
 
 use crate::error::NomenclatureError;
-use crate::ig_like::kir_ligand::LigandMotif;
+use crate::ig_like::kir_ligand::KirLigandInfo;
 
 use log::{debug, error, info, warn};
 
 type Result<T> = std::result::Result<T, NomenclatureError>;
 
 /* Nomenclature */
+
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum HlaFields {
+    AlleleGroup,
+    Protein,
+    CodingSynSub,
+    NonCoding,
+}
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum Gene {
@@ -80,7 +88,7 @@ impl std::fmt::Display for Gene {
             DR => "DR",
             Unknown => "Unknown",
         }
-            .to_string();
+        .to_string();
 
         write!(f, "{}", s)
     }
@@ -148,40 +156,60 @@ impl FromStr for ExpressionChange {
     }
 }
 
-
 /* HLA Class I */
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct ClassI {
-    pub gene: Gene,
-    pub allele_group: String,
-    pub hla_protein: Option<String>,
-    pub cds_synonymous: Option<String>,
-    pub non_coding: Option<String>,
-    pub expression_change: ExpressionChange,
-    pub ligand_motif: Option<LigandMotif>,
+    pub(crate) gene: Gene,
+    pub(crate) allele_group: String,
+    pub(crate) hla_protein: Option<String>,
+    pub(crate) cds_syn_sub: Option<String>,
+    pub(crate) non_coding: Option<String>,
+    pub(crate) expression_change: ExpressionChange,
+    pub(crate) ligand_info: Option<Box<KirLigandInfo>>,
+}
+
+impl ClassI {
+    pub fn new(
+        gene: Gene,
+        allele_group: String,
+        hla_protein: Option<String>,
+        cds_syn_sub: Option<String>,
+        non_coding: Option<String>,
+        expression_change: ExpressionChange,
+        ligand_info: Option<Box<KirLigandInfo>>,
+    ) -> Self {
+        Self {
+            gene,
+            allele_group,
+            hla_protein,
+            cds_syn_sub,
+            non_coding,
+            expression_change,
+            ligand_info,
+        }
+    }
+
+    pub fn set_ligand_info(&mut self, ligand_info: KirLigandInfo) {
+        self.ligand_info = Some(Box::new(ligand_info))
+    }
 }
 
 impl std::str::FromStr for ClassI {
     type Err = NomenclatureError;
 
     fn from_str(s: &str) -> Result<Self> {
-        let hla = s
-            .trim_start_matches("HLA-")
-            .replace("*", "");
+        let hla = s.trim_start_matches("HLA-").replace("*", "");
 
         if !hla.contains(':') && hla.len() > 3 {
             error!("HLA-I allele {} is longer than 3 characters but does not contain colons which are required", s);
             Err(NomenclatureError::CouldNotParseClassI(s.to_string()))
         } else {
-
-            let mut hla_parts =  hla
-                        .split(':');
+            let mut hla_parts = hla.split(':');
 
             let (gene, allele_group) = hla_parts
                 .next()
-                .map(|required_fields|  {
-
+                .map(|required_fields| {
                     let gene = required_fields[0..1].chars().collect::<Gene>();
                     let allele_group = required_fields[1..].to_string();
 
@@ -195,31 +223,27 @@ impl std::str::FromStr for ClassI {
                 .map(ExpressionChange::from)
                 .unwrap_or_else(|| ExpressionChange::Unknown);
 
-            Ok(
-                Self {
-                    gene,
-                    allele_group,
-                    hla_protein: hla_parts.next().map(String::from),
-                    cds_synonymous: hla_parts.next().map(String::from),
-                    non_coding: hla_parts.next().map(String::from),
-                    expression_change,
-                    ligand_motif: None,
-                }
-            )
+            Ok(Self {
+                gene,
+                allele_group,
+                hla_protein: hla_parts.next().map(String::from),
+                cds_syn_sub: hla_parts.next().map(String::from),
+                non_coding: hla_parts.next().map(String::from),
+                expression_change,
+                ligand_info: None,
+            })
         }
     }
 }
 
 impl std::fmt::Display for ClassI {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-
-
-        let s  = format!(
+        let s = format!(
             "{}{}{}{}{}{}",
             self.gene,
             self.allele_group,
             self.hla_protein.clone().unwrap_or_else(|| "".to_string()),
-            self.cds_synonymous.clone().unwrap_or_else(|| "".to_string()),
+            self.cds_syn_sub.clone().unwrap_or_else(|| "".to_string()),
             self.non_coding.clone().unwrap_or_else(|| "".to_string()),
             self.expression_change
         );
@@ -227,27 +251,34 @@ impl std::fmt::Display for ClassI {
     }
 }
 
-
 impl ClassI {
     pub fn to_nomenclature_string(&self) -> String {
         format!(
             "HLA-{}*{}{}{}{}{}",
             self.gene,
             self.allele_group,
-            self.hla_protein.clone().map(|protein| format!(":{}", protein)).unwrap_or_else(|| "".to_string()),
-            self.cds_synonymous.clone().map(|synonymous| format!(":{}", synonymous)).unwrap_or_else(|| "".to_string()),
-            self.non_coding.clone().map(|non_coding| format!(":{}", non_coding)).unwrap_or_else(|| "".to_string()),
+            self.hla_protein
+                .clone()
+                .map(|protein| format!(":{}", protein))
+                .unwrap_or_else(|| "".to_string()),
+            self.cds_syn_sub
+                .clone()
+                .map(|synonymous| format!(":{}", synonymous))
+                .unwrap_or_else(|| "".to_string()),
+            self.non_coding
+                .clone()
+                .map(|non_coding| format!(":{}", non_coding))
+                .unwrap_or_else(|| "".to_string()),
             self.expression_change
         )
-
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::mhc::mhc_I::{ExpressionChange , ClassI};
     use crate::ig_like::kir_ligand::LigandMotif;
     use crate::mhc::hla::Gene;
+    use crate::mhc::hla::{ClassI, ExpressionChange};
 
     #[test]
     fn test_expression_change() {
@@ -263,41 +294,38 @@ mod tests {
         assert_eq!(LigandMotif::A3, ligand_motif)
     }
     #[test]
-    fn test_mhcI_parse() {
-        let mhc_I = "A03:02:101".parse::<ClassI>().unwrap();
+    fn test_classI_from_str() {
+        let classI = "A03:02:101".parse::<ClassI>().unwrap();
         assert_eq!(
             ClassI {
                 gene: Gene::A,
                 allele_group: "03".to_string(),
                 hla_protein: Some("02".to_string()),
-                cds_synonymous: Some("101".to_string()),
+                cds_syn_sub: Some("101".to_string()),
                 non_coding: None,
                 expression_change: ExpressionChange::Unknown,
-                ligand_motif: None
+                ligand_info: None
             },
-            mhc_I);
+            classI
+        );
     }
 
     #[test]
-    fn test_mhcI_into_str() {
-        let mhc_I = ClassI {
-                gene: Gene::A,
-                allele_group: "03".to_string(),
-                hla_protein: Some("02".to_string()),
-                cds_synonymous: Some("101".to_string()),
-                non_coding: None,
-                expression_change: ExpressionChange::Unknown,
-                ligand_motif: None
-            };
+    fn test_classI_into_str() {
+        let classI = ClassI {
+            gene: Gene::A,
+            allele_group: "03".to_string(),
+            hla_protein: Some("02".to_string()),
+            cds_syn_sub: Some("101".to_string()),
+            non_coding: None,
+            expression_change: ExpressionChange::Unknown,
+            ligand_info: None,
+        };
 
-
-        assert_eq!(
-            mhc_I.to_string(),
-            "A0302101".to_string()
-        );
+        assert_eq!(classI.to_string(), "A0302101".to_string());
 
         assert_eq!(
-            mhc_I.to_nomenclature_string(),
+            classI.to_nomenclature_string(),
             "HLA-A*03:02:101".to_string()
         );
     }

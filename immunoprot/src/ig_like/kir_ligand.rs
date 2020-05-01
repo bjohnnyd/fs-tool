@@ -1,73 +1,14 @@
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
-use std::collections::HashSet;
 
 use crate::error::NomenclatureError;
 use crate::mhc::hla::ClassI;
+use scraper::{Html, Selector};
 
 type Result<T> = std::result::Result<T, NomenclatureError>;
 
-const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
-const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
-
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct LigandInfo(pub ClassI, pub LigandMotif, pub AlleleFreq);
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum AlleleFreq {
-    Rare,
-    Common,
-    Unknown
-}
-
-impl<T> From<T> for AlleleFreq
-where T: AsRef<str>  {
-    fn from(s: T) -> Self {
-        use AlleleFreq::*;
-        match s.as_ref().trim() {
-            _match if _match.contains("Common") => Common,
-            "Rare" => Rare,
-            _ => Unknown
-        }
-    }
-}
-
-// TODO: Create struct for IPD information storage that implements can be create from vec of strings,
-// written to file etc.
-// TODO: Need to create appropriate errors and split function into one that gets HTML and one that
-// parses the tables and creates IPD info struct
-mod reader {
-    use scraper::{Html, Selector};
-    use crate::ig_like::kir_ligand::{LigandInfo, AlleleFreq, LigandMotif};
-    use crate::mhc::hla::ClassI;
-
-    pub fn get_ipd_html<T>(gene_locus: T) -> Html
-        where T: AsRef<str> + std::fmt::Display {
-        let resp = attohttpc::get(format!("https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?{}", gene_locus));
-        let text = resp.send().unwrap().text().unwrap();
-
-        Html::parse_document(&text)
-    }
-
-    pub fn read_table(html: &Html, skip_rows: usize) -> Vec<LigandInfo> {
-        let mut result = Vec::<LigandInfo>::new();
-
-        let selector = Selector::parse("tr").unwrap();
-
-        for row in html.select(&selector).skip(skip_rows) {
-            let table_row = row.text().collect::<Vec<&str>>();
-            let ligand_info = LigandInfo(
-                table_row[0].parse::<ClassI>().unwrap(),
-                table_row[1].parse::<LigandMotif>().unwrap(),
-                table_row[2].into()
-            );
-
-            result.push(ligand_info);
-        }
-
-        result
-    }
-}
+pub const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
+pub const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum LigandMotif {
@@ -112,17 +53,95 @@ impl std::fmt::Display for LigandMotif {
             Bw6 => "Bw6",
             C1 => "C1",
             C2 => "C2",
-            Unclassified => "Unclassified"
+            Unclassified => "Unclassified",
         };
         write!(f, "{}", motif)
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub enum AlleleFreq {
+    Rare,
+    Common,
+    Unknown,
+}
+
+impl<T> From<T> for AlleleFreq
+where
+    T: AsRef<str>,
+{
+    fn from(s: T) -> Self {
+        use AlleleFreq::*;
+        match s.as_ref().trim() {
+            _match if _match.contains("Common") => Common,
+            "Rare" => Rare,
+            _ => Unknown,
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub struct KirLigandInfo(ClassI, LigandMotif, AlleleFreq);
+
+impl KirLigandInfo {
+    pub fn new(hla: ClassI, motif: LigandMotif, freq: AlleleFreq) -> Self {
+        Self(hla, motif, freq)
+    }
+
+    pub fn get_allele(&self) -> &ClassI {
+        &self.0
+    }
+
+    pub fn get_motif(&self) -> &LigandMotif {
+        &self.1
+    }
+
+    pub fn get_freq(&self) -> &AlleleFreq {
+        &self.2
+    }
+}
+
+pub struct KirLigandMap {
+    pub alleles: HashSet<ClassI>,
+    pub cache: HashMap<ClassI, KirLigandInfo>,
+}
+
+/// Obtains raw HTL from the EBI website
+pub fn get_ipd_html<T>(gene_locus: T) -> Html
+where
+    T: AsRef<str> + std::fmt::Display,
+{
+    let resp = attohttpc::get(format!("{}{}", IPD_KIR_URL, gene_locus));
+    let text = resp.send().unwrap().text().unwrap();
+
+    Html::parse_document(&text)
+}
+
+/// Find the first HTML table and can skip a desired set of rows
+pub fn read_table(html: &Html, skip_rows: usize) -> Vec<KirLigandInfo> {
+    let mut result = Vec::<KirLigandInfo>::new();
+
+    let selector = Selector::parse("tr").unwrap();
+
+    for row in html.select(&selector).skip(skip_rows) {
+        let table_row = row.text().collect::<Vec<&str>>();
+        let ligand_info = KirLigandInfo::new(
+            table_row[0].parse::<ClassI>().unwrap(),
+            table_row[1].parse::<LigandMotif>().unwrap(),
+            table_row[2].into(),
+        );
+
+        result.push(ligand_info);
+    }
+    result
+}
 
 #[cfg(test)]
 mod tests {
-    use crate::mhc::hla::{ExpressionChange, ClassI};
-    use crate::ig_like::kir_ligand::{LigandMotif, reader::get_ipd_html, reader::read_table};
+    use crate::ig_like::kir_ligand::{
+        get_ipd_html, read_table, AlleleFreq, KirLigandInfo, LigandMotif,
+    };
+    use crate::mhc::hla::{ClassI, ExpressionChange};
 
     #[test]
     fn test_known_ligands() {
@@ -134,17 +153,21 @@ mod tests {
     fn test_ligand_info() {
         let lg_info = include_str!("../resources/2019-12-29_lg.tsv");
 
-        lg_info
-            .lines()
-            .for_each(|l|{
-                dbg!(l);
-            });
+        lg_info.lines().for_each(|l| {
+            dbg!(l);
+        });
     }
 
     #[test]
     fn test_connect_to_ipd() {
         let html = get_ipd_html("C*01:02");
         let ligand_info = read_table(&html, 1);
-        dbg!(ligand_info);
+        let expected = KirLigandInfo::new(
+            "C01:02".parse::<ClassI>().unwrap(),
+            LigandMotif::C1,
+            AlleleFreq::Common,
+        );
+
+        assert_eq!(expected, ligand_info[0]);
     }
 }

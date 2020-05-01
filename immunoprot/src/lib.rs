@@ -6,10 +6,9 @@ pub mod mhc {
 
 pub mod ig_like {
     pub mod kir;
-    pub mod lilrb;
     pub mod kir_ligand;
+    pub mod lilrb;
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}

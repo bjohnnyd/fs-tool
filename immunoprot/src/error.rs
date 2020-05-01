@@ -7,7 +7,10 @@ pub(crate) static HLA_GENES: &str = "A, B, C, DP, DM, DO, DQ and DR";
 // Errors representing various NomenClature errors
 #[derive(Debug, Error)]
 pub enum NomenclatureError {
-    #[error("Cound not determine the kir-ligand group from {0}.  Supported groups are {}", MHCI_LIGAND_MOTIFS)]
+    #[error(
+        "Cound not determine the kir-ligand group from {0}.  Supported groups are {}",
+        MHCI_LIGAND_MOTIFS
+    )]
     UnknownLigandMotif(String),
     #[error("Unknown expression change tag '{0}'. ClassI nomenclature acceptable values are {}, for more details visit {}", EXPRESSION_CHANGES, NOMENCLATURE_URL)]
     UnknownExpressionChangeTag(String),
@@ -15,8 +18,9 @@ pub enum NomenclatureError {
     CouldNotParseClassI(String),
     #[error("Could not determine gene from '{0}'. Recognized HLA genes are {}, for more details visit {}", HLA_GENES, NOMENCLATURE_URL)]
     GeneUnknown(String),
-    #[error("Could not parse allele group information{0}, for naming guidelines see {}", NOMENCLATURE_URL)]
+    #[error(
+        "Could not parse allele group information{0}, for naming guidelines see {}",
+        NOMENCLATURE_URL
+    )]
     NoAlleleGroup(String),
 }
-
-

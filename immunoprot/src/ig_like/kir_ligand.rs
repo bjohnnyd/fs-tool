@@ -1,17 +1,17 @@
 use std::str::FromStr;
 use std::collections::HashSet;
 
-use crate::error::HLAError;
-use crate::mhc::mhc_I::MHCI;
+use crate::error::NomenclatureError;
+use crate::mhc::hla::ClassI;
 
-type Result<T> = std::result::Result<T, HLAError>;
+type Result<T> = std::result::Result<T, NomenclatureError>;
 
 const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
 const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
 
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct LigandInfo(pub MHCI, pub LigandMotif, pub AlleleFreq);
+pub struct LigandInfo(pub ClassI, pub LigandMotif, pub AlleleFreq);
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum AlleleFreq {
@@ -39,7 +39,7 @@ where T: AsRef<str>  {
 mod reader {
     use scraper::{Html, Selector};
     use crate::ig_like::kir_ligand::{LigandInfo, AlleleFreq, LigandMotif};
-    use crate::mhc::mhc_I::MHCI;
+    use crate::mhc::hla::ClassI;
 
     pub fn get_ipd_html<T>(gene_locus: T) -> Html
         where T: AsRef<str> + std::fmt::Display {
@@ -57,7 +57,7 @@ mod reader {
         for row in html.select(&selector).skip(skip_rows) {
             let table_row = row.text().collect::<Vec<&str>>();
             let ligand_info = LigandInfo(
-                table_row[0].parse::<MHCI>().unwrap(),
+                table_row[0].parse::<ClassI>().unwrap(),
                 table_row[1].parse::<LigandMotif>().unwrap(),
                 table_row[2].into()
             );
@@ -82,7 +82,7 @@ pub enum LigandMotif {
 }
 
 impl FromStr for LigandMotif {
-    type Err = HLAError;
+    type Err = NomenclatureError;
 
     fn from_str(s: &str) -> Result<Self> {
         let s = s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
@@ -96,7 +96,7 @@ impl FromStr for LigandMotif {
             "C1" | "C01" => Ok(LigandMotif::C1),
             "C2" | "C02" => Ok(LigandMotif::C2),
             "Unclassified" => Ok(LigandMotif::Unclassified),
-            s => Err(HLAError::UnknownLigandMotif(s.to_string())),
+            s => Err(NomenclatureError::UnknownLigandMotif(s.to_string())),
         }
     }
 }
@@ -121,7 +121,7 @@ impl std::fmt::Display for LigandMotif {
 
 #[cfg(test)]
 mod tests {
-    use crate::mhc::mhc_I::{ExpressionChange, MHCI};
+    use crate::mhc::hla::{ExpressionChange, ClassI};
     use crate::ig_like::kir_ligand::{LigandMotif, reader::get_ipd_html, reader::read_table};
 
     #[test]

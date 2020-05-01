@@ -20,7 +20,7 @@ To get the latest binary through CLI and download the latest ligand group assign
 $ curl -LO https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.3/fs-tool && chmod +x fs-tool && ./fs-tool
 ```
 
-To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  After installing rustup download the release archive file and build:
+To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  After installing rustup download the release archive file and build (N.B to supress warnings add `2 > /dev/null` to the end of the command below):
 
 ``` bash
 $ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.1.3.tar.gz |  tar xvz && cd fs-tool-0.1.3 && cargo build --release --bin fs-tool

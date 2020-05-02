@@ -492,6 +492,7 @@ dependencies = [
  "directories 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "scraper 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "stderrlog 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

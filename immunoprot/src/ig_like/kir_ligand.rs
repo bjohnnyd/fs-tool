@@ -146,21 +146,19 @@ impl KirLigandMap {
         if let Some(allele_info) = self.cache.get(allele) {
             kir_ligand_info.push(allele_info)
         } else {
-            self.alleles
-                .iter()
-                .for_each(| cached_allele| {
-                    let generalised = cached_allele.generalize();
-                    if let Some(generalised_once) = generalised {
-                        if generalised_once == *allele {
+            self.alleles.iter().for_each(|cached_allele| {
+                let generalised = cached_allele.generalize();
+                if let Some(generalised_once) = generalised {
+                    if generalised_once == *allele {
+                        kir_ligand_info.push(self.cache.get(cached_allele).unwrap());
+                    } else if let Some(generalised_twice) = generalised_once.generalize() {
+                        if generalised_twice == *allele {
                             kir_ligand_info.push(self.cache.get(cached_allele).unwrap());
-                        } else if let Some(generalised_twice) = generalised_once.generalize() {
-                            if generalised_twice == *allele {
-                                kir_ligand_info.push(self.cache.get(cached_allele).unwrap());
-                            }
                         }
                     }
-                });
-            }
+                }
+            });
+        }
         kir_ligand_info
     }
 }
@@ -309,7 +307,6 @@ mod tests {
 
         let mut matching_second_option = ligand_map.get_allele_info(&query_allele_variable_output);
         let expected = "A*02:07:01:01".parse::<ClassI>().unwrap();
-
 
         assert!(matching_none.is_empty());
         assert_eq!(1, matching_once.len());

@@ -1,3 +1,4 @@
+// TODO: Curently motifs are assigned by sorting by allele field (e.g. protein number), Ligand motif, then frequency
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
@@ -12,7 +13,7 @@ pub const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_li
 pub const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
 pub const SKIP_ROWS: usize = 1;
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Ord, PartialOrd)]
 pub enum LigandMotif {
     A11,
     A3,
@@ -61,10 +62,10 @@ impl std::fmt::Display for LigandMotif {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Ord, PartialOrd)]
 pub enum AlleleFreq {
-    Rare,
     Common,
+    Rare,
     Unknown,
 }
 
@@ -82,7 +83,7 @@ where
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
 pub struct KirLigandInfo(ClassI, LigandMotif, AlleleFreq);
 
 impl KirLigandInfo {
@@ -110,12 +111,11 @@ pub struct KirLigandMap {
 }
 
 impl KirLigandMap {
-
     fn new(loci: &[&str]) -> std::result::Result<Self, HtmlParseError> {
         let mut alleles = HashSet::<ClassI>::new();
         let mut cache = HashMap::<ClassI, KirLigandInfo>::new();
 
-        let _: std::result::Result<Vec<_>, HtmlParseError> = loci
+        let results: std::result::Result<Vec<_>, HtmlParseError> = loci
             .iter()
             .map(|locus| {
                 let raw_html = get_ipd_html(locus)?;
@@ -130,15 +130,56 @@ impl KirLigandMap {
             })
             .collect();
 
+        results?;
+
         Ok(Self { alleles, cache })
     }
 
-    fn  get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
+    // TODO: Messy and inefficient as it iterates over all backwards removing fields
+    // cannot think of case where more than once is really necessary but there might be A*02 returning A*02:01:01
+    // might be better to return multiple removed at once so cases like A02:07 returning A*02:07:01:01 and A*02:07:02
+    // will both have A*02:07:01 and A*02:07:02 present?
+    fn get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
         let mut kir_ligand_info = Vec::<&KirLigandInfo>::new();
 
-        if self.alleles.contains(allele) {
-            if let Some(allele_info) = self.cache.get(allele) {
-                kir_ligand_info.push(allele_info)
+        if let Some(allele_info) = self.cache.get(allele) {
+            kir_ligand_info.push(allele_info)
+        } else {
+            let mut present_alleles = self
+                .alleles
+                .iter()
+                .map(|allele_with_info| (allele_with_info.clone(), allele_with_info.generalize()))
+                .filter(|(_, general)| general.is_some())
+                .collect::<HashMap<ClassI, Option<ClassI>>>();
+
+            let mut no_more_alleles = true;
+
+            'find_alleles: loop {
+                for (original_allele, generalized_allele) in present_alleles.iter() {
+                    if let Some(generalized_allele) = generalized_allele {
+                        no_more_alleles = false;
+                        if generalized_allele == allele {
+                            kir_ligand_info.push(self.cache.get(original_allele).unwrap());
+                        }
+                    }
+                }
+                if !kir_ligand_info.is_empty() || no_more_alleles {
+                    break 'find_alleles;
+                } else {
+                    no_more_alleles = true;
+                    present_alleles = present_alleles
+                        .into_iter()
+                        .map(|(original, general)| {
+                            if let Some(general) = general {
+                                let general = general.generalize();
+                                (original, general)
+                            } else {
+                                (original, None)
+                            }
+                        })
+                        .filter(|(_, general)| general.is_some())
+                        .collect::<HashMap<ClassI, Option<ClassI>>>();
+                }
             }
         }
         kir_ligand_info
@@ -166,6 +207,7 @@ where
     Ok(Html::parse_document(&text))
 }
 
+// TODO: Need to deal with cases where supplied HLA allele is incorrect format
 /// Find the first HTML table and can skip a desired set of rows
 pub fn read_table(
     html: &Html,
@@ -180,14 +222,18 @@ pub fn read_table(
     for row in html.select(&selector).skip(skip_rows) {
         let table_row = row.text().collect::<Vec<&str>>();
 
-        if table_row.len() == 3 {
+        if table_row.len() == 3 || table_row.len() == 2 {
             let allele = table_row[0]
                 .parse::<ClassI>()
                 .or_else(|_| Err(HtmlParseError::CouldNotReadClassI(table_row[0].to_string())))?;
             let motif = table_row[1]
                 .parse::<LigandMotif>()
                 .or_else(|_| Err(HtmlParseError::CouldNotReadClassI(table_row[1].to_string())))?;
-            let freq: AlleleFreq = table_row[2].into();
+            let freq: AlleleFreq = if table_row.len() == 3 {
+                table_row[2].into()
+            } else {
+                AlleleFreq::Unknown
+            };
 
             let ligand_info = KirLigandInfo::new(allele, motif, freq);
             result.push(ligand_info);
@@ -239,15 +285,52 @@ mod tests {
 
     #[test]
     fn test_create_ligand_map() {
+        let loci = ["A*02:07", "B*57:01", "C0*01:02"];
+        let ligand_map = KirLigandMap::new(&loci).unwrap();
+
+        let mut motifs = Vec::<LigandMotif>::new();
+        let mut expected: Vec<LigandMotif> = vec![
+            "Unclassified".parse().unwrap(),
+            "Bw4-80I".parse().unwrap(),
+            "Bw4-80I".parse().unwrap(),
+        ];
+
+        for (k, v) in ligand_map.cache.into_iter() {
+            motifs.push(v.1)
+        }
+
+        motifs.sort();
+        motifs.dedup();
+
+        expected.sort();
+        expected.dedup();
+
+        assert_eq!(expected, motifs);
+    }
+
+    // Website has bugs as for example https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?A*02:15
+    // A*02:15 should not be resolved to any allele (might loop long!!)
+    #[test]
+    fn test_query_ligand_map() {
         stderrlog::new()
             .module("immunoprot")
             .verbosity(3)
             .init()
             .unwrap();
-        let loci = ["A*02:07", "B*57:01", "C0*01:02"];
-
+        let loci = ["A*02:15", "A*02:16", "A*02:07"];
         let ligand_map = KirLigandMap::new(&loci).unwrap();
 
-        dbg!(ligand_map.alleles);
+        let query_allele_missing = "A*02:15".parse::<ClassI>().unwrap();
+        let query_allele_singly_matched = "A*02:16".parse::<ClassI>().unwrap();
+        let query_allele_variable_output = "A*02:07".parse::<ClassI>().unwrap();
+
+        let mut matching_none = ligand_map.get_allele_info(&query_allele_missing);
+
+        let mut matching_once = ligand_map.get_allele_info(&query_allele_singly_matched);
+
+        let mut matching_second_option = ligand_map.get_allele_info(&query_allele_variable_output);
+
+        assert!(matching_none.is_empty());
+        assert_eq!(1, matching_once.len())
     }
 }

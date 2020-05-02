@@ -25,6 +25,8 @@ pub enum NomenclatureError {
         NOMENCLATURE_URL
     )]
     NoAlleleGroup(String),
+    #[error("Empty string passed as an HLA allele please check your naming")]
+    EmptyAlleleString,
 }
 
 #[derive(Debug, Error)]

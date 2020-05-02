@@ -4,7 +4,9 @@ use std::str::FromStr;
 use crate::error::NomenclatureError;
 use crate::ig_like::kir_ligand::KirLigandInfo;
 
+use crate::error::NomenclatureError::EmptyAlleleString;
 use log::error;
+use std::cmp::Ordering;
 
 type Result<T> = std::result::Result<T, NomenclatureError>;
 
@@ -169,6 +171,18 @@ pub struct ClassI {
     pub(crate) ligand_info: Option<Box<KirLigandInfo>>,
 }
 
+impl Ord for ClassI {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.to_string().cmp(&other.to_string())
+    }
+}
+
+impl PartialOrd for ClassI {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl ClassI {
     pub fn new(
         gene: Gene,
@@ -196,25 +210,33 @@ impl ClassI {
 
     pub fn generalize(&self) -> Option<ClassI> {
         let allele = self.to_string();
-        let mut allele_fields = allele.split(":").peekable();
+        let mut allele_fields = allele.split(':').peekable();
         let mut generalized_fields = String::from("");
 
         // TODO: Can be improved the joining with ':'
         while let Some(field) = allele_fields.next() {
             if allele_fields.peek().is_some() {
-                generalized_fields = if generalized_fields.is_empty() {format!("{}{}", generalized_fields, field)} else {format!("{}:{}", generalized_fields, field)}
+                generalized_fields = if generalized_fields.is_empty() {
+                    format!("{}{}", generalized_fields, field)
+                } else {
+                    format!("{}:{}", generalized_fields, field)
+                }
             }
-        };
+        }
 
         generalized_fields.parse::<ClassI>().ok()
-
     }
 }
 
 impl std::str::FromStr for ClassI {
     type Err = NomenclatureError;
 
+    // TODO: WARNING this might still catch all possibilities had to so far:
+    // 1. Fix an empty string passing through
     fn from_str(s: &str) -> Result<Self> {
+        if s.is_empty() {
+            return Err(EmptyAlleleString);
+        }
         let hla = s.trim_start_matches("HLA-").replace("*", "");
 
         if !hla.contains(':') && hla.len() > 3 {
@@ -254,25 +276,24 @@ impl std::str::FromStr for ClassI {
 
 impl std::fmt::Display for ClassI {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s =
-            format!(
-                "{}*{}{}{}{}{}",
-                self.gene,
-                self.allele_group,
-                self.hla_protein
-                    .clone()
-                    .map(|protein| format!(":{}", protein))
-                    .unwrap_or_else(|| "".to_string()),
-                self.cds_syn_sub
-                    .clone()
-                    .map(|synonymous| format!(":{}", synonymous))
-                    .unwrap_or_else(|| "".to_string()),
-                self.non_coding
-                    .clone()
-                    .map(|non_coding| format!(":{}", non_coding))
-                    .unwrap_or_else(|| "".to_string()),
-                self.expression_change
-            );
+        let s = format!(
+            "{}*{}{}{}{}{}",
+            self.gene,
+            self.allele_group,
+            self.hla_protein
+                .clone()
+                .map(|protein| format!(":{}", protein))
+                .unwrap_or_else(|| "".to_string()),
+            self.cds_syn_sub
+                .clone()
+                .map(|synonymous| format!(":{}", synonymous))
+                .unwrap_or_else(|| "".to_string()),
+            self.non_coding
+                .clone()
+                .map(|non_coding| format!(":{}", non_coding))
+                .unwrap_or_else(|| "".to_string()),
+            self.expression_change
+        );
 
         write!(f, "{}", s)
     }
@@ -344,6 +365,5 @@ mod tests {
         let expected = "A*02:101".parse::<ClassI>().unwrap();
 
         assert_eq!(expected, generalized.unwrap());
-
     }
 }

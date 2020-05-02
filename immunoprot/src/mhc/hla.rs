@@ -193,6 +193,22 @@ impl ClassI {
     pub fn set_ligand_info(&mut self, ligand_info: KirLigandInfo) {
         self.ligand_info = Some(Box::new(ligand_info))
     }
+
+    pub fn generalize(&self) -> Option<ClassI> {
+        let allele = self.to_string();
+        let mut allele_fields = allele.split(":").peekable();
+        let mut generalized_fields = String::from("");
+
+        // TODO: Can be improved the joining with ':'
+        while let Some(field) = allele_fields.next() {
+            if allele_fields.peek().is_some() {
+                generalized_fields = if generalized_fields.is_empty() {format!("{}{}", generalized_fields, field)} else {format!("{}:{}", generalized_fields, field)}
+            }
+        };
+
+        generalized_fields.parse::<ClassI>().ok()
+
+    }
 }
 
 impl std::str::FromStr for ClassI {
@@ -238,39 +254,33 @@ impl std::str::FromStr for ClassI {
 
 impl std::fmt::Display for ClassI {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = format!(
-            "{}{}{}{}{}{}",
-            self.gene,
-            self.allele_group,
-            self.hla_protein.clone().unwrap_or_else(|| "".to_string()),
-            self.cds_syn_sub.clone().unwrap_or_else(|| "".to_string()),
-            self.non_coding.clone().unwrap_or_else(|| "".to_string()),
-            self.expression_change
-        );
+        let s =
+            format!(
+                "{}*{}{}{}{}{}",
+                self.gene,
+                self.allele_group,
+                self.hla_protein
+                    .clone()
+                    .map(|protein| format!(":{}", protein))
+                    .unwrap_or_else(|| "".to_string()),
+                self.cds_syn_sub
+                    .clone()
+                    .map(|synonymous| format!(":{}", synonymous))
+                    .unwrap_or_else(|| "".to_string()),
+                self.non_coding
+                    .clone()
+                    .map(|non_coding| format!(":{}", non_coding))
+                    .unwrap_or_else(|| "".to_string()),
+                self.expression_change
+            );
+
         write!(f, "{}", s)
     }
 }
 
 impl ClassI {
     pub fn to_nomenclature_string(&self) -> String {
-        format!(
-            "HLA-{}*{}{}{}{}{}",
-            self.gene,
-            self.allele_group,
-            self.hla_protein
-                .clone()
-                .map(|protein| format!(":{}", protein))
-                .unwrap_or_else(|| "".to_string()),
-            self.cds_syn_sub
-                .clone()
-                .map(|synonymous| format!(":{}", synonymous))
-                .unwrap_or_else(|| "".to_string()),
-            self.non_coding
-                .clone()
-                .map(|non_coding| format!(":{}", non_coding))
-                .unwrap_or_else(|| "".to_string()),
-            self.expression_change
-        )
+        format!("HLA-{}", self.to_string())
     }
 }
 
@@ -325,5 +335,15 @@ mod tests {
         assert_eq!(hla.to_string(), "A0302101".to_string());
 
         assert_eq!(hla.to_nomenclature_string(), "HLA-A*03:02:101".to_string());
+    }
+
+    #[test]
+    fn test_generalise_allele() {
+        let allele = "A*02:101:02".parse::<ClassI>().unwrap();
+        let generalized = allele.generalize();
+        let expected = "A*02:101".parse::<ClassI>().unwrap();
+
+        assert_eq!(expected, generalized.unwrap());
+
     }
 }

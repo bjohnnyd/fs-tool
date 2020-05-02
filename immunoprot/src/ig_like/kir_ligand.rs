@@ -110,6 +110,7 @@ pub struct KirLigandMap {
 }
 
 impl KirLigandMap {
+
     fn new(loci: &[&str]) -> std::result::Result<Self, HtmlParseError> {
         let mut alleles = HashSet::<ClassI>::new();
         let mut cache = HashMap::<ClassI, KirLigandInfo>::new();
@@ -130,6 +131,17 @@ impl KirLigandMap {
             .collect();
 
         Ok(Self { alleles, cache })
+    }
+
+    fn  get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
+        let mut kir_ligand_info = Vec::<&KirLigandInfo>::new();
+
+        if self.alleles.contains(allele) {
+            if let Some(allele_info) = self.cache.get(allele) {
+                kir_ligand_info.push(allele_info)
+            }
+        }
+        kir_ligand_info
     }
 }
 

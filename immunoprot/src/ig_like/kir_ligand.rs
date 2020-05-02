@@ -137,51 +137,30 @@ impl KirLigandMap {
 
     // TODO: Messy and inefficient as it iterates over all backwards removing fields
     // cannot think of case where more than once is really necessary but there might be A*02 returning A*02:01:01
-    // might be better to return multiple removed at once so cases like A02:07 returning A*02:07:01:01 and A*02:07:02
-    // will both have A*02:07:01 and A*02:07:02 present?
+    // decided to be better to return multiple removed at once so cases like A02:07 returning A*02:07:01:01 and A*02:07:02
+    // will both have A*02:07:01 and A*02:07:02 present.
+    // Look at ebd55784dc5a2d11645c0a754650b705b7407705 for previous messier implementation
     fn get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
         let mut kir_ligand_info = Vec::<&KirLigandInfo>::new();
 
         if let Some(allele_info) = self.cache.get(allele) {
             kir_ligand_info.push(allele_info)
         } else {
-            let mut present_alleles = self
-                .alleles
+            self.alleles
                 .iter()
-                .map(|allele_with_info| (allele_with_info.clone(), allele_with_info.generalize()))
-                .filter(|(_, general)| general.is_some())
-                .collect::<HashMap<ClassI, Option<ClassI>>>();
-
-            let mut no_more_alleles = true;
-
-            'find_alleles: loop {
-                for (original_allele, generalized_allele) in present_alleles.iter() {
-                    if let Some(generalized_allele) = generalized_allele {
-                        no_more_alleles = false;
-                        if generalized_allele == allele {
-                            kir_ligand_info.push(self.cache.get(original_allele).unwrap());
+                .for_each(| cached_allele| {
+                    let generalised = cached_allele.generalize();
+                    if let Some(generalised_once) = generalised {
+                        if generalised_once == *allele {
+                            kir_ligand_info.push(self.cache.get(cached_allele).unwrap());
+                        } else if let Some(generalised_twice) = generalised_once.generalize() {
+                            if generalised_twice == *allele {
+                                kir_ligand_info.push(self.cache.get(cached_allele).unwrap());
+                            }
                         }
                     }
-                }
-                if !kir_ligand_info.is_empty() || no_more_alleles {
-                    break 'find_alleles;
-                } else {
-                    no_more_alleles = true;
-                    present_alleles = present_alleles
-                        .into_iter()
-                        .map(|(original, general)| {
-                            if let Some(general) = general {
-                                let general = general.generalize();
-                                (original, general)
-                            } else {
-                                (original, None)
-                            }
-                        })
-                        .filter(|(_, general)| general.is_some())
-                        .collect::<HashMap<ClassI, Option<ClassI>>>();
-                }
+                });
             }
-        }
         kir_ligand_info
     }
 }
@@ -329,8 +308,14 @@ mod tests {
         let mut matching_once = ligand_map.get_allele_info(&query_allele_singly_matched);
 
         let mut matching_second_option = ligand_map.get_allele_info(&query_allele_variable_output);
+        let expected = "A*02:07:01:01".parse::<ClassI>().unwrap();
+
 
         assert!(matching_none.is_empty());
-        assert_eq!(1, matching_once.len())
+        assert_eq!(1, matching_once.len());
+
+        matching_second_option.sort();
+
+        assert_eq!(expected, *matching_second_option[0].allele())
     }
 }

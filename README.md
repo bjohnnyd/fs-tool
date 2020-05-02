@@ -34,10 +34,10 @@ In addition, [OpenSSL](https://www.openssl.org) needs to be present:
             ```
 
 
-After installing rustup download the release archive file and build (N.B to supress warnings add `2 > /dev/null` to the end of the command below):
+After installing rustup download the release archive file and build:
 
 ``` bash
-$ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.1.3.tar.gz |  tar xvz && cd fs-tool-0.1.3 && cargo build --release --bin fs-tool
+$ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.1.3.tar.gz |  tar xvz && cd fs-tool-0.1.3 && RUSTFLAGS="-Awarnings" cargo build --release --bin fs-tool
 ```
 
 The resulting binary can then be ran to download the updated ligand data with:

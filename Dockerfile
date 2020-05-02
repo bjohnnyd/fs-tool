@@ -1,6 +1,7 @@
 FROM ubuntu:xenial
 
 ENV PATH=/root/.cargo/bin:$PATH
+ENV RUSTFLAGS="-Awarnings"
 # general packages
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
@@ -24,5 +25,5 @@ RUN curl https://sh.rustup.rs -sSf | \
 
 RUN git clone https://github.com/bjohnnyd/fs-tool.git
 WORKDIR fs-tool
-RUN cargo build --release --bin fs-tool 2>/dev/null
+RUN cargo build --release --bin fs-tool
 ENTRYPOINT ["./target/release/fs-tool"]

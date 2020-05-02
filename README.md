@@ -26,11 +26,11 @@ In addition, [OpenSSL](https://www.openssl.org) needs to be present:
 
  * macOS with Homebrew:
             ```
-            $ brew install openssl 
+            $ brew install openssl pkg-config
             ``` 
  * Linux:
             ```
-            $ sudo apt-get install openssl
+            $ sudo apt-get install openssl libssl-dev pkg-config
             ```
 
 

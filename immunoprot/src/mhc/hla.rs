@@ -4,7 +4,7 @@ use std::str::FromStr;
 use crate::error::NomenclatureError;
 use crate::ig_like::kir_ligand::KirLigandInfo;
 
-use log::{debug, error, info, warn};
+use log::error;
 
 type Result<T> = std::result::Result<T, NomenclatureError>;
 
@@ -294,8 +294,8 @@ mod tests {
         assert_eq!(LigandMotif::A3, ligand_motif)
     }
     #[test]
-    fn test_classI_from_str() {
-        let classI = "A03:02:101".parse::<ClassI>().unwrap();
+    fn test_hla_from_str() {
+        let hla = "A03:02:101".parse::<ClassI>().unwrap();
         assert_eq!(
             ClassI {
                 gene: Gene::A,
@@ -306,13 +306,13 @@ mod tests {
                 expression_change: ExpressionChange::Unknown,
                 ligand_info: None
             },
-            classI
+            hla
         );
     }
 
     #[test]
-    fn test_classI_into_str() {
-        let classI = ClassI {
+    fn test_hla_into_str() {
+        let hla = ClassI {
             gene: Gene::A,
             allele_group: "03".to_string(),
             hla_protein: Some("02".to_string()),
@@ -322,11 +322,8 @@ mod tests {
             ligand_info: None,
         };
 
-        assert_eq!(classI.to_string(), "A0302101".to_string());
+        assert_eq!(hla.to_string(), "A0302101".to_string());
 
-        assert_eq!(
-            classI.to_nomenclature_string(),
-            "HLA-A*03:02:101".to_string()
-        );
+        assert_eq!(hla.to_nomenclature_string(), "HLA-A*03:02:101".to_string());
     }
 }

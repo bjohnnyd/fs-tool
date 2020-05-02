@@ -1,14 +1,16 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use crate::error::NomenclatureError;
+use crate::error::{HtmlParseError, NomenclatureError};
 use crate::mhc::hla::ClassI;
+use log::info;
 use scraper::{Html, Selector};
 
 type Result<T> = std::result::Result<T, NomenclatureError>;
 
 pub const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
 pub const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
+pub const SKIP_ROWS: usize = 1;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum LigandMotif {
@@ -88,60 +90,112 @@ impl KirLigandInfo {
         Self(hla, motif, freq)
     }
 
-    pub fn get_allele(&self) -> &ClassI {
+    pub fn allele(&self) -> &ClassI {
         &self.0
     }
 
-    pub fn get_motif(&self) -> &LigandMotif {
+    pub fn motif(&self) -> &LigandMotif {
         &self.1
     }
 
-    pub fn get_freq(&self) -> &AlleleFreq {
+    pub fn freq(&self) -> &AlleleFreq {
         &self.2
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct KirLigandMap {
     pub alleles: HashSet<ClassI>,
     pub cache: HashMap<ClassI, KirLigandInfo>,
 }
 
+impl KirLigandMap {
+    fn new(loci: &[&str]) -> std::result::Result<Self, HtmlParseError> {
+        let mut alleles = HashSet::<ClassI>::new();
+        let mut cache = HashMap::<ClassI, KirLigandInfo>::new();
+
+        let _: std::result::Result<Vec<_>, HtmlParseError> = loci
+            .iter()
+            .map(|locus| {
+                let raw_html = get_ipd_html(locus)?;
+                let allele_infos = read_table(&raw_html, SKIP_ROWS)?;
+
+                for allele_info in allele_infos {
+                    alleles.insert(allele_info.0.clone());
+                    cache.insert(allele_info.0.clone(), allele_info);
+                }
+
+                Ok(())
+            })
+            .collect();
+
+        Ok(Self { alleles, cache })
+    }
+}
+
 /// Obtains raw HTL from the EBI website
-pub fn get_ipd_html<T>(gene_locus: T) -> Html
+pub fn get_ipd_html<T>(gene_locus: T) -> std::result::Result<Html, HtmlParseError>
 where
     T: AsRef<str> + std::fmt::Display,
 {
-    let resp = attohttpc::get(format!("{}{}", IPD_KIR_URL, gene_locus));
-    let text = resp.send().unwrap().text().unwrap();
+    let url = format!("{}{}", IPD_KIR_URL, &gene_locus);
+    info!("Connecting to {}...", &url);
+    let request = attohttpc::get(&url);
+    let response = request.send()?;
+    let text = response
+        .text()
+        .or_else(|err| Err(HtmlParseError::CouldNotReadResponse(err)))?;
 
-    Html::parse_document(&text)
+    info!(
+        "Obtained response, looking for allele table for locus '{}'",
+        gene_locus
+    );
+
+    Ok(Html::parse_document(&text))
 }
 
 /// Find the first HTML table and can skip a desired set of rows
-pub fn read_table(html: &Html, skip_rows: usize) -> Vec<KirLigandInfo> {
+pub fn read_table(
+    html: &Html,
+    skip_rows: usize,
+) -> std::result::Result<Vec<KirLigandInfo>, HtmlParseError> {
     let mut result = Vec::<KirLigandInfo>::new();
 
+    // TODO: Deal with error
     let selector = Selector::parse("tr").unwrap();
+    info!("Found HLA allele table! Reading rows...");
 
     for row in html.select(&selector).skip(skip_rows) {
         let table_row = row.text().collect::<Vec<&str>>();
-        let ligand_info = KirLigandInfo::new(
-            table_row[0].parse::<ClassI>().unwrap(),
-            table_row[1].parse::<LigandMotif>().unwrap(),
-            table_row[2].into(),
-        );
 
-        result.push(ligand_info);
+        if table_row.len() == 3 {
+            let allele = table_row[0]
+                .parse::<ClassI>()
+                .or_else(|_| Err(HtmlParseError::CouldNotReadClassI(table_row[0].to_string())))?;
+            let motif = table_row[1]
+                .parse::<LigandMotif>()
+                .or_else(|_| Err(HtmlParseError::CouldNotReadClassI(table_row[1].to_string())))?;
+            let freq: AlleleFreq = table_row[2].into();
+
+            let ligand_info = KirLigandInfo::new(allele, motif, freq);
+            result.push(ligand_info);
+        } else {
+            return Err(HtmlParseError::IncorrectNumberOfColumns(
+                table_row.len(),
+                table_row.join(""),
+            ));
+        }
     }
-    result
+    info!("Finished reading table");
+    Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::ig_like::kir_ligand::{
-        get_ipd_html, read_table, AlleleFreq, KirLigandInfo, LigandMotif,
+        get_ipd_html, read_table, AlleleFreq, KirLigandInfo, KirLigandMap, LigandMotif,
     };
-    use crate::mhc::hla::{ClassI, ExpressionChange};
+    use crate::mhc::hla::ClassI;
 
     #[test]
     fn test_known_ligands() {
@@ -160,14 +214,28 @@ mod tests {
 
     #[test]
     fn test_connect_to_ipd() {
-        let html = get_ipd_html("C*01:02");
-        let ligand_info = read_table(&html, 1);
+        let html = get_ipd_html("C*01:02").unwrap();
+        let ligand_info = read_table(&html, 1).unwrap();
         let expected = KirLigandInfo::new(
-            "C01:02".parse::<ClassI>().unwrap(),
+            "C01:02:01:01".parse::<ClassI>().unwrap(),
             LigandMotif::C1,
             AlleleFreq::Common,
         );
 
         assert_eq!(expected, ligand_info[0]);
+    }
+
+    #[test]
+    fn test_create_ligand_map() {
+        stderrlog::new()
+            .module("immunoprot")
+            .verbosity(3)
+            .init()
+            .unwrap();
+        let loci = ["A*02:07", "B*57:01", "C0*01:02"];
+
+        let ligand_map = KirLigandMap::new(&loci).unwrap();
+
+        dbg!(ligand_map.alleles);
     }
 }

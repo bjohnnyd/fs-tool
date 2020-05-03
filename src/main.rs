@@ -8,7 +8,6 @@ use ::fs_tool::prelude::io::*;
 use ::fs_tool::prelude::logging::*;
 use ::fs_tool::prelude::snafu_error::ResultExt;
 use ::fs_tool::prelude::traits::TryFrom;
-use immunoprot;
 
 fn main() -> std::result::Result<(), ()> {
     match main_try() {

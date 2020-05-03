@@ -3,7 +3,16 @@ name = "netmhcpan"
 version = "0.1.0"
 authors = ["Johnny Debebe <28043284+bjohnnyd@users.noreply.github.com>"]
 edition = "2018"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = ["../immunoprot"]
+
 [dependencies]
+log = "0.4"
+stderrlog="0.4"
+thiserror = "1.0"
+csv = "1.1"
+nom = "5.1"

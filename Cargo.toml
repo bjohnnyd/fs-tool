@@ -6,7 +6,7 @@ edition = "2018"
 publish = false
 
 [workspace]
-members = ["immunoprot"]
+members = ["immunoprot", "netmphcpan"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]

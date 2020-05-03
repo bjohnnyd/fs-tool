@@ -353,7 +353,7 @@ mod tests {
             ligand_info: None,
         };
 
-        assert_eq!(hla.to_string(), "A0302101".to_string());
+        assert_eq!(hla.to_string(), "A*03:02:101".to_string());
 
         assert_eq!(hla.to_nomenclature_string(), "HLA-A*03:02:101".to_string());
     }

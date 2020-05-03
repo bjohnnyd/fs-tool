@@ -6,7 +6,7 @@ pub(crate) static HLA_GENES: &str = "A, B, C, DP, DM, DO, DQ and DR";
 
 use crate::ig_like::kir_ligand::IPD_KIR_URL;
 
-// Errors representing various NomenClature errors
+/// Errors related to immune protein nomenclature
 #[derive(Debug, Error)]
 pub enum NomenclatureError {
     #[error(
@@ -29,6 +29,7 @@ pub enum NomenclatureError {
     EmptyAlleleString,
 }
 
+/// Errors related to parsing IPD website
 #[derive(Debug, Error)]
 pub enum HtmlParseError {
     #[error("Could not connect to {}", IPD_KIR_URL)]
@@ -43,4 +44,15 @@ pub enum HtmlParseError {
     CouldNotReadFreq(String),
     #[error("Expected 3 columns in HLA allele table but found {0}:\n")]
     IncorrectNumberOfColumns(usize, String),
+}
+
+/// Errors related to reading data from files
+#[derive(Debug, Error)]
+pub enum IoError {
+    #[error("Could not read HLA allele at line {0}, column 1")]
+    CouldNotReadAllele(usize),
+    #[error("Could not read KIR Ligand Motif line {0}, column 2")]
+    CouldNotReadMotif(usize),
+    #[error("Could not read or open Kir Ligand Info file")]
+    CouldNotReadOrOpenFile(#[from] csv::Error),
 }

@@ -2,7 +2,7 @@
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-use crate::error::{HtmlParseError, NomenclatureError};
+use crate::error::{HtmlParseError, IoError, NomenclatureError};
 use crate::mhc::hla::ClassI;
 use log::info;
 use scraper::{Html, Selector};
@@ -110,8 +110,26 @@ pub struct KirLigandMap {
     pub cache: HashMap<ClassI, KirLigandInfo>,
 }
 
+impl Default for KirLigandMap {
+    fn default() -> Self {
+        let alleles = HashSet::<ClassI>::new();
+        let cache = HashMap::<ClassI, KirLigandInfo>::new();
+
+        Self { alleles, cache }
+    }
+}
+
 impl KirLigandMap {
-    fn new(loci: &[&str]) -> std::result::Result<Self, HtmlParseError> {
+    pub fn new() -> Self {
+        KirLigandMap::default()
+    }
+
+    pub fn insert_info(&mut self, info: KirLigandInfo) {
+        self.alleles.insert(info.0.clone());
+        self.cache.insert(info.0.clone(), info);
+    }
+
+    pub fn from_loci(loci: &[&str]) -> std::result::Result<Self, HtmlParseError> {
         let mut alleles = HashSet::<ClassI>::new();
         let mut cache = HashMap::<ClassI, KirLigandInfo>::new();
 
@@ -133,6 +151,41 @@ impl KirLigandMap {
         results?;
 
         Ok(Self { alleles, cache })
+    }
+
+    pub fn from_path<T>(p: T) -> std::result::Result<Self, IoError>
+    where
+        T: AsRef<std::path::Path>,
+    {
+        let mut map = KirLigandMap::new();
+
+        let mut rdr = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .delimiter(b'\t')
+            .from_path(&p)?;
+
+        for (row, result) in rdr.records().enumerate() {
+            let entry = result?;
+
+            let allele = entry[0]
+                .parse::<ClassI>()
+                .or_else(|_| Err(IoError::CouldNotReadAllele(row + 1)))?;
+
+            let motif = entry[1]
+                .parse::<LigandMotif>()
+                .or_else(|_| Err(IoError::CouldNotReadMotif(row + 1)))?;
+
+            let freq: AlleleFreq = if entry.len() == 3 {
+                entry[2].into()
+            } else {
+                AlleleFreq::Unknown
+            };
+
+            let info = KirLigandInfo::new(allele, motif, freq);
+            map.insert_info(info);
+        }
+
+        Ok(map)
     }
 
     // TODO: Messy and inefficient as it iterates over all backwards removing fields
@@ -257,18 +310,18 @@ mod tests {
             AlleleFreq::Common,
         );
 
-        assert_eq!(expected, ligand_info[0]);
+        assert_eq!(ligand_info[0], expected);
     }
 
     #[test]
     fn test_create_ligand_map() {
-        let loci = ["A*02:07", "B*57:01", "C0*01:02"];
-        let ligand_map = KirLigandMap::new(&loci).unwrap();
+        let loci = ["A*02:07", "B*57:01", "C*01:02"];
+        let ligand_map = KirLigandMap::from_loci(&loci).unwrap();
 
         let mut motifs = Vec::<LigandMotif>::new();
         let mut expected: Vec<LigandMotif> = vec![
             "Unclassified".parse().unwrap(),
-            "Bw4-80I".parse().unwrap(),
+            "C1".parse().unwrap(),
             "Bw4-80I".parse().unwrap(),
         ];
 
@@ -282,20 +335,15 @@ mod tests {
         expected.sort();
         expected.dedup();
 
-        assert_eq!(expected, motifs);
+        assert_eq!(motifs, expected);
     }
 
     // Website has bugs as for example https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?A*02:15
     // A*02:15 should not be resolved to any allele (might loop long!!)
     #[test]
     fn test_query_ligand_map() {
-        stderrlog::new()
-            .module("immunoprot")
-            .verbosity(3)
-            .init()
-            .unwrap();
         let loci = ["A*02:15", "A*02:16", "A*02:07"];
-        let ligand_map = KirLigandMap::new(&loci).unwrap();
+        let ligand_map = KirLigandMap::from_loci(&loci).unwrap();
 
         let query_allele_missing = "A*02:15".parse::<ClassI>().unwrap();
         let query_allele_singly_matched = "A*02:16".parse::<ClassI>().unwrap();
@@ -309,10 +357,27 @@ mod tests {
         let expected = "A*02:07:01:01".parse::<ClassI>().unwrap();
 
         assert!(matching_none.is_empty());
-        assert_eq!(1, matching_once.len());
+        assert_eq!(matching_once.len(), 1);
 
         matching_second_option.sort();
+        assert_eq!(*matching_second_option[0].allele(), expected)
+    }
 
-        assert_eq!(expected, *matching_second_option[0].allele())
+    #[test]
+    fn test_map_from_file() {
+        let mut map = KirLigandMap::from_path("tests/lg.tsv").unwrap();
+
+        let expected_allele = "A*01:01:01:01".parse::<ClassI>().unwrap();
+        let expected_motif = "Unclassified".parse::<LigandMotif>().unwrap();
+        let expected_freq = AlleleFreq::Common;
+
+        let expected_ligand_info =
+            KirLigandInfo::new(expected_allele.clone(), expected_motif, expected_freq);
+
+        let first_allele = map.alleles.iter().next().unwrap();
+        let ligand_info = map.cache.remove(first_allele).unwrap();
+
+        assert_eq!(*first_allele, expected_allele);
+        assert_eq!(ligand_info, expected_ligand_info);
     }
 }

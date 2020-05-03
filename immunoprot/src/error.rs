@@ -9,6 +9,7 @@ use crate::ig_like::kir_ligand::IPD_KIR_URL;
 /// Errors related to immune protein nomenclature
 #[derive(Debug, Error)]
 pub enum NomenclatureError {
+    /* HLA Class I related */
     #[error(
         "Cound not determine the kir-ligand group from {0}.  Supported groups are {}",
         MHCI_LIGAND_MOTIFS
@@ -27,6 +28,16 @@ pub enum NomenclatureError {
     NoAlleleGroup(String),
     #[error("Empty string passed as an HLA allele please check your naming")]
     EmptyAlleleString,
+
+    /* KIR related */
+    #[error("The KIR type has an unsupported/incorrect tail naming. Tails can be either S, L or P but got '{0}'")]
+    IncorrectKirTail(String),
+    #[error("The KIR type has an unsupported/incorrect domain naming. Domain can be either 2D or 3D but got '{0}'")]
+    IncorrectKirDomain(String),
+    #[error("Allele has insufficient information. An allele has to at least have series specified (e.g. 003) but got '{0}'")]
+    IncorrectKirAllele(String),
+    #[error("The KIR type protein specification is not known. Currenlty accepted KIR proteins are 1, 2, 3, 4, 5, 5A, 5B but got '{0}'")]
+    IncorrectKirProtein(String),
 }
 
 /// Errors related to parsing IPD website

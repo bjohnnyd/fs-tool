@@ -4,6 +4,7 @@ use std::str::FromStr;
 
 use crate::error::{HtmlParseError, IoError, NomenclatureError};
 use crate::mhc::hla::ClassI;
+
 use log::info;
 use scraper::{Html, Selector};
 
@@ -188,11 +189,10 @@ impl KirLigandMap {
         Ok(map)
     }
 
-    // TODO: Messy and inefficient as it iterates over all backwards removing fields
-    // cannot think of case where more than once is really necessary but there might be A*02 returning A*02:01:01
-    // decided to be better to return multiple removed at once so cases like A02:07 returning A*02:07:01:01 and A*02:07:02
-    // will both have A*02:07:01 and A*02:07:02 present.
-    // Look at ebd55784dc5a2d11645c0a754650b705b7407705 for previous messier implementation
+    // TODO: Look at ebd55784dc5a2d11645c0a754650b705b7407705 for previous messier implementation
+    // cannot think of case where more than twice is really necessary but there might be.
+    // Decided to for now to only generalise the allele twice. Cases like A02:07,
+    // returning A*02:07:01:01 and A*02:07:02 will both have A*02:07:01 and A*02:07:02 present.
     fn get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
         let mut kir_ligand_info = Vec::<&KirLigandInfo>::new();
 
@@ -200,8 +200,7 @@ impl KirLigandMap {
             kir_ligand_info.push(allele_info)
         } else {
             self.alleles.iter().for_each(|cached_allele| {
-                let generalised = cached_allele.generalize();
-                if let Some(generalised_once) = generalised {
+                if let Some(generalised_once) = cached_allele.generalize() {
                     if generalised_once == *allele {
                         kir_ligand_info.push(self.cache.get(cached_allele).unwrap());
                     } else if let Some(generalised_twice) = generalised_once.generalize() {
@@ -238,7 +237,7 @@ where
 }
 
 // TODO: Need to deal with cases where supplied HLA allele is incorrect format
-/// Find the first HTML table and can skip a desired set of rows
+/// Finds the first HTML table with the possibility of skipping a set of rows
 pub fn read_table(
     html: &Html,
     skip_rows: usize,

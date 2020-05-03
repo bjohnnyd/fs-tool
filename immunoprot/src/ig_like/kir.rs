@@ -34,7 +34,7 @@ impl FromStr for Tail {
             "L" => Ok(Long),
             "S" => Ok(Short),
             "P" => Ok(Pseudo),
-            s => Err(NomenclatureError::IncorrectKirTail(s.to_string())),
+            s => Err(NomenclatureError::UnknownKirTail(s.to_string())),
         }
     }
 }
@@ -64,7 +64,7 @@ impl FromStr for Domain {
         match s {
             "2D" => Ok(Two),
             "3D" => Ok(Three),
-            s => Err(NomenclatureError::IncorrectKirDomain(s.to_string())),
+            s => Err(NomenclatureError::UnknownKirDomain(s.to_string())),
         }
     }
 }
@@ -109,7 +109,7 @@ impl FromStr for KirProtein {
             "5" => Ok(KP5),
             "5A" => Ok(KP5A),
             "5B" => Ok(KP5B),
-            s => Err(NomenclatureError::IncorrectKirProtein(s.to_string())),
+            s => Err(NomenclatureError::UnknownKirProtein(s.to_string())),
         }
     }
 }
@@ -143,7 +143,7 @@ impl FromStr for KirAllele {
         let non_coding_sub = s.chars().skip(5).take(2).collect::<String>();
 
         if series.len() != 3 {
-            Err(NomenclatureError::IncorrectKirAllele(s.to_string()))
+            Err(NomenclatureError::UnknownKirAllele(s.to_string()))
         } else {
             Ok(Self {
                 series,
@@ -170,10 +170,67 @@ pub struct Kir {
     allele: Option<KirAllele>,
 }
 
+impl std::fmt::Display for Kir {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(ref allele) = self.allele {
+            write!(
+                f,
+                "KIR{}{}{}*{}",
+                self.ig_like_domain, self.cytoplasmic_tail, self.protein, allele
+            )
+        } else {
+            write!(
+                f,
+                "KIR{}{}{}",
+                self.ig_like_domain, self.cytoplasmic_tail, self.protein
+            )
+        }
+    }
+}
+
+impl FromStr for Kir {
+    type Err = NomenclatureError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim_start_matches("KIR");
+        let type_allele = s.splitn(2, |c| c == '*').collect::<Vec<&str>>();
+
+        let mut allele = None;
+        let ig_like_domain = type_allele[0]
+            .chars()
+            .take(2)
+            .collect::<String>()
+            .parse::<Domain>()?;
+        let cytoplasmic_tail = type_allele[0]
+            .chars()
+            .skip(2)
+            .take(1)
+            .collect::<String>()
+            .parse::<Tail>()?;
+        let protein = type_allele[0]
+            .chars()
+            .skip(3)
+            .collect::<String>()
+            .parse::<KirProtein>()?;
+
+        if type_allele.len() == 2 {
+            allele = Some(type_allele[1].parse::<KirAllele>()?);
+        }
+
+        Ok(Self {
+            ig_like_domain,
+            cytoplasmic_tail,
+            protein,
+            allele,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::ig_like::kir::Domain::{self, *};
     use crate::ig_like::kir::Tail::{self, *};
+    use crate::ig_like::kir::{Kir, KirAllele, KirProtein};
 
     #[test]
     fn test_kir_tail_naming_correct() {
@@ -187,5 +244,17 @@ mod tests {
     fn test_kir_tail_naming_incorrect() {
         let incorrect = "Z";
         incorrect.parse::<Tail>().unwrap();
+    }
+
+    #[test]
+    fn test_parse_kir() {
+        let kir = "3DL2".parse::<Kir>().unwrap();
+        let expected = Kir {
+            ig_like_domain: Domain::Three,
+            cytoplasmic_tail: Tail::Long,
+            protein: KirProtein::KP2,
+            allele: None,
+        };
+        assert_eq!(kir, expected);
     }
 }

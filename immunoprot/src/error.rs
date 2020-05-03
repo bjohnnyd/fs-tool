@@ -30,14 +30,14 @@ pub enum NomenclatureError {
     EmptyAlleleString,
 
     /* KIR related */
-    #[error("The KIR type has an unsupported/incorrect tail naming. Tails can be either S, L or P but got '{0}'")]
-    IncorrectKirTail(String),
-    #[error("The KIR type has an unsupported/incorrect domain naming. Domain can be either 2D or 3D but got '{0}'")]
-    IncorrectKirDomain(String),
-    #[error("Allele has insufficient information. An allele has to at least have series specified (e.g. 003) but got '{0}'")]
-    IncorrectKirAllele(String),
-    #[error("The KIR type protein specification is not known. Currenlty accepted KIR proteins are 1, 2, 3, 4, 5, 5A, 5B but got '{0}'")]
-    IncorrectKirProtein(String),
+    #[error("The KIR type has an unknown tail. Tails can be either S, L or P but got '{0}'")]
+    UnknownKirTail(String),
+    #[error("The KIR type has an unknown domain. Domain can be either 2D or 3D but got '{0}'")]
+    UnknownKirDomain(String),
+    #[error("The KIR type protein is not known. Accepted KIR proteins are 1, 2, 3, 4, 5, 5A, 5B but got '{0}'")]
+    UnknownKirProtein(String),
+    #[error("Allele has insufficient information. A kir allele has to at least have a series specified (e.g. 003) but got '{0}'")]
+    UnknownKirAllele(String),
 }
 
 /// Errors related to parsing IPD website

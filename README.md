@@ -18,7 +18,7 @@ Precompiled binaries are available, you can download the latest binary for [Wind
 ### Build 
 To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  
 
-After installing rustup download the release archive file and build:
+After installing rustup download clone the repository and build:
 
 ``` bash
 $ git clone https://github.com/bjohnnyd/fs-tool.git  && cd fs-tool && RUSTFLAGS="-Awarnings" cargo build --release --bin fs-tool

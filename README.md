@@ -12,32 +12,16 @@ When the tool is ran, the first time after installation, it will download curren
 
 ## Install
 
-Precompiled binary that will run on Linux 64 systems is available for each release. You can download the latest binary from the Releases tab.
+### Binary
+Precompiled binaries are available, you can download the latest binary for [Windows](https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.4/x86_64-pc-windows-gnu.zip) and [Linux64](https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.4/x86_64-unknown-linux-gnu.tar.gz) (N.B. some `CentOS` releases need compiling from source).
 
-To get the latest binary through CLI and download the latest ligand group assignments from EBI run the following command:
-
-``` bash
-$ curl -LO https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.3/fs-tool && chmod +x fs-tool && ./fs-tool
-```
-
+### Build 
 To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  
-
-In addition, [OpenSSL](https://www.openssl.org) needs to be present:
-
- * macOS with Homebrew:
-            ```
-            $ brew install openssl pkg-config
-            ``` 
- * Linux:
-            ```
-            $ sudo apt-get install openssl libssl-dev pkg-config
-            ```
-
 
 After installing rustup download the release archive file and build:
 
 ``` bash
-$ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.1.3.tar.gz |  tar xvz && cd fs-tool-0.1.3 && RUSTFLAGS="-Awarnings" cargo build --release --bin fs-tool
+$ git clone https://github.com/bjohnnyd/fs-tool.git  && cd fs-tool && RUSTFLAGS="-Awarnings" cargo build --release --bin fs-tool
 ```
 
 The resulting binary can then be ran to download the updated ligand data with:
@@ -45,6 +29,8 @@ The resulting binary can then be ran to download the updated ligand data with:
 ``` bash
 $ ./target/release/fs-tool
 ```
+
+All releases and associated binaries and archives are accessible here [https://github.com/bjohnnyd/fs-tool/releases](https://github.com/bjohnnyd/fs-tool/releases).
 
 ## Usage
 

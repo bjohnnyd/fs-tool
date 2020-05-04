@@ -155,7 +155,7 @@ fn save_ligand_groups(p: &PathBuf) -> Result<()> {
         .collect::<Vec<LigandInfo>>();
 
     if ligands.is_empty() {
-        error!("No ligand information found");
+        error!("No ligand information found at {}", IPD_KIR_URL.to_string());
         return Err(Error::NoLigandInformation {
             url: IPD_KIR_URL.to_string(),
         });

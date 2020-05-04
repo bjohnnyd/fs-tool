@@ -91,7 +91,7 @@ impl Opt {
         if let Ok(ligand_table) = get_ligand_table(self.update_ligand_groups) {
             ligand_data = parse_ligand_table(ligand_table);
         } else {
-            info!("Ligand data will cannot be updated and the current local version will be used");
+            info!("Ligand update was unsuccessful and the version from https://github.com/bjohnnyd/fs-tool/blob/master/resources/2019-12-29_lg.tsv will be used");
             ligand_data = parse_ligand_table(LIGAND_TABLE)
         }
 

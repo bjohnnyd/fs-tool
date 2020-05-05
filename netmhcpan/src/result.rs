@@ -31,18 +31,110 @@ impl NearestNeighbour {
 // The core is a 9mer always used for alignment and identification
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Peptide<'a> {
-    // 0-based in documents but never represented as such in the results
+    // 0-based in documents but never represented as such in the results so need to `-1` shift before
     pos: usize,
+    len: usize,
     protein: &'a Protein,
-    sequence: &'a [u8],
     // Represents the epitope. This might be possible to deduce??
-    interaction_core: String,
+    icore: String,
     // predicts an n-terminal protrusion if > 0
     offset: usize,
-    del_pos: usize,
-    del_len: usize,
-    ins_pos: usize,
+    gap_start: usize,
+    gap_len: usize,
+    ins_start: usize,
     ins_len: usize,
+}
+
+impl<'a> Peptide<'a> {
+    fn new(
+        pos: usize,
+        len: usize,
+        protein: &'a Protein,
+        icore: String,
+        offset: usize,
+        gap_start: usize,
+        gap_len: usize,
+        ins_start: usize,
+        ins_len: usize,
+    ) -> Self {
+        Self {
+            pos,
+            len,
+            protein,
+            icore,
+            offset,
+            gap_start,
+            gap_len,
+            ins_start,
+            ins_len,
+        }
+    }
+
+    pub fn sequence(&self) -> &str {
+        &self.protein.sequence[self.pos..(self.pos + self.len)]
+    }
+
+    pub fn protein(&self) -> &Protein {
+        &*self.protein
+    }
+
+    // TODO: Are there any cases where there is a gap and insertion?
+    pub fn core(&self) -> String {
+        let mut seq = self.sequence().to_string();
+
+        if self.gap_len != 0 {
+            let gap = Range {
+                start: self.gap_start,
+                end: self.gap_len + 1,
+            };
+
+            seq = seq
+                .chars()
+                .enumerate()
+                .filter(|(i, c)| !gap.contains(i))
+                .map(|(_, c)| c)
+                .collect();
+        }
+
+        if self.ins_len != 0 {
+            let ins = Range {
+                start: self.ins_start,
+                end: self.ins_len + 1,
+            };
+
+            seq = seq
+                .chars()
+                .enumerate()
+                .map(|(i, c)| if ins.contains(&i) { '-' } else { c })
+                .collect();
+        }
+        seq
+    }
+
+    pub fn icore(&self) -> &str {
+        self.icore.as_ref()
+    }
+
+    pub fn sequence_motif(&self, aa_pos: &[usize]) -> String {
+        self.sequence()
+            .chars()
+            .enumerate()
+            .filter(|(i, c)| aa_pos.contains(i))
+            .map(|(_, c)| c)
+            .collect()
+    }
+
+    /// Returns the differences from original sequence in the format
+    /// `(offset, gap start, gap length, insertion start, insertion length)`
+    pub fn aa_diff(&self) -> (usize, usize, usize, usize, usize) {
+        (
+            self.offset,
+            self.gap_start,
+            self.gap_len,
+            self.ins_start,
+            self.ins_len,
+        )
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -63,6 +155,7 @@ impl Protein {
     }
 
     /// Adds a peptide sequence to the current protein at position specified.
+    /// 0-based so if passing NetMHCpan 4.0 `Pos` column `-1` needs to be subtracted.
     /// The position + sequence length can only be larger than 1 for it to be added.
     /// If the sequence + position are within current sequence length the sequence is overwritten
     fn add_sequence_at_pos<T>(&mut self, pos: usize, sequence: T) -> Result<(), Error>
@@ -71,8 +164,8 @@ impl Protein {
     {
         let sequence = sequence.as_ref();
         let region = Range {
-            start: pos - 1,
-            end: pos - 1 + sequence.len(),
+            start: pos,
+            end: pos + sequence.len(),
         };
 
         if region.start > self.sequence.len() {
@@ -97,7 +190,7 @@ impl Hash for Protein {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Proteome<'a> {
     pub(crate) proteins: HashSet<Protein>,
-    pub(crate) peptides: HashMap<Protein, Peptide<'a>>,
+    pub(crate) peptides: HashMap<Protein, Vec<Peptide<'a>>>,
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct BindingData<'a> {
@@ -109,8 +202,23 @@ pub struct BindingData<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::result::Protein;
+    use crate::result::{Peptide, Protein};
 
+    #[test]
+    fn test_peptide_core() {
+        let mut protein = Protein::new("Gag_180_209");
+        protein.add_sequence_at_pos(0, "GHQAAMQMLK");
+        protein.add_sequence_at_pos(1, "HQAAMQMLK");
+
+        let pep_identical = Peptide::new(1, 9, &protein, String::from("HQAAMQMLK"), 0, 0, 0, 0, 0);
+        let pep_diff = Peptide::new(0, 10, &protein, String::from("GHQAAMQMLK"), 0, 1, 1, 0, 0);
+
+        let expected_core_diff = String::from("GQAAMQMLK");
+
+        assert_eq!(pep_identical.core(), pep_identical.sequence().to_string());
+        assert_ne!(pep_diff.core(), pep_diff.sequence().to_string());
+        assert_eq!(pep_diff.core(), expected_core_diff);
+    }
     #[test]
     fn test_add_seq_to_protein() {
         let mut protein = Protein::new("Gag");
@@ -118,10 +226,10 @@ mod tests {
             identity: "Gag".to_string(),
             sequence: "ABCDEF".to_string(),
         };
-        protein.add_sequence_at_pos(1, "ABCDEF").unwrap();
+        protein.add_sequence_at_pos(0, "ABCDEF").unwrap();
         assert_eq!(protein, expected);
 
-        protein.add_sequence_at_pos(3, "DEFG").unwrap();
+        protein.add_sequence_at_pos(2, "DEFG").unwrap();
         let expected = Protein {
             identity: "Gag".to_string(),
             sequence: "ABDEFG".to_string(),

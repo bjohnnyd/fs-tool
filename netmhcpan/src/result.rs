@@ -11,7 +11,7 @@ pub enum RankThreshold {
     Weak(f32),
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialOrd)]
 pub struct NearestNeighbour {
     index: ClassI,
     distance: f32,
@@ -28,23 +28,33 @@ impl NearestNeighbour {
     }
 }
 
-// The core is a 9mer always used for alignment and identification
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Peptide<'a> {
-    // 0-based in documents but never represented as such in the results so need to `-1` shift before
-    pos: usize,
-    len: usize,
-    protein: &'a Protein,
-    // Represents the epitope. This might be possible to deduce??
-    icore: String,
-    // predicts an n-terminal protrusion if > 0
-    offset: usize,
-    gap_start: usize,
-    gap_len: usize,
-    ins_start: usize,
-    ins_len: usize,
+//TODO: FIX need to use `cmp`
+impl PartialEq for NearestNeighbour {
+    fn eq(&self, other: &Self) -> bool {
+        self.index == other.index && self.nn == other.nn
+    }
 }
 
+impl Eq for NearestNeighbour {}
+
+// The core is a 9mer always used for alignment and identification
+#[derive(Debug, Clone, Eq, Ord, PartialOrd)]
+pub struct Peptide<'a> {
+    // 0-based in documents but never represented as such in the results so need to `-1` shift before
+    pub(crate) pos: usize,
+    pub(crate) len: usize,
+    pub(crate) protein: &'a Protein,
+    // Represents the epitope. This might be possible to deduce??
+    pub(crate) icore: String,
+    // predicts an n-terminal protrusion if > 0
+    pub(crate) offset: usize,
+    pub(crate) gap_start: usize,
+    pub(crate) gap_len: usize,
+    pub(crate) ins_start: usize,
+    pub(crate) ins_len: usize,
+}
+
+//TODO: FIX has too many arguments should convert the modification info into a struct
 impl<'a> Peptide<'a> {
     fn new(
         pos: usize,
@@ -91,7 +101,7 @@ impl<'a> Peptide<'a> {
             seq = seq
                 .chars()
                 .enumerate()
-                .filter(|(i, c)| !gap.contains(i))
+                .filter(|(i, _)| !gap.contains(i))
                 .map(|(_, c)| c)
                 .collect();
         }
@@ -119,7 +129,7 @@ impl<'a> Peptide<'a> {
         self.sequence()
             .chars()
             .enumerate()
-            .filter(|(i, c)| aa_pos.contains(i))
+            .filter(|(i, _)| aa_pos.contains(i))
             .map(|(_, c)| c)
             .collect()
     }
@@ -137,14 +147,29 @@ impl<'a> Peptide<'a> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+impl PartialEq for Peptide<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.pos == other.pos && self.len == other.len && self.protein == other.protein
+    }
+}
+
+// NOTE: Might not be needed anymore due to PartialEq
+impl Hash for Peptide<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.pos.hash(state);
+        self.len.hash(state);
+        self.protein.hash(state);
+    }
+}
+
+#[derive(Debug, Clone, Eq, Ord, PartialOrd)]
 pub struct Protein {
     identity: String,
     sequence: String,
 }
 
 impl Protein {
-    fn new<T>(identity: T) -> Self
+    pub fn new<T>(identity: T) -> Self
     where
         T: AsRef<str>,
     {
@@ -158,7 +183,7 @@ impl Protein {
     /// 0-based so if passing NetMHCpan 4.0 `Pos` column `-1` needs to be subtracted.
     /// The position + sequence length can only be larger than 1 for it to be added.
     /// If the sequence + position are within current sequence length the sequence is overwritten
-    fn add_sequence_at_pos<T>(&mut self, pos: usize, sequence: T) -> Result<(), Error>
+    pub fn add_sequence_at_pos<T>(&mut self, pos: usize, sequence: T) -> Result<(), Error>
     where
         T: AsRef<str>,
     {
@@ -170,34 +195,72 @@ impl Protein {
 
         if region.start > self.sequence.len() {
             return Err(Error::ProteinTooShort(pos, self.sequence.len()));
+        } else if region.end > self.sequence.len() {
+            self.sequence.replace_range(region.start.., sequence)
         } else {
-            if region.end > self.sequence.len() {
-                self.sequence.replace_range(region.start.., sequence)
-            } else {
-                self.sequence.replace_range(region, sequence)
-            }
+            self.sequence.replace_range(region, sequence)
         }
+
         Ok(())
+    }
+
+    /// Returns protein sequence at specified positions (0 based and right open-ended)
+    ///
+    pub fn sequence(&self, start: usize, end: usize) -> Result<&str, Error> {
+        if end > self.sequence.len() {
+            Err(Error::ProteinTooShort(end, self.sequence.len()))
+        } else {
+            Ok(&self.sequence[start..end])
+        }
     }
 }
 
+impl PartialEq for Protein {
+    fn eq(&self, other: &Self) -> bool {
+        self.identity == other.identity && self.sequence == other.sequence
+    }
+}
 impl Hash for Protein {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identity.hash(state);
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Proteome<'a> {
-    pub(crate) proteins: HashSet<Protein>,
-    pub(crate) peptides: HashMap<Protein, Vec<Peptide<'a>>>,
-}
 #[derive(Debug, Clone, PartialEq)]
+pub struct BindingInfo<'a> {
+    pub(crate) peptide: &'a Peptide<'a>,
+    pub(crate) score: f32,
+    pub(crate) affinity: Option<f32>,
+    pub(crate) rank: f32,
+}
+
+#[derive(Debug, Clone)]
 pub struct BindingData<'a> {
-    pub(crate) alleles: HashSet<ClassI>,
-    pub(crate) proteome: Proteome<'a>,
+    pub(crate) alleles: HashSet<NearestNeighbour>,
+    pub(crate) allele_binding: HashMap<ClassI, BindingInfo<'a>>,
+    pub(crate) proteome: HashSet<Protein>,
+    pub(crate) peptides: HashSet<Peptide<'a>>,
     pub(crate) weak_threshold: Option<f32>,
     pub(crate) strong_threshold: Option<f32>,
+}
+
+impl Default for BindingData<'_> {
+    fn default() -> Self {
+        Self {
+            alleles: HashSet::<NearestNeighbour>::new(),
+            allele_binding: HashMap::<ClassI, BindingInfo>::new(),
+            proteome: HashSet::<Protein>::new(),
+            peptides: HashSet::<Peptide>::new(),
+            weak_threshold: None,
+            strong_threshold: None,
+        }
+    }
+}
+
+impl<'a> BindingData<'a> {
+    pub fn new() -> Self {
+        BindingData::default()
+    }
 }
 
 #[cfg(test)]

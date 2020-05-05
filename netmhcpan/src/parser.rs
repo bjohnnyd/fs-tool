@@ -1,38 +1,38 @@
+// TODO: Deal with errors from nom to custom
 pub const NETMHCPAN_VERSION: &str = "4.0";
 pub const HLA_GENES: [u8; 3] = [b'A', b'B', b'C'];
 pub const HLA_GENE_SEPARATORS: [u8; 3] = [b':', b'*', b'-'];
 
 use nom::{
     bytes::complete::{tag, take_until, take_while, take_while1},
-    character::is_alphanumeric,
     combinator::opt,
+    multi::many_m_n,
     sequence::tuple,
     IResult,
 };
 
-use crate::result::{NearestNeighbour, RankThreshold};
+use crate::result::{BindingInfo, NearestNeighbour, Peptide, RankThreshold};
+
 use immunoprot::mhc::hla::ClassI;
 
 /* Basic Parsers */
-fn take_first_numeric(i: &[u8]) -> IResult<&[u8], f32> {
+fn take_first_numeric(i: &[u8]) -> IResult<&[u8], String> {
     let take_until_digit = take_while(|c: u8| !c.is_ascii_digit());
     let take_digits = take_while1(|c: u8| c.is_ascii_digit() || c.is_ascii_punctuation());
 
     let (remainder, (_, numeric_word)) = tuple((take_until_digit, take_digits))(i)?;
 
-    let numeric = String::from_utf8(numeric_word.to_vec())
-        .unwrap()
-        .parse::<f32>()
-        .unwrap();
+    let numeric = String::from_utf8(numeric_word.to_vec()).unwrap();
 
     Ok((remainder, numeric))
 }
 
-fn take_word(i: &[u8]) -> IResult<&[u8], &[u8]> {
-    let word = take_while(is_alphanumeric);
+fn take_word(i: &[u8]) -> IResult<&[u8], String> {
+    let word = take_while(|c: u8| !c.is_ascii_whitespace());
     let space = take_while(|c| c == b' ');
 
     let (remainder, (_, word)) = tuple((space, word))(i)?;
+    let word = String::from_utf8(word.to_vec()).unwrap();
 
     Ok((remainder, word))
 }
@@ -82,22 +82,19 @@ fn get_rank_info(i: &[u8]) -> IResult<&[u8], RankThreshold> {
 
     let take_until_rank_threshold =
         take_while(|c: u8| c.is_ascii_alphabetic() || c.is_ascii_whitespace());
-    let rank_threshold = take_while1(|c: u8| c.is_ascii_digit() || c.is_ascii_punctuation());
     let (remainder, (_, rank_type, _, rank_threshold)) = tuple((
         take_word,
         take_word,
         take_until_rank_threshold,
-        rank_threshold,
+        take_first_numeric,
     ))(i)
     .unwrap();
 
-    let rank_threshold = String::from_utf8(rank_threshold.to_vec())
-        .unwrap()
-        .parse::<f32>()
-        .unwrap();
-    let rank = match rank_type {
-        b"Strong" => Strong(rank_threshold),
-        b"Weak" => Weak(rank_threshold),
+    let rank_threshold = rank_threshold.parse::<f32>().unwrap();
+
+    let rank = match rank_type.as_ref() {
+        "Strong" => Strong(rank_threshold),
+        "Weak" => Weak(rank_threshold),
         _ => Weak(0f32),
     };
 
@@ -112,20 +109,86 @@ fn get_nn_info(i: &[u8]) -> IResult<&[u8], NearestNeighbour> {
         take_hla_allele,
     ))(i)
     .unwrap();
+
+    let distance = distance.parse::<f32>().unwrap();
     let nn_info = NearestNeighbour::new(index, distance, nn);
 
     Ok((remainder, nn_info))
 }
 
+fn get_netmhc_entry_info(i: &[u8]) -> IResult<&[u8], (usize, ClassI, String)> {
+    let (remainder, (pos, _, allele, pep_seq)) = tuple((
+        take_first_numeric,
+        take_until("HLA-"),
+        take_hla_allele,
+        take_word,
+    ))(i)?;
+
+    // Shifts position by `-1` due to NetMHCpan entry representation being 1-based
+    let pos = pos.parse::<usize>().unwrap() - 1;
+
+    Ok((remainder, (pos, allele, pep_seq)))
+}
+
+fn get_netmhc_align_info(i: &[u8]) -> IResult<&[u8], (Vec<usize>, String, String)> {
+    let (i, alignment_info) = many_m_n(5, 5, take_first_numeric)(i)?;
+    let (remainder, (icore, identity)) = tuple((take_word, take_word))(i)?;
+
+    let alignment_info = alignment_info
+        .iter()
+        .map(|num| num.parse::<usize>().unwrap())
+        .collect::<Vec<usize>>();
+
+    Ok((remainder, (alignment_info, icore, identity)))
+}
+
+fn get_netmhc_binding_info<'a, 'b>(
+    i: &'b [u8],
+    peptide: &'a Peptide,
+) -> IResult<&'b [u8], BindingInfo<'a>> {
+    let (remainder, binding_info) = many_m_n(2, 3, take_first_numeric)(i)?;
+
+    let binding_info = binding_info
+        .iter()
+        .map(|num| num.parse::<f32>().unwrap())
+        .collect::<Vec<f32>>();
+
+    let score = binding_info[0];
+
+    let (affinity, rank) = if binding_info.len() == 2 {
+        (None, binding_info[1])
+    } else {
+        (Some(binding_info[1]), binding_info[2])
+    };
+
+    Ok((
+        remainder,
+        BindingInfo {
+            peptide,
+            score,
+            affinity,
+            rank,
+        },
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::parser::*;
-    use crate::result::{NearestNeighbour, RankThreshold};
+    use crate::result::{NearestNeighbour, Peptide, Protein, RankThreshold};
+
+    static TEST_ENTRY: &[u8] = b"  1  HLA-A*03:01     TPQDLNTMLNT  TPLNTMLNT  0  2  2  0  0  TPQDLNTMLNT     Gag_180_209 0.0190370 40692.6 77.6355";
 
     #[test]
     fn test_parse_numeric() {
-        assert_eq!(take_first_numeric(b"word5"), Ok((&b""[..], 5f32)));
-        assert_eq!(take_first_numeric(b"5word"), Ok((&b"word"[..], 5f32)));
+        assert_eq!(
+            take_first_numeric(b"word5"),
+            Ok((&b""[..], String::from("5")))
+        );
+        assert_eq!(
+            take_first_numeric(b"5word"),
+            Ok((&b"word"[..], String::from("5")))
+        );
     }
 
     #[test]
@@ -185,5 +248,28 @@ mod tests {
                     thresholds
                 });
         assert_eq!(thresholds, expected);
+    }
+
+    #[test]
+    fn test_parse_entry() {
+        let (i, entry_info) = get_netmhc_entry_info(TEST_ENTRY).unwrap();
+        let (i, alignment_info) = get_netmhc_align_info(i).unwrap();
+
+        let mut protein = Protein::new(alignment_info.2);
+        protein.add_sequence_at_pos(entry_info.0, &entry_info.2);
+        let peptide = Peptide {
+            pos: entry_info.0,
+            len: entry_info.2.len(),
+            protein: &protein,
+            icore: alignment_info.1,
+            offset: alignment_info.0[0],
+            gap_start: alignment_info.0[1],
+            gap_len: alignment_info.0[2],
+            ins_start: alignment_info.0[3],
+            ins_len: alignment_info.0[4],
+        };
+
+        let (i, binding_info) = get_netmhc_binding_info(i, &peptide).unwrap();
+        dbg!(&binding_info);
     }
 }

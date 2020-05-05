@@ -324,7 +324,7 @@ mod tests {
             "Bw4-80I".parse().unwrap(),
         ];
 
-        for (k, v) in ligand_map.cache.into_iter() {
+        for (_, v) in ligand_map.cache.into_iter() {
             motifs.push(v.1)
         }
 
@@ -348,9 +348,8 @@ mod tests {
         let query_allele_singly_matched = "A*02:16".parse::<ClassI>().unwrap();
         let query_allele_variable_output = "A*02:07".parse::<ClassI>().unwrap();
 
-        let mut matching_none = ligand_map.get_allele_info(&query_allele_missing);
-
-        let mut matching_once = ligand_map.get_allele_info(&query_allele_singly_matched);
+        let matching_none = ligand_map.get_allele_info(&query_allele_missing);
+        let matching_once = ligand_map.get_allele_info(&query_allele_singly_matched);
 
         let mut matching_second_option = ligand_map.get_allele_info(&query_allele_variable_output);
         let expected = "A*02:07:01:01".parse::<ClassI>().unwrap();

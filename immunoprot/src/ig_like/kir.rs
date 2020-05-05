@@ -228,15 +228,13 @@ impl FromStr for Kir {
 
 #[cfg(test)]
 mod tests {
-    use crate::ig_like::kir::Domain::{self, *};
+    use crate::ig_like::kir::Domain;
     use crate::ig_like::kir::Tail::{self, *};
-    use crate::ig_like::kir::{Kir, KirAllele, KirProtein};
+    use crate::ig_like::kir::{Kir, KirProtein};
 
     #[test]
     fn test_kir_tail_naming_correct() {
         let correct = "L";
-        let incorrect = "Z";
-
         assert_eq!(correct.parse::<Tail>().unwrap(), Long);
     }
     #[test]

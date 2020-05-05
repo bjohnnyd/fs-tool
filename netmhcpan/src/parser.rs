@@ -1,4 +1,6 @@
 pub const NETMHCPAN_VERSION: &str = "4.0";
+pub const HLA_GENES: [u8; 3] = [b'A', b'B', b'C'];
+pub const HLA_GENE_SEPARATORS: [u8; 3] = [b':', b'*', b'-'];
 
 use nom::{
     bytes::complete::{tag, take_until, take_while, take_while1},
@@ -13,7 +15,7 @@ use immunoprot::mhc::hla::ClassI;
 
 /* Basic Parsers */
 fn take_first_numeric(i: &[u8]) -> IResult<&[u8], f32> {
-    let take_until_digit = take_while(|c: u8| c.is_ascii_alphabetic() || c.is_ascii_whitespace());
+    let take_until_digit = take_while(|c: u8| !c.is_ascii_digit());
     let take_digits = take_while1(|c: u8| c.is_ascii_digit() || c.is_ascii_punctuation());
 
     let (remainder, (_, numeric_word)) = tuple((take_until_digit, take_digits))(i)?;
@@ -27,8 +29,8 @@ fn take_first_numeric(i: &[u8]) -> IResult<&[u8], f32> {
 }
 
 fn take_word(i: &[u8]) -> IResult<&[u8], &[u8]> {
-    let word = take_while1(is_alphanumeric);
-    let space = take_while1(|c| c == b' ');
+    let word = take_while(is_alphanumeric);
+    let space = take_while(|c| c == b' ');
 
     let (remainder, (_, word)) = tuple((space, word))(i)?;
 
@@ -37,10 +39,12 @@ fn take_word(i: &[u8]) -> IResult<&[u8], &[u8]> {
 
 // TODO: Need to deal with error
 fn take_hla_allele(i: &[u8]) -> IResult<&[u8], ClassI> {
-    let until_allele = take_until("HLA-");
-    let (remainder, (_, hla)) = tuple((until_allele, take_word))(i)?;
-    dbg!(&hla);
+    let allele_prefix = opt(tag("HLA-"));
+    let take_allele = take_while(|c: u8| {
+        c.is_ascii_digit() || HLA_GENES.contains(&c) || HLA_GENE_SEPARATORS.contains(&c)
+    });
 
+    let (remainder, (_, hla)) = tuple((allele_prefix, take_allele))(i)?;
     let hla_allele = String::from_utf8(hla.to_vec())
         .unwrap()
         .parse::<ClassI>()
@@ -57,6 +61,17 @@ fn is_nn_line(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
 
 fn is_rank_line(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
     opt(tag(b"# Rank Threshold"))(i)
+}
+
+fn is_peptide_line(i: &[u8]) -> IResult<&[u8], bool> {
+    if let (non_space, Some(_)) = opt(take_while(|c: u8| c.is_ascii_whitespace()))(i)? {
+        if !non_space.is_empty() {
+            let is_digit = non_space[0].is_ascii_digit();
+            return Ok((non_space, is_digit));
+        }
+    }
+
+    Ok((i, false))
 }
 
 /* Line Parsers */
@@ -90,8 +105,13 @@ fn get_rank_info(i: &[u8]) -> IResult<&[u8], RankThreshold> {
 }
 
 fn get_nn_info(i: &[u8]) -> IResult<&[u8], NearestNeighbour> {
-    let (remainder, (index, distance, nn)) =
-        tuple((take_hla_allele, take_first_numeric, take_hla_allele))(i).unwrap();
+    let (remainder, (index, distance, _, nn)) = tuple((
+        take_hla_allele,
+        take_first_numeric,
+        take_until("HLA-"),
+        take_hla_allele,
+    ))(i)
+    .unwrap();
     let nn_info = NearestNeighbour::new(index, distance, nn);
 
     Ok((remainder, nn_info))
@@ -99,9 +119,7 @@ fn get_nn_info(i: &[u8]) -> IResult<&[u8], NearestNeighbour> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::{
-        get_nn_info, get_rank_info, is_nn_line, is_rank_line, take_first_numeric, take_word,
-    };
+    use crate::parser::*;
     use crate::result::{NearestNeighbour, RankThreshold};
 
     #[test]
@@ -110,6 +128,19 @@ mod tests {
         assert_eq!(take_first_numeric(b"5word"), Ok((&b"word"[..], 5f32)));
     }
 
+    #[test]
+    fn test_pep_line() {
+        let netmhcout = std::fs::read_to_string("tests/netmhcpan_woBA.txt").unwrap();
+
+        netmhcout
+            .lines()
+            .for_each(|line| match is_peptide_line(line.as_bytes()) {
+                Ok((pep_line, true)) => {
+                    println!("{}", String::from_utf8(pep_line.to_vec()).unwrap())
+                }
+                _ => (),
+            });
+    }
     #[test]
     fn test_identify_nn_line() {
         let netmhcout = std::fs::read_to_string("tests/netmhcpan_woBA.txt").unwrap();
@@ -120,15 +151,13 @@ mod tests {
                 .fold(Vec::<NearestNeighbour>::new(), |mut nn_neighbours, line| {
                     match is_nn_line(line.as_bytes()).unwrap() {
                         (nn_line, Some(_)) => {
-                            let (_, mut nn) = get_nn_info(nn_line).unwrap();
+                            let (_, nn) = get_nn_info(nn_line).unwrap();
                             nn_neighbours.push(nn)
                         }
                         _ => (),
                     }
                     nn_neighbours
                 });
-
-        dbg!(nn_neighbours);
     }
 
     #[test]
@@ -142,13 +171,13 @@ mod tests {
             Weak(2.0_f32),
         ];
 
-        let mut thresholds =
+        let thresholds =
             netmhcout
                 .lines()
                 .fold(Vec::<RankThreshold>::new(), |mut thresholds, line| {
                     match is_rank_line(line.as_bytes()).unwrap() {
                         (rank_line, Some(_)) => {
-                            let (_, mut rank) = get_rank_info(rank_line).unwrap();
+                            let (_, rank) = get_rank_info(rank_line).unwrap();
                             thresholds.push(rank)
                         }
                         _ => (),

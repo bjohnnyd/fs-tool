@@ -37,113 +37,86 @@ impl PartialEq for NearestNeighbour {
 
 impl Eq for NearestNeighbour {}
 
-
-#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone)]
-pub struct AlignmentModifications {
-    // predicts an n-terminal protrusion if > 0
-    pub(crate) offset: usize,
-    pub(crate) gap_start: usize,
-    pub(crate) gap_len: usize,
-    pub(crate) ins_start: usize,
-    pub(crate) ins_len: usize,
-}
-
-impl Default for AlignmentModifications {
-    fn default() -> Self {
-        Self {
-            offset: 0,
-            gap_start: 0,
-            gap_len: 0,
-            ins_start: 0,
-            ins_len: 0,
-        }
+impl Hash for NearestNeighbour {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.index.hash(state);
+        self.nn.hash(state);
     }
 }
 
-impl AlignmentModifications {
-    pub fn new(alignment_mods: [usize;5]) -> Self {
-        Self {
-            offset: alignment_mods[0],
-            gap_start: alignment_mods[1],
-            gap_len: alignment_mods[2],
-            ins_start: alignment_mods[3],
-            ins_len: alignment_mods[4],
-        }
-    }
-
-    pub fn modify_sequence(&self, seq:&str) -> String {
-
-    }
-}
 // The core is a 9mer always used for alignment and identification
-#[derive(Debug, Clone, Eq, Ord, PartialOrd)]
-pub struct Peptide<'a> {
+#[derive(Debug, Clone, Eq)]
+pub struct Peptide {
     // 0-based in documents but never represented as such in the results so need to `-1` shift before
     pub(crate) pos: usize,
     pub(crate) len: usize,
-    pub(crate) protein: &'a Protein,
+    pub(crate) seq: String,
+    pub(crate) identity: String,
     // Represents the epitope. This might be possible to deduce??
     pub(crate) icore: String,
-    pub(crate) alignment_mods: AlignmentModifications,
+    pub(crate) offset: usize,
+    pub(crate) gap: Range<usize>,
+    pub(crate) ins: Range<usize>,
 }
 
 //TODO: FIX has too many arguments should convert the modification info into a struct
-impl<'a> Peptide<'a> {
-    fn new(
+impl Peptide {
+    pub fn new(
         pos: usize,
         len: usize,
-        protein: &'a Protein,
+        seq: String,
+        identity: String,
         icore: String,
-        gap: AlignmentModifications
+        alignment_mods: &[usize],
     ) -> Self {
+        let offset = alignment_mods[0];
+        let gap = Range {
+            start: alignment_mods[1],
+            end: alignment_mods[1..3].iter().sum(),
+        };
+        let ins = Range {
+            start: alignment_mods[3],
+            end: alignment_mods[3..5].iter().sum(),
+        };
+
         Self {
             pos,
             len,
-            protein,
+            seq,
+            identity,
             icore,
-            alignment_mods
+            offset,
+            gap,
+            ins,
         }
     }
 
     pub fn sequence(&self) -> &str {
-        &self.protein.sequence[self.pos..(self.pos + self.len)]
+        &self.seq
     }
 
-    pub fn protein(&self) -> &Protein {
-        &*self.protein
+    pub fn protein(&self) -> &str {
+        &self.identity
     }
 
     // TODO: Are there any cases where there is a gap and insertion?
     pub fn core(&self) -> String {
-        let mut seq = self.sequence().to_string();
-
-        if self.gap_len != 0 {
-            let gap = Range {
-                start: self.gap_start,
-                end: self.gap_len + 1,
-            };
-
-            seq = seq
+        if self.gap.len() != 0 {
+            self.seq
                 .chars()
                 .enumerate()
-                .filter(|(i, _)| !gap.contains(i))
+                .filter(|(i, _)| !self.gap.contains(i))
                 .map(|(_, c)| c)
-                .collect();
-        }
-
-        if self.ins_len != 0 {
-            let ins = Range {
-                start: self.ins_start,
-                end: self.ins_len + 1,
-            };
-
-            seq = seq
+                .collect()
+        } else if self.ins.len() != 0 {
+            self.seq
                 .chars()
                 .enumerate()
-                .map(|(i, c)| if ins.contains(&i) { '-' } else { c })
-                .collect();
+                .map(|(i, c)| if self.ins.contains(&i) { '-' } else { c })
+                .collect()
+        } else {
+            self.seq.clone()
         }
-        seq
     }
 
     pub fn icore(&self) -> &str {
@@ -151,7 +124,7 @@ impl<'a> Peptide<'a> {
     }
 
     pub fn sequence_motif(&self, aa_pos: &[usize]) -> String {
-        self.sequence()
+        self.seq
             .chars()
             .enumerate()
             .filter(|(i, _)| aa_pos.contains(i))
@@ -160,30 +133,28 @@ impl<'a> Peptide<'a> {
     }
 
     /// Returns the differences from original sequence in the format
-    /// `(offset, gap start, gap length, insertion start, insertion length)`
-    pub fn aa_diff(&self) -> (usize, usize, usize, usize, usize) {
-        (
-            self.offset,
-            self.gap_start,
-            self.gap_len,
-            self.ins_start,
-            self.ins_len,
-        )
+    /// `(offset, gap range, insertion range)`
+    pub fn aa_diff(&self) -> (usize, &Range<usize>, &Range<usize>) {
+        (self.offset, &self.gap, &self.ins)
     }
 }
 
-impl PartialEq for Peptide<'_> {
+impl PartialEq for Peptide {
     fn eq(&self, other: &Self) -> bool {
-        self.pos == other.pos && self.len == other.len && self.protein == other.protein
+        self.pos == other.pos
+            && self.len == other.len
+            && self.identity == other.identity
+            && self.seq == other.seq
     }
 }
 
 // NOTE: Might not be needed anymore due to PartialEq
-impl Hash for Peptide<'_> {
+impl Hash for Peptide {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.pos.hash(state);
         self.len.hash(state);
-        self.protein.hash(state);
+        self.seq.hash(state);
+        self.identity.hash(state);
     }
 }
 
@@ -252,29 +223,29 @@ impl Hash for Protein {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct BindingInfo<'a> {
-    pub(crate) peptide: &'a Peptide<'a>,
+pub struct BindingInfo {
+    pub(crate) peptide: Peptide,
     pub(crate) score: f32,
     pub(crate) affinity: Option<f32>,
     pub(crate) rank: f32,
 }
 
 #[derive(Debug, Clone)]
-pub struct BindingData<'a> {
+pub struct BindingData {
     pub(crate) alleles: HashSet<NearestNeighbour>,
-    pub(crate) allele_binding: HashMap<ClassI, BindingInfo<'a>>,
-    pub(crate) proteome: HashSet<Protein>,
-    pub(crate) peptides: HashSet<Peptide<'a>>,
+    pub(crate) allele_binding: HashMap<ClassI, Vec<BindingInfo>>,
+    pub(crate) proteome: HashMap<String, Protein>,
+    pub(crate) peptides: HashSet<Peptide>,
     pub(crate) weak_threshold: Option<f32>,
     pub(crate) strong_threshold: Option<f32>,
 }
 
-impl Default for BindingData<'_> {
+impl Default for BindingData {
     fn default() -> Self {
         Self {
             alleles: HashSet::<NearestNeighbour>::new(),
-            allele_binding: HashMap::<ClassI, BindingInfo>::new(),
-            proteome: HashSet::<Protein>::new(),
+            allele_binding: HashMap::<ClassI, Vec<BindingInfo>>::new(),
+            proteome: HashMap::<String, Protein>::new(),
             peptides: HashSet::<Peptide>::new(),
             weak_threshold: None,
             strong_threshold: None,
@@ -282,7 +253,7 @@ impl Default for BindingData<'_> {
     }
 }
 
-impl<'a> BindingData<'a> {
+impl BindingData {
     pub fn new() -> Self {
         BindingData::default()
     }
@@ -294,12 +265,31 @@ mod tests {
 
     #[test]
     fn test_peptide_core() {
-        let mut protein = Protein::new("Gag_180_209");
-        protein.add_sequence_at_pos(0, "GHQAAMQMLK");
-        protein.add_sequence_at_pos(1, "HQAAMQMLK");
+        let identity = String::from("Gag_180_209");
+        let seq1 = String::from("GHQAAMQMLK");
+        let seq2 = String::from("HQAAMQMLK");
+        let mut protein = Protein::new(identity.clone());
+        protein.add_sequence_at_pos(0, seq1.clone());
+        protein.add_sequence_at_pos(1, seq2.clone());
 
-        let pep_identical = Peptide::new(1, 9, &protein, String::from("HQAAMQMLK"), 0, 0, 0, 0, 0);
-        let pep_diff = Peptide::new(0, 10, &protein, String::from("GHQAAMQMLK"), 0, 1, 1, 0, 0);
+        let alignments_mode_none = [0; 5];
+        let alignments_mode_one = [0, 1, 1, 0, 0];
+        let pep_identical = Peptide::new(
+            1,
+            9,
+            seq2.clone(),
+            identity.clone(),
+            seq1.clone(),
+            &alignments_mode_none,
+        );
+        let pep_diff = Peptide::new(
+            0,
+            10,
+            seq1.clone(),
+            identity.clone(),
+            seq2.clone(),
+            &alignments_mode_one,
+        );
 
         let expected_core_diff = String::from("GQAAMQMLK");
 

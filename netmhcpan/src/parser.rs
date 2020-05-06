@@ -11,12 +11,12 @@ use nom::{
     IResult,
 };
 
-use crate::result::{BindingInfo, NearestNeighbour, Peptide, RankThreshold, AlignmentModifications};
+use crate::result::{BindingInfo, NearestNeighbour, Peptide, RankThreshold};
 
 use immunoprot::mhc::hla::ClassI;
 
 /* Basic Parsers */
-fn take_first_numeric(i: &[u8]) -> IResult<&[u8], String> {
+pub fn take_first_numeric(i: &[u8]) -> IResult<&[u8], String> {
     let take_until_digit = take_while(|c: u8| !c.is_ascii_digit());
     let take_digits = take_while1(|c: u8| c.is_ascii_digit() || c.is_ascii_punctuation());
 
@@ -27,7 +27,7 @@ fn take_first_numeric(i: &[u8]) -> IResult<&[u8], String> {
     Ok((remainder, numeric))
 }
 
-fn take_word(i: &[u8]) -> IResult<&[u8], String> {
+pub fn take_word(i: &[u8]) -> IResult<&[u8], String> {
     let word = take_while(|c: u8| !c.is_ascii_whitespace());
     let space = take_while(|c| c == b' ');
 
@@ -38,7 +38,7 @@ fn take_word(i: &[u8]) -> IResult<&[u8], String> {
 }
 
 // TODO: Need to deal with error
-fn take_hla_allele(i: &[u8]) -> IResult<&[u8], ClassI> {
+pub fn take_hla_allele(i: &[u8]) -> IResult<&[u8], ClassI> {
     let allele_prefix = opt(tag("HLA-"));
     let take_allele = take_while(|c: u8| {
         c.is_ascii_digit() || HLA_GENES.contains(&c) || HLA_GENE_SEPARATORS.contains(&c)
@@ -55,15 +55,15 @@ fn take_hla_allele(i: &[u8]) -> IResult<&[u8], ClassI> {
 
 /* Line Identifiers */
 
-fn is_nn_line(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
+pub fn is_nn_line(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
     opt(tag(b"HLA-"))(i)
 }
 
-fn is_rank_line(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
+pub fn is_rank_line(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
     opt(tag(b"# Rank Threshold"))(i)
 }
 
-fn is_peptide_line(i: &[u8]) -> IResult<&[u8], bool> {
+pub fn is_peptide_line(i: &[u8]) -> IResult<&[u8], bool> {
     if let (non_space, Some(_)) = opt(take_while(|c: u8| c.is_ascii_whitespace()))(i)? {
         if !non_space.is_empty() {
             let is_digit = non_space[0].is_ascii_digit();
@@ -77,7 +77,7 @@ fn is_peptide_line(i: &[u8]) -> IResult<&[u8], bool> {
 /* Line Parsers */
 
 // TODO: Error fixing needed, especially regarding match
-fn get_rank_info(i: &[u8]) -> IResult<&[u8], RankThreshold> {
+pub fn get_rank_info(i: &[u8]) -> IResult<&[u8], RankThreshold> {
     use RankThreshold::*;
 
     let take_until_rank_threshold =
@@ -101,7 +101,7 @@ fn get_rank_info(i: &[u8]) -> IResult<&[u8], RankThreshold> {
     Ok((remainder, rank))
 }
 
-fn get_nn_info(i: &[u8]) -> IResult<&[u8], NearestNeighbour> {
+pub fn get_nn_info(i: &[u8]) -> IResult<&[u8], NearestNeighbour> {
     let (remainder, (index, distance, _, nn)) = tuple((
         take_hla_allele,
         take_first_numeric,
@@ -116,7 +116,7 @@ fn get_nn_info(i: &[u8]) -> IResult<&[u8], NearestNeighbour> {
     Ok((remainder, nn_info))
 }
 
-fn get_netmhc_entry_info(i: &[u8]) -> IResult<&[u8], (usize, ClassI, String)> {
+pub fn get_netmhc_entry_info(i: &[u8]) -> IResult<&[u8], (usize, ClassI, String)> {
     let (remainder, (pos, _, allele, pep_seq)) = tuple((
         take_first_numeric,
         take_until("HLA-"),
@@ -130,9 +130,8 @@ fn get_netmhc_entry_info(i: &[u8]) -> IResult<&[u8], (usize, ClassI, String)> {
     Ok((remainder, (pos, allele, pep_seq)))
 }
 
-fn get_netmhc_align_info(i: &[u8]) -> IResult<&[u8], (Vec<usize>, String, String)> {
+pub fn get_netmhc_align_info(i: &[u8]) -> IResult<&[u8], (Vec<usize>, String, String)> {
     let (i, alignment_mods) = many_m_n(5, 5, take_first_numeric)(i)?;
-    let alignment_mods = AlignmentModifications::new(alignment_mods);
     let (remainder, (icore, identity)) = tuple((take_word, take_word))(i)?;
 
     let alignment_mods = alignment_mods
@@ -143,10 +142,10 @@ fn get_netmhc_align_info(i: &[u8]) -> IResult<&[u8], (Vec<usize>, String, String
     Ok((remainder, (alignment_mods, icore, identity)))
 }
 
-fn get_netmhc_binding_info<'a, 'b>(
+pub fn get_netmhc_binding_info<'a, 'b>(
     i: &'b [u8],
-    peptide: &'a Peptide,
-) -> IResult<&'b [u8], BindingInfo<'a>> {
+    peptide: Peptide,
+) -> IResult<&'b [u8], BindingInfo> {
     let (remainder, binding_info) = many_m_n(2, 3, take_first_numeric)(i)?;
 
     let binding_info = binding_info
@@ -256,21 +255,18 @@ mod tests {
         let (i, entry_info) = get_netmhc_entry_info(TEST_ENTRY).unwrap();
         let (i, alignment_info) = get_netmhc_align_info(i).unwrap();
 
-        let mut protein = Protein::new(alignment_info.2);
+        let mut protein = Protein::new(alignment_info.2.clone());
         protein.add_sequence_at_pos(entry_info.0, &entry_info.2);
-        let peptide = Peptide {
-            pos: entry_info.0,
-            len: entry_info.2.len(),
-            protein: &protein,
-            icore: alignment_info.1,
-            offset: alignment_info.0[0],
-            gap_start: alignment_info.0[1],
-            gap_len: alignment_info.0[2],
-            ins_start: alignment_info.0[3],
-            ins_len: alignment_info.0[4],
-        };
+        let peptide = Peptide::new(
+            entry_info.0,
+            entry_info.2.len(),
+            entry_info.2,
+            alignment_info.2,
+            alignment_info.1,
+            &alignment_info.0,
+        );
 
-        let (i, binding_info) = get_netmhc_binding_info(i, &peptide).unwrap();
+        let (i, binding_info) = get_netmhc_binding_info(i, peptide).unwrap();
         dbg!(&binding_info);
     }
 }

@@ -11,7 +11,7 @@ use nom::{
     IResult,
 };
 
-use crate::result::{BindingInfo, NearestNeighbour, Peptide, RankThreshold};
+use crate::result::{BindingInfo, NearestNeighbour, Peptide, RankThreshold, AlignmentModifications};
 
 use immunoprot::mhc::hla::ClassI;
 
@@ -131,15 +131,16 @@ fn get_netmhc_entry_info(i: &[u8]) -> IResult<&[u8], (usize, ClassI, String)> {
 }
 
 fn get_netmhc_align_info(i: &[u8]) -> IResult<&[u8], (Vec<usize>, String, String)> {
-    let (i, alignment_info) = many_m_n(5, 5, take_first_numeric)(i)?;
+    let (i, alignment_mods) = many_m_n(5, 5, take_first_numeric)(i)?;
+    let alignment_mods = AlignmentModifications::new(alignment_mods);
     let (remainder, (icore, identity)) = tuple((take_word, take_word))(i)?;
 
-    let alignment_info = alignment_info
+    let alignment_mods = alignment_mods
         .iter()
         .map(|num| num.parse::<usize>().unwrap())
         .collect::<Vec<usize>>();
 
-    Ok((remainder, (alignment_info, icore, identity)))
+    Ok((remainder, (alignment_mods, icore, identity)))
 }
 
 fn get_netmhc_binding_info<'a, 'b>(

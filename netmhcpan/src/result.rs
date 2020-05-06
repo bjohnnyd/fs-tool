@@ -37,6 +37,44 @@ impl PartialEq for NearestNeighbour {
 
 impl Eq for NearestNeighbour {}
 
+
+#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone)]
+pub struct AlignmentModifications {
+    // predicts an n-terminal protrusion if > 0
+    pub(crate) offset: usize,
+    pub(crate) gap_start: usize,
+    pub(crate) gap_len: usize,
+    pub(crate) ins_start: usize,
+    pub(crate) ins_len: usize,
+}
+
+impl Default for AlignmentModifications {
+    fn default() -> Self {
+        Self {
+            offset: 0,
+            gap_start: 0,
+            gap_len: 0,
+            ins_start: 0,
+            ins_len: 0,
+        }
+    }
+}
+
+impl AlignmentModifications {
+    pub fn new(alignment_mods: [usize;5]) -> Self {
+        Self {
+            offset: alignment_mods[0],
+            gap_start: alignment_mods[1],
+            gap_len: alignment_mods[2],
+            ins_start: alignment_mods[3],
+            ins_len: alignment_mods[4],
+        }
+    }
+
+    pub fn modify_sequence(&self, seq:&str) -> String {
+
+    }
+}
 // The core is a 9mer always used for alignment and identification
 #[derive(Debug, Clone, Eq, Ord, PartialOrd)]
 pub struct Peptide<'a> {
@@ -46,12 +84,7 @@ pub struct Peptide<'a> {
     pub(crate) protein: &'a Protein,
     // Represents the epitope. This might be possible to deduce??
     pub(crate) icore: String,
-    // predicts an n-terminal protrusion if > 0
-    pub(crate) offset: usize,
-    pub(crate) gap_start: usize,
-    pub(crate) gap_len: usize,
-    pub(crate) ins_start: usize,
-    pub(crate) ins_len: usize,
+    pub(crate) alignment_mods: AlignmentModifications,
 }
 
 //TODO: FIX has too many arguments should convert the modification info into a struct
@@ -61,22 +94,14 @@ impl<'a> Peptide<'a> {
         len: usize,
         protein: &'a Protein,
         icore: String,
-        offset: usize,
-        gap_start: usize,
-        gap_len: usize,
-        ins_start: usize,
-        ins_len: usize,
+        gap: AlignmentModifications
     ) -> Self {
         Self {
             pos,
             len,
             protein,
             icore,
-            offset,
-            gap_start,
-            gap_len,
-            ins_start,
-            ins_len,
+            alignment_mods
         }
     }
 

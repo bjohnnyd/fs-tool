@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::{BufReader, Read, BufRead};
 use std::path::Path;
 
 use crate::error::Error;
@@ -8,22 +8,22 @@ use crate::result::*;
 
 // TODO: Needs serious refactoring and error handling not finished covnerting from nom::Err
 /// Reads a netmhcpan output file.  Not optimized to skip peptides already processed.
-pub fn read_raw_netmhcpan<T>(path: T) -> Result<BindingData, Error<()>>
+pub fn read_raw_netmhcpan<T>(path: T) -> Result<BindingData, Box<dyn std::error::Error>>
 where
     T: AsRef<Path>,
 {
     use RankThreshold::*;
 
     let mut f = File::open(path)?;
-    let mut raw_data = String::new();
-    f.read_to_string(&mut raw_data).unwrap();
+    // let mut raw_data = String::new();
+    let rdr = BufReader::new(f);
+    // f.read_to_string(&mut raw_data).unwrap();
 
-    let sequence_info_finished = false;
+    let mut binding_data = BindingData::new();
 
-    Ok(raw_data
-        .lines()
-        .fold(BindingData::new(), |mut binding_data, line| {
-            let (i, nn_line) = is_nn_line(line).unwrap();
+    for line in rdr.lines() {
+            let line = line?;
+            let (i, nn_line) = is_nn_line(line.as_str()).unwrap();
 
             if let Some(nn_line) = nn_line {
                 let (_, nn) = get_nn_info(i).unwrap();
@@ -72,8 +72,8 @@ where
                 }
             }
 
-            binding_data
-        }))
+        }
+    Ok(binding_data)
 }
 
 #[cfg(test)]

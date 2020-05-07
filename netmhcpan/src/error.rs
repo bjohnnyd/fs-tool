@@ -1,4 +1,7 @@
 use thiserror::Error;
+use csv::FromUtf8Error;
+use nom::error::{ParseError, ErrorKind};
+
 
 /// Errors related to immune protein nomenclature
 #[derive(Debug, Error)]
@@ -7,4 +10,11 @@ pub enum Error {
     ProteinTooShort(usize, usize),
     #[error("Could not open file containing netmhcpan binding data")]
     CouldNotOpenFile(#[from] std::io::Error),
+    #[error("Bytes not valid UTF-8.")]
+    CouldNotCreateString(#[from] std::string::FromUtf8Error),
+}
+
+
+pub enum ResultParsingError {
+
 }

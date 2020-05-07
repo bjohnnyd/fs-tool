@@ -1,9 +1,17 @@
+// output info at http://www.cbs.dtu.dk/services/NetMHC/output.php
+
+
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
 
 use crate::error::Error;
+
 use immunoprot::mhc::hla::ClassI;
+use log::warn;
+
+pub static WEAK_BOUND_THRESHOLD: f32 = 2.0;
+pub static STRONG_BOUND_THRESHOLD: f32 = 0.5;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum RankThreshold {
@@ -49,7 +57,6 @@ impl Hash for NearestNeighbour {
 pub struct Peptide {
     // 0-based in documents but never represented as such in the results so need to `-1` shift before
     pub(crate) pos: usize,
-    pub(crate) len: usize,
     pub(crate) seq: String,
     pub(crate) identity: String,
     // Represents the epitope. This might be possible to deduce??
@@ -63,7 +70,6 @@ pub struct Peptide {
 impl Peptide {
     pub fn new(
         pos: usize,
-        len: usize,
         seq: String,
         identity: String,
         icore: String,
@@ -81,7 +87,6 @@ impl Peptide {
 
         Self {
             pos,
-            len,
             seq,
             identity,
             icore,
@@ -89,6 +94,22 @@ impl Peptide {
             gap,
             ins,
         }
+    }
+
+    pub fn seq(&self) -> &str {
+        &self.seq
+    }
+
+    pub fn len(&self) -> usize {
+        self.seq.len()
+    }
+
+    pub fn gap_region(&self) -> &Range<usize> {
+        &self.gap
+    }
+
+    pub fn ins_region(&self) -> &Range<usize> {
+        &self.ins
     }
 
     pub fn sequence(&self) -> &str {
@@ -101,21 +122,21 @@ impl Peptide {
 
     // TODO: Are there any cases where there is a gap and insertion?
     pub fn core(&self) -> String {
-        if self.gap.len() != 0 {
-            self.seq
+        if self.gap_region().len() != 0 {
+            self.seq()
                 .chars()
                 .enumerate()
                 .filter(|(i, _)| !self.gap.contains(i))
                 .map(|(_, c)| c)
                 .collect()
         } else if self.ins.len() != 0 {
-            self.seq
+            self.seq()
                 .chars()
                 .enumerate()
                 .map(|(i, c)| if self.ins.contains(&i) { '-' } else { c })
                 .collect()
         } else {
-            self.seq.clone()
+            self.seq().to_string()
         }
     }
 
@@ -124,7 +145,7 @@ impl Peptide {
     }
 
     pub fn sequence_motif(&self, aa_pos: &[usize]) -> String {
-        self.seq
+        self.seq()
             .chars()
             .enumerate()
             .filter(|(i, _)| aa_pos.contains(i))
@@ -142,9 +163,9 @@ impl Peptide {
 impl PartialEq for Peptide {
     fn eq(&self, other: &Self) -> bool {
         self.pos == other.pos
-            && self.len == other.len
+            && self.len() == other.len()
             && self.identity == other.identity
-            && self.seq == other.seq
+            && self.seq() == other.seq()
     }
 }
 
@@ -152,8 +173,8 @@ impl PartialEq for Peptide {
 impl Hash for Peptide {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.pos.hash(state);
-        self.len.hash(state);
-        self.seq.hash(state);
+        self.len().hash(state);
+        self.seq().hash(state);
         self.identity.hash(state);
     }
 }
@@ -167,12 +188,20 @@ pub struct Protein {
 impl Protein {
     pub fn new<T>(identity: T) -> Self
     where
-        T: AsRef<str>,
+        T: AsRef<str>
     {
         let sequence = String::from("");
         let identity = String::from(identity.as_ref());
 
         Self { sequence, identity }
+    }
+
+    pub fn identity(&self) -> &str {
+        &self.identity
+    }
+
+    pub fn seq(&self) -> &str {
+        &self.sequence
     }
 
     /// Adds a peptide sequence to the current protein at position specified.
@@ -181,7 +210,7 @@ impl Protein {
     /// If the sequence + position are within current sequence length the sequence is overwritten
     pub fn add_sequence_at_pos<T>(&mut self, pos: usize, sequence: T) -> Result<(), Error>
     where
-        T: AsRef<str>,
+        T: AsRef<str>
     {
         let sequence = sequence.as_ref();
         let region = Range {
@@ -230,6 +259,12 @@ pub struct BindingInfo {
     pub(crate) rank: f32,
 }
 
+impl BindingInfo {
+    pub fn motif(&self, aa_pos: &[usize]) -> String {
+        self.peptide.sequence_motif(aa_pos)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct BindingData {
     pub(crate) alleles: HashSet<NearestNeighbour>,
@@ -257,6 +292,22 @@ impl BindingData {
     pub fn new() -> Self {
         BindingData::default()
     }
+
+    pub fn get_bound_info(&self, allele: &ClassI, threshold: f32) -> Vec<&BindingInfo>{
+        let mut bound_info = Vec::<&BindingInfo>::new();
+
+        if let Some(peptides) = self.allele_binding.get(allele) {
+            peptides
+                .iter()
+                .filter(|binding_info| binding_info.rank < threshold)
+                .for_each(|binding_info| bound_info.push(binding_info))
+        } else {
+            warn!("{} has no associated binding data", allele);
+        }
+
+        bound_info
+
+    }
 }
 
 #[cfg(test)]
@@ -269,14 +320,13 @@ mod tests {
         let seq1 = String::from("GHQAAMQMLK");
         let seq2 = String::from("HQAAMQMLK");
         let mut protein = Protein::new(identity.clone());
-        protein.add_sequence_at_pos(0, seq1.clone());
-        protein.add_sequence_at_pos(1, seq2.clone());
+        protein.add_sequence_at_pos(0, seq1.clone()).unwrap();
+        protein.add_sequence_at_pos(1, seq2.clone()).unwrap();
 
         let alignments_mode_none = [0; 5];
         let alignments_mode_one = [0, 1, 1, 0, 0];
         let pep_identical = Peptide::new(
             1,
-            9,
             seq2.clone(),
             identity.clone(),
             seq1.clone(),
@@ -284,7 +334,6 @@ mod tests {
         );
         let pep_diff = Peptide::new(
             0,
-            10,
             seq1.clone(),
             identity.clone(),
             seq2.clone(),

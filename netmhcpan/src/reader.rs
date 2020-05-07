@@ -6,6 +6,7 @@ use crate::error::Error;
 use crate::parser::*;
 use crate::result::*;
 
+/// Reads a netmhcpan output file.  Not optimized to skip peptides already processed.
 pub fn read_raw_netmhcpan<T>(path: T) -> Result<BindingData, Error>
 where
     T: AsRef<Path>,
@@ -36,7 +37,6 @@ where
                         match rank {
                             Strong(threshold) => binding_data.strong_threshold = Some(threshold),
                             Weak(threshold) => binding_data.weak_threshold = Some(threshold),
-                            _ => (),
                         }
                     }
                 }
@@ -50,11 +50,10 @@ where
                         .proteome
                         .entry(identity.clone())
                         .or_insert_with(|| Protein::new(identity.clone()));
-                    protein.add_sequence_at_pos(pos, pep_seq.clone());
+                    protein.add_sequence_at_pos(pos, pep_seq.clone()).unwrap();
 
                     let peptide = Peptide::new(
                         pos,
-                        pep_seq.len(),
                         pep_seq,
                         identity.clone(),
                         icore,
@@ -79,8 +78,24 @@ mod tests {
     use crate::reader::read_raw_netmhcpan;
 
     #[test]
-    fn read_binding_data_raw() {
+    fn read_binding_protein() {
         let bd = read_raw_netmhcpan("tests/netmhcpan_wBA.txt").unwrap();
-        dbg!(&bd);
+        let seq_expected = "TPQDLNTMLNTVGGHQAAMQMLKETINEEA";
+        assert_eq!(bd.proteome.get("Gag_180_209").unwrap().seq(), seq_expected);
+    }
+    #[test]
+    fn read_hla_bound_at_threshold() {
+        use crate::result::WEAK_BOUND_THRESHOLD;
+
+        let bd = read_raw_netmhcpan("tests/netmhcpan_wBA.txt").unwrap();
+        let allele = "B27:05".parse().unwrap();
+
+        let motif_pos = vec![2,3,4,5,7,8];
+        let expected_motif = "AAMQLK";
+
+
+
+        let bound = bd.get_bound_info(&allele, WEAK_BOUND_THRESHOLD);
+        assert_eq!(bound[0].motif(&motif_pos), expected_motif.to_string());
     }
 }

@@ -8,13 +8,21 @@ use nom::{
     combinator::opt,
     multi::many_m_n,
     sequence::tuple,
-    IResult,
+    IResult
 };
 
 use crate::result::{BindingInfo, NearestNeighbour, Peptide, RankThreshold};
-
+use crate::error::Error;
 use immunoprot::mhc::hla::ClassI;
+use nom::error::{ErrorKind, ParseError};
 
+fn bytes_to_string(i: &[u8]) -> Result<String, (&[u8], ErrorKind)> {
+
+    match String::from_utf8(i.to_vec()) {
+        Ok(s) => Ok(s),
+        _ => Err(nom::error::ParseError::from_error_kind(i, ErrorKind::Digit))
+    }
+}
 /* Basic Parsers */
 pub fn take_first_numeric(i: &[u8]) -> IResult<&[u8], String> {
     let take_until_digit = take_while(|c: u8| !c.is_ascii_digit());
@@ -22,7 +30,7 @@ pub fn take_first_numeric(i: &[u8]) -> IResult<&[u8], String> {
 
     let (remainder, (_, numeric_word)) = tuple((take_until_digit, take_digits))(i)?;
 
-    let numeric = String::from_utf8(numeric_word.to_vec()).unwrap();
+    let numeric = bytes_to_string(numeric_word)?;
 
     Ok((remainder, numeric))
 }
@@ -142,10 +150,10 @@ pub fn get_netmhc_align_info(i: &[u8]) -> IResult<&[u8], (Vec<usize>, String, St
     Ok((remainder, (alignment_mods, icore, identity)))
 }
 
-pub fn get_netmhc_binding_info<'a, 'b>(
-    i: &'b [u8],
+pub fn get_netmhc_binding_info(
+    i: & [u8],
     peptide: Peptide,
-) -> IResult<&'b [u8], BindingInfo> {
+) -> IResult<&[u8], BindingInfo> {
     let (remainder, binding_info) = many_m_n(2, 3, take_first_numeric)(i)?;
 
     let binding_info = binding_info
@@ -259,7 +267,6 @@ mod tests {
         protein.add_sequence_at_pos(entry_info.0, &entry_info.2);
         let peptide = Peptide::new(
             entry_info.0,
-            entry_info.2.len(),
             entry_info.2,
             alignment_info.2,
             alignment_info.1,

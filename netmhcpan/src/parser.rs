@@ -1,95 +1,76 @@
 // TODO: Deal with errors from nom to custom
 pub const NETMHCPAN_VERSION: &str = "4.0";
-pub const HLA_GENES: [u8; 3] = [b'A', b'B', b'C'];
-pub const HLA_GENE_SEPARATORS: [u8; 3] = [b':', b'*', b'-'];
+pub const HLA_GENES: [char; 3] = ['A', 'B', 'C'];
+pub const HLA_GENE_SEPARATORS: [char; 3] = [':', '*', '-'];
 
 use nom::{
     bytes::complete::{tag, take_until, take_while, take_while1},
     combinator::opt,
     multi::many_m_n,
     sequence::tuple,
-    IResult
+    IResult,
 };
 
 use crate::result::{BindingInfo, NearestNeighbour, Peptide, RankThreshold};
-use crate::error::Error;
 use immunoprot::mhc::hla::ClassI;
-use nom::error::{ErrorKind, ParseError};
 
-fn bytes_to_string(i: &[u8]) -> Result<String, (&[u8], ErrorKind)> {
-
-    match String::from_utf8(i.to_vec()) {
-        Ok(s) => Ok(s),
-        _ => Err(nom::error::ParseError::from_error_kind(i, ErrorKind::Digit))
-    }
-}
 /* Basic Parsers */
-pub fn take_first_numeric(i: &[u8]) -> IResult<&[u8], String> {
-    let take_until_digit = take_while(|c: u8| !c.is_ascii_digit());
-    let take_digits = take_while1(|c: u8| c.is_ascii_digit() || c.is_ascii_punctuation());
+pub fn take_first_numeric(i: &str) -> IResult<&str, &str> {
+    let take_until_digit = take_while(|c: char| !c.is_digit(10));
+    let take_digits = take_while1(|c: char| c.is_digit(10) || c == '.');
 
-    let (remainder, (_, numeric_word)) = tuple((take_until_digit, take_digits))(i)?;
-
-    let numeric = bytes_to_string(numeric_word)?;
+    let (remainder, (_, numeric)) = tuple((take_until_digit, take_digits))(i)?;
 
     Ok((remainder, numeric))
 }
 
-pub fn take_word(i: &[u8]) -> IResult<&[u8], String> {
-    let word = take_while(|c: u8| !c.is_ascii_whitespace());
-    let space = take_while(|c| c == b' ');
+pub fn take_word(i: &str) -> IResult<&str, &str> {
+    let word = take_while(|c: char| !c.is_whitespace());
+    let space = take_while(|c: char| c.is_whitespace());
 
     let (remainder, (_, word)) = tuple((space, word))(i)?;
-    let word = String::from_utf8(word.to_vec()).unwrap();
 
     Ok((remainder, word))
 }
 
 // TODO: Need to deal with error
-pub fn take_hla_allele(i: &[u8]) -> IResult<&[u8], ClassI> {
+pub fn take_hla_allele(i: &str) -> IResult<&str, ClassI> {
     let allele_prefix = opt(tag("HLA-"));
-    let take_allele = take_while(|c: u8| {
-        c.is_ascii_digit() || HLA_GENES.contains(&c) || HLA_GENE_SEPARATORS.contains(&c)
+    let take_allele = take_while(|c: char| {
+        c.is_digit(10) || HLA_GENES.contains(&c) || HLA_GENE_SEPARATORS.contains(&c)
     });
 
     let (remainder, (_, hla)) = tuple((allele_prefix, take_allele))(i)?;
-    let hla_allele = String::from_utf8(hla.to_vec())
-        .unwrap()
-        .parse::<ClassI>()
-        .unwrap();
+    let hla_allele = hla.parse::<ClassI>().unwrap();
 
     Ok((remainder, hla_allele))
 }
 
 /* Line Identifiers */
 
-pub fn is_nn_line(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
-    opt(tag(b"HLA-"))(i)
+pub fn is_nn_line(i: &str) -> IResult<&str, Option<&str>> {
+    opt(tag("HLA-"))(i)
 }
 
-pub fn is_rank_line(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
-    opt(tag(b"# Rank Threshold"))(i)
+pub fn is_rank_line(i: &str) -> IResult<&str, Option<&str>> {
+    opt(tag("# Rank Threshold"))(i)
 }
 
-pub fn is_peptide_line(i: &[u8]) -> IResult<&[u8], bool> {
-    if let (non_space, Some(_)) = opt(take_while(|c: u8| c.is_ascii_whitespace()))(i)? {
-        if !non_space.is_empty() {
-            let is_digit = non_space[0].is_ascii_digit();
-            return Ok((non_space, is_digit));
-        }
+pub fn is_peptide_line(i: &str) -> IResult<&str, bool> {
+    let (non_space, _) = take_while(|c: char| c.is_whitespace())(i)?;
+    match non_space.chars().next() {
+        Some(c) if c.is_digit(10) => Ok((i, true)),
+        _ => Ok((i, false)),
     }
-
-    Ok((i, false))
 }
 
 /* Line Parsers */
 
 // TODO: Error fixing needed, especially regarding match
-pub fn get_rank_info(i: &[u8]) -> IResult<&[u8], RankThreshold> {
+pub fn get_rank_info(i: &str) -> IResult<&str, RankThreshold> {
     use RankThreshold::*;
 
-    let take_until_rank_threshold =
-        take_while(|c: u8| c.is_ascii_alphabetic() || c.is_ascii_whitespace());
+    let take_until_rank_threshold = take_while(|c: char| c.is_alphabetic() || c.is_whitespace());
     let (remainder, (_, rank_type, _, rank_threshold)) = tuple((
         take_word,
         take_word,
@@ -100,7 +81,7 @@ pub fn get_rank_info(i: &[u8]) -> IResult<&[u8], RankThreshold> {
 
     let rank_threshold = rank_threshold.parse::<f32>().unwrap();
 
-    let rank = match rank_type.as_ref() {
+    let rank = match rank_type {
         "Strong" => Strong(rank_threshold),
         "Weak" => Weak(rank_threshold),
         _ => Weak(0f32),
@@ -109,7 +90,7 @@ pub fn get_rank_info(i: &[u8]) -> IResult<&[u8], RankThreshold> {
     Ok((remainder, rank))
 }
 
-pub fn get_nn_info(i: &[u8]) -> IResult<&[u8], NearestNeighbour> {
+pub fn get_nn_info(i: &str) -> IResult<&str, NearestNeighbour> {
     let (remainder, (index, distance, _, nn)) = tuple((
         take_hla_allele,
         take_first_numeric,
@@ -124,7 +105,7 @@ pub fn get_nn_info(i: &[u8]) -> IResult<&[u8], NearestNeighbour> {
     Ok((remainder, nn_info))
 }
 
-pub fn get_netmhc_entry_info(i: &[u8]) -> IResult<&[u8], (usize, ClassI, String)> {
+pub fn get_netmhc_entry_info(i: &str) -> IResult<&str, (usize, ClassI, &str)> {
     let (remainder, (pos, _, allele, pep_seq)) = tuple((
         take_first_numeric,
         take_until("HLA-"),
@@ -138,7 +119,7 @@ pub fn get_netmhc_entry_info(i: &[u8]) -> IResult<&[u8], (usize, ClassI, String)
     Ok((remainder, (pos, allele, pep_seq)))
 }
 
-pub fn get_netmhc_align_info(i: &[u8]) -> IResult<&[u8], (Vec<usize>, String, String)> {
+pub fn get_netmhc_align_info(i: &str) -> IResult<&str, (Vec<usize>, &str, &str)> {
     let (i, alignment_mods) = many_m_n(5, 5, take_first_numeric)(i)?;
     let (remainder, (icore, identity)) = tuple((take_word, take_word))(i)?;
 
@@ -150,10 +131,7 @@ pub fn get_netmhc_align_info(i: &[u8]) -> IResult<&[u8], (Vec<usize>, String, St
     Ok((remainder, (alignment_mods, icore, identity)))
 }
 
-pub fn get_netmhc_binding_info(
-    i: & [u8],
-    peptide: Peptide,
-) -> IResult<&[u8], BindingInfo> {
+pub fn get_netmhc_binding_info(i: &str, peptide: Peptide) -> IResult<&str, BindingInfo> {
     let (remainder, binding_info) = many_m_n(2, 3, take_first_numeric)(i)?;
 
     let binding_info = binding_info
@@ -185,18 +163,12 @@ mod tests {
     use crate::parser::*;
     use crate::result::{NearestNeighbour, Peptide, Protein, RankThreshold};
 
-    static TEST_ENTRY: &[u8] = b"  1  HLA-A*03:01     TPQDLNTMLNT  TPLNTMLNT  0  2  2  0  0  TPQDLNTMLNT     Gag_180_209 0.0190370 40692.6 77.6355";
+    static TEST_ENTRY: &str = "  1  HLA-A*03:01     TPQDLNTMLNT  TPLNTMLNT  0  2  2  0  0  TPQDLNTMLNT     Gag_180_209 0.0190370 40692.6 77.6355";
 
     #[test]
     fn test_parse_numeric() {
-        assert_eq!(
-            take_first_numeric(b"word5"),
-            Ok((&b""[..], String::from("5")))
-        );
-        assert_eq!(
-            take_first_numeric(b"5word"),
-            Ok((&b"word"[..], String::from("5")))
-        );
+        assert_eq!(take_first_numeric("word5"), Ok(("", "5")));
+        assert_eq!(take_first_numeric("5word"), Ok(("word", "5")));
     }
 
     #[test]
@@ -205,10 +177,8 @@ mod tests {
 
         netmhcout
             .lines()
-            .for_each(|line| match is_peptide_line(line.as_bytes()) {
-                Ok((pep_line, true)) => {
-                    println!("{}", String::from_utf8(pep_line.to_vec()).unwrap())
-                }
+            .for_each(|line| match is_peptide_line(line) {
+                Ok((pep_line, true)) => println!("{}", pep_line),
                 _ => (),
             });
     }
@@ -220,7 +190,7 @@ mod tests {
             netmhcout
                 .lines()
                 .fold(Vec::<NearestNeighbour>::new(), |mut nn_neighbours, line| {
-                    match is_nn_line(line.as_bytes()).unwrap() {
+                    match is_nn_line(line).unwrap() {
                         (nn_line, Some(_)) => {
                             let (_, nn) = get_nn_info(nn_line).unwrap();
                             nn_neighbours.push(nn)
@@ -246,7 +216,7 @@ mod tests {
             netmhcout
                 .lines()
                 .fold(Vec::<RankThreshold>::new(), |mut thresholds, line| {
-                    match is_rank_line(line.as_bytes()).unwrap() {
+                    match is_rank_line(line).unwrap() {
                         (rank_line, Some(_)) => {
                             let (_, rank) = get_rank_info(rank_line).unwrap();
                             thresholds.push(rank)
@@ -264,12 +234,14 @@ mod tests {
         let (i, alignment_info) = get_netmhc_align_info(i).unwrap();
 
         let mut protein = Protein::new(alignment_info.2.clone());
-        protein.add_sequence_at_pos(entry_info.0, &entry_info.2);
+        protein
+            .add_sequence_at_pos(entry_info.0, &entry_info.2)
+            .unwrap();
         let peptide = Peptide::new(
             entry_info.0,
-            entry_info.2,
-            alignment_info.2,
-            alignment_info.1,
+            entry_info.2.to_string(),
+            alignment_info.2.to_string(),
+            alignment_info.1.to_string(),
             &alignment_info.0,
         );
 

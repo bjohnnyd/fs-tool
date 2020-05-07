@@ -1,6 +1,5 @@
 // output info at http://www.cbs.dtu.dk/services/NetMHC/output.php
 
-
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
@@ -188,7 +187,7 @@ pub struct Protein {
 impl Protein {
     pub fn new<T>(identity: T) -> Self
     where
-        T: AsRef<str>
+        T: AsRef<str>,
     {
         let sequence = String::from("");
         let identity = String::from(identity.as_ref());
@@ -208,9 +207,9 @@ impl Protein {
     /// 0-based so if passing NetMHCpan 4.0 `Pos` column `-1` needs to be subtracted.
     /// The position + sequence length can only be larger than 1 for it to be added.
     /// If the sequence + position are within current sequence length the sequence is overwritten
-    pub fn add_sequence_at_pos<T>(&mut self, pos: usize, sequence: T) -> Result<(), Error>
+    pub fn add_sequence_at_pos<T>(&mut self, pos: usize, sequence: T) -> Result<(), Error<()>>
     where
-        T: AsRef<str>
+        T: AsRef<str>,
     {
         let sequence = sequence.as_ref();
         let region = Range {
@@ -231,7 +230,7 @@ impl Protein {
 
     /// Returns protein sequence at specified positions (0 based and right open-ended)
     ///
-    pub fn sequence(&self, start: usize, end: usize) -> Result<&str, Error> {
+    pub fn sequence(&self, start: usize, end: usize) -> Result<&str, Error<()>> {
         if end > self.sequence.len() {
             Err(Error::ProteinTooShort(end, self.sequence.len()))
         } else {
@@ -293,7 +292,7 @@ impl BindingData {
         BindingData::default()
     }
 
-    pub fn get_bound_info(&self, allele: &ClassI, threshold: f32) -> Vec<&BindingInfo>{
+    pub fn get_bound_info(&self, allele: &ClassI, threshold: f32) -> Vec<&BindingInfo> {
         let mut bound_info = Vec::<&BindingInfo>::new();
 
         if let Some(peptides) = self.allele_binding.get(allele) {
@@ -306,7 +305,6 @@ impl BindingData {
         }
 
         bound_info
-
     }
 }
 

@@ -6,8 +6,9 @@ use crate::error::Error;
 use crate::parser::*;
 use crate::result::*;
 
+// TODO: Needs serious refactoring
 /// Reads a netmhcpan output file.  Not optimized to skip peptides already processed.
-pub fn read_raw_netmhcpan<T>(path: T) -> Result<BindingData, Error>
+pub fn read_raw_netmhcpan<T>(path: T) -> Result<BindingData, Error<()>>
 where
     T: AsRef<Path>,
 {
@@ -17,12 +18,12 @@ where
     let mut raw_data = String::new();
     f.read_to_string(&mut raw_data).unwrap();
 
-    let mut sequence_info_finished = false;
+    let sequence_info_finished = false;
 
     Ok(raw_data
         .lines()
         .fold(BindingData::new(), |mut binding_data, line| {
-            let (i, nn_line) = is_nn_line(line.as_bytes()).unwrap();
+            let (i, nn_line) = is_nn_line(line).unwrap();
 
             if let Some(nn_line) = nn_line {
                 let (_, nn) = get_nn_info(i).unwrap();
@@ -46,17 +47,19 @@ where
                     let (i, (pos, allele, pep_seq)) = get_netmhc_entry_info(i).unwrap();
                     let (i, (alignment_mods, icore, identity)) = get_netmhc_align_info(i).unwrap();
 
-                    let mut protein = binding_data
+                    let protein = binding_data
                         .proteome
-                        .entry(identity.clone())
-                        .or_insert_with(|| Protein::new(identity.clone()));
-                    protein.add_sequence_at_pos(pos, pep_seq.clone()).unwrap();
+                        .entry(identity.to_string())
+                        .or_insert_with(|| Protein::new(identity.to_string()));
+                    protein
+                        .add_sequence_at_pos(pos, pep_seq.to_string())
+                        .unwrap();
 
                     let peptide = Peptide::new(
                         pos,
-                        pep_seq,
-                        identity.clone(),
-                        icore,
+                        pep_seq.to_string(),
+                        identity.to_string(),
+                        icore.to_string(),
                         &alignment_mods,
                     );
 
@@ -90,10 +93,8 @@ mod tests {
         let bd = read_raw_netmhcpan("tests/netmhcpan_wBA.txt").unwrap();
         let allele = "B27:05".parse().unwrap();
 
-        let motif_pos = vec![2,3,4,5,7,8];
+        let motif_pos = vec![2, 3, 4, 5, 7, 8];
         let expected_motif = "AAMQLK";
-
-
 
         let bound = bd.get_bound_info(&allele, WEAK_BOUND_THRESHOLD);
         assert_eq!(bound[0].motif(&motif_pos), expected_motif.to_string());

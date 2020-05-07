@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::parser::*;
 use crate::result::*;
 
-// TODO: Needs serious refactoring
+// TODO: Needs serious refactoring and error handling not finished covnerting from nom::Err
 /// Reads a netmhcpan output file.  Not optimized to skip peptides already processed.
 pub fn read_raw_netmhcpan<T>(path: T) -> Result<BindingData, Error<()>>
 where

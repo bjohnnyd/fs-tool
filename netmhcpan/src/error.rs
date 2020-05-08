@@ -15,4 +15,3 @@ where
     #[error("Could not parse binding data in line: {0:?}. Issue with  parser {1:?}")]
     ParseError(I, nom::error::ErrorKind),
 }
-

@@ -1,12 +1,11 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-use crate::error::Error;
 use crate::parser::*;
 use crate::result::*;
 
-// TODO: Needs serious refactoring and error handling not finished covnerting from nom::Err
+// TODO: Needs serious refactoring and error handling not finished converting from nom::Err
 /// Reads a netmhcpan output file.  Not optimized to skip peptides already processed.
 pub fn read_raw_netmhcpan<T>(path: T) -> Result<BindingData, Box<dyn std::error::Error>>
 where
@@ -14,10 +13,8 @@ where
 {
     use RankThreshold::*;
 
-    let mut f = File::open(path)?;
-    // let mut raw_data = String::new();
+    let f = File::open(path)?;
     let rdr = BufReader::new(f);
-    // f.read_to_string(&mut raw_data).unwrap();
 
     let mut binding_data = BindingData::new();
 

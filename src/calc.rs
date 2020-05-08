@@ -17,7 +17,6 @@ impl Measure {
     }
 }
 
-/* Need to deal with Error */
 impl std::str::FromStr for Measure {
     type Err = Error;
 

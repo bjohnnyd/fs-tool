@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 use crate::calc::Measure;
-use crate::error::Error;
 
 pub const LIGAND_TABLE: &str = include_str!("resources/2019-12-29_lg.tsv");
 pub const KIR_DEF: &str = "KIR:2,7,8,9";
@@ -49,23 +48,26 @@ pub enum Command {
         #[structopt(short, long, value_delimiter = " ", default_value = "9")]
         /// Which length of input peptide sequence to consider
         peptide_length: Vec<usize>,
+        /// Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
+        #[structopt(short, long)]
+        measure: Option<Vec<Measure>>,
     },
 }
 
 impl Opt {
     pub fn set_logging(&self) {
-        use log::LevelFilter::*;
+        use log::LevelFilter::{self, *};
 
-        let mut log_level = match self.verbose {
-            level if level == 1 => Info,
-            level if level == 2 => Debug,
-            level if level > 2 => Trace,
-            _ => Warn,
+        let log_level = if self.quiet {
+            LevelFilter::Error
+        } else {
+            match self.verbose {
+                level if level == 1 => Info,
+                level if level == 2 => Debug,
+                level if level > 2 => Trace,
+                _ => Warn,
+            }
         };
-
-        if self.quiet {
-            log_level = log::LevelFilter::Error;
-        }
 
         env_logger::builder()
             .format_module_path(false)

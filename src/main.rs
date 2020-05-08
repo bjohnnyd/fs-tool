@@ -6,6 +6,7 @@ mod cli;
 mod error;
 
 use crate::cli::{Command::*, Opt};
+use netmhcpan::reader::read_raw_netmhcpan;
 use structopt::StructOpt;
 
 fn main() -> std::result::Result<(), ()> {
@@ -30,7 +31,13 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
             output,
             drop_default,
             peptide_length,
-        } => {}
+            measure,
+        } => {
+            let binding_data = binding_predictions
+                .iter()
+                .map(read_raw_netmhcpan)
+                .collect::<Result<Vec<_>, _>>()?;
+        }
     }
 
     Ok(())

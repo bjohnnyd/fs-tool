@@ -111,6 +111,7 @@ pub struct KirLigandMap {
     pub cache: HashMap<ClassI, KirLigandInfo>,
 }
 
+// NOTE: Could cause errors if the ligand map file is wrong
 impl Default for KirLigandMap {
     fn default() -> Self {
         let alleles = HashSet::<ClassI>::new();
@@ -123,6 +124,36 @@ impl Default for KirLigandMap {
 impl KirLigandMap {
     pub fn new() -> Self {
         KirLigandMap::default()
+    }
+
+    pub fn init() -> std::result::Result<Self, IoError> {
+        let mut alleles = HashSet::<ClassI>::new();
+        let mut cache = HashMap::<ClassI, KirLigandInfo>::new();
+
+        for (row, line) in crate::LIGAND_MAP_DEF.lines().enumerate() {
+            let entry = line.split('\t').collect::<Vec<&str>>();
+
+            let allele = entry[0]
+                .parse::<ClassI>()
+                .or_else(|_| Err(IoError::CouldNotReadAllele(row + 1)))?;
+
+            let motif = entry[1]
+                .parse::<LigandMotif>()
+                .or_else(|_| Err(IoError::CouldNotReadMotif(row + 1)))?;
+
+            let freq: AlleleFreq = if entry.len() == 3 {
+                entry[2].into()
+            } else {
+                AlleleFreq::Unknown
+            };
+
+            let info = KirLigandInfo::new(allele.clone(), motif, freq);
+
+            alleles.insert(allele.clone());
+            cache.insert(allele, info);
+        }
+
+        Ok(Self { alleles, cache })
     }
 
     pub fn insert_info(&mut self, info: KirLigandInfo) {

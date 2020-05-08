@@ -20,9 +20,9 @@ pub enum RankThreshold {
 
 #[derive(Debug, Clone, PartialOrd)]
 pub struct NearestNeighbour {
-    index: ClassI,
-    distance: f32,
-    nn: ClassI,
+    pub(crate) index: ClassI,
+    pub(crate) distance: f32,
+    pub(crate) nn: ClassI,
 }
 
 impl NearestNeighbour {
@@ -129,11 +129,7 @@ impl Peptide {
                 .map(|(_, c)| c)
                 .collect()
         } else if self.ins.len() != 0 {
-            self.seq()
-                .chars()
-                .enumerate()
-                .map(|(i, c)| if self.ins.contains(&i) { '-' } else { c })
-                .collect()
+            self.seq().chars().enumerate().map(|(_, c)| c).collect()
         } else {
             self.seq().to_string()
         }
@@ -305,6 +301,10 @@ impl BindingData {
         }
 
         bound_info
+    }
+
+    pub fn list_alleles(&self) -> Vec<&ClassI> {
+        self.alleles.iter().map(|nn| &nn.index).collect()
     }
 }
 

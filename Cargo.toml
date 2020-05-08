@@ -1,5 +1,5 @@
 [package]
-name = "fs-tool"
+name = "fstool"
 version = "0.1.1"
 authors = ["Johnny Debebe <28043284+bjohnnyd@users.noreply.github.com>"]
 edition = "2018"
@@ -10,15 +10,12 @@ members = ["./immunoprot", "./netmhcpan"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-scraper = "0.11.0"
-structopt = "0.3.5"
-rayon = "1.3.0"
-nom = "5.0.1"
-directories = "2.0.2"
-lazy_static = "1.4.0"
-snafu = "0.6.0"
-stderrlog="0.4.3"
-log = "0.4.8"
+structopt = "0.3"
+rayon = "1.3"
+stderrlog="0.4"
+log = "0.4"
+directories = "2.0"
+thiserror = "1.0.16"
 
 [dependencies.attohttpc]                                                                                          
 default-features = false                                                                                          

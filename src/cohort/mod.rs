@@ -1,2 +1,0 @@
-mod genotype;
-mod individual;

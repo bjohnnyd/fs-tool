@@ -1,12 +1,15 @@
+const PEPTIDE_LENGTHS: [&str; 4] = ["8", "9", "10", "11"];
+
 use std::path::PathBuf;
 use structopt::StructOpt;
 
 use crate::calc::Measure;
+use crate::reader::*;
+use crate::writer::*;
+use crate::LOGGING_MODULES;
 
-pub const LIGAND_TABLE: &str = include_str!("resources/2019-12-29_lg.tsv");
-pub const KIR_DEF: &str = "KIR:2,7,8,9";
-pub const TCR_DEF: &str = "TCR:3,4,5,6,8,9";
-pub const LOGGING_MODULES: [&str; 3] = ["immunoprot", "netmhcpan", "fstool"];
+use immunoprot::ig_like::kir_ligand::KirLigandMap;
+use log::{info, warn};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -45,7 +48,7 @@ pub enum Command {
         /// Whether to drop the default measures that are calculated by default
         /// on TCR and KIR motifs.
         drop_default: bool,
-        #[structopt(short, long, value_delimiter = " ", default_value = "9")]
+        #[structopt(short, long, possible_values = &PEPTIDE_LENGTHS, default_value = "9")]
         /// Which length of input peptide sequence to consider
         peptide_length: Vec<usize>,
         /// Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
@@ -75,5 +78,24 @@ impl Opt {
             .filter_module(LOGGING_MODULES[1], log_level)
             .filter_module(LOGGING_MODULES[2], log_level)
             .init()
+    }
+
+    pub fn setup_kir_ligand_info(&self) -> Result<KirLigandMap, crate::error::Error> {
+        if self.update {
+            info!("Updating kir ligand information");
+            let update = KirLigandMap::updated().ok();
+            match update {
+                Some(updated_info) => {
+                    write_project_ligand_info(&updated_info);
+                } ,
+                _ => warn!("Failed to obtain updated kir ligand information from IPD/EBI.\n Trying to use the most recent downloaded version...")
+            }
+        }
+        let kir_ligand_map = read_project_ligand_info();
+
+        match kir_ligand_map {
+            Some(ligand_map) => Ok(ligand_map),
+            _ => Err(crate::error::Error::KirLigandMapError),
+        }
     }
 }

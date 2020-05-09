@@ -16,5 +16,7 @@ env_logger="0.7.1"
 log = "0.4"
 directories = "2.0"
 thiserror = "1.0.16"
+csv="1.1"
+chrono = "0.4.11"
 immunoprot = {path = "immunoprot"}
 netmhcpan = {path = "netmhcpan"}

@@ -70,6 +70,20 @@ pub enum AlleleFreq {
     Unknown,
 }
 
+impl std::fmt::Display for AlleleFreq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use AlleleFreq::*;
+
+        let s = match self {
+            Common => "Common or Well Defined",
+            Rare => "Rare",
+            Unknown => "",
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
 impl<T> From<T> for AlleleFreq
 where
     T: AsRef<str>,
@@ -124,6 +138,10 @@ impl Default for KirLigandMap {
 impl KirLigandMap {
     pub fn new() -> Self {
         KirLigandMap::default()
+    }
+
+    pub fn updated() -> std::result::Result<Self, HtmlParseError> {
+        KirLigandMap::from_loci(&GENE_LOCI)
     }
 
     pub fn init() -> std::result::Result<Self, IoError> {
@@ -194,6 +212,7 @@ impl KirLigandMap {
         let mut rdr = csv::ReaderBuilder::new()
             .has_headers(false)
             .delimiter(b'\t')
+            .comment(Some(b'#'))
             .from_path(&p)?;
 
         for (row, result) in rdr.records().enumerate() {

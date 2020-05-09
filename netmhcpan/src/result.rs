@@ -258,6 +258,14 @@ impl BindingInfo {
     pub fn motif(&self, aa_pos: &[usize]) -> String {
         self.peptide.sequence_motif(aa_pos)
     }
+
+    pub fn peptide(&self) -> &Peptide {
+        &self.peptide
+    }
+
+    pub fn rank(&self) -> f32 {
+        self.rank
+    }
 }
 
 #[derive(Debug, Clone)]

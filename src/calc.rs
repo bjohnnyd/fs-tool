@@ -1,4 +1,8 @@
+// TODO: Need a function to create all combinations
 use crate::error::Error;
+
+use immunoprot::mhc::hla::ClassI;
+use netmhcpan::result::{BindingInfo, Peptide};
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.
 /// Might be extended by a field representing whether the calculations should take KIR genotypes into
@@ -7,6 +11,88 @@ use crate::error::Error;
 pub struct Measure {
     pub name: String,
     pub motif_pos: Vec<usize>,
+}
+
+#[derive(Debug)]
+pub struct CalculatorComb<'a> {
+    pub alleles: (&'a ClassI, &'a ClassI),
+    pub binding_data: (&'a [BindingInfo], &'a [BindingInfo]),
+}
+
+impl<'a> CalculatorComb<'a> {
+    fn new(
+        first_allele: &'a ClassI,
+        second_allele: &'a ClassI,
+        first_bd: &'a Vec<BindingInfo>,
+        second_bd: &'a Vec<BindingInfo>,
+    ) -> Self {
+        Self {
+            alleles: (first_allele, second_allele),
+            binding_data: (first_bd, second_bd),
+        }
+    }
+
+    /// Calculates shared peptides motifs based on a threshold for determining bound and whether unique motifs should only be considered,
+    /// the peptides considered can also optionally be filtered based on length
+    fn calculate_shared_motifs(
+        &self,
+        motif: &[usize],
+        threshold: f32,
+        unique: bool,
+        length: Option<usize>,
+    ) -> (f32, f32) {
+        let get_bound_motifs = |item: &BindingInfo| {
+            if item.rank() < threshold {
+                match length {
+                    Some(length) => {
+                        let pep = item.peptide();
+                        if pep.len() == length {
+                            Some(pep.sequence_motif(motif))
+                        } else {
+                            None
+                        }
+                    }
+                    None => Some(item.peptide().sequence_motif(motif)),
+                }
+            } else {
+                None
+            }
+        };
+
+        let mut first_motifs = self
+            .binding_data
+            .0
+            .iter()
+            .filter_map(get_bound_motifs)
+            .collect::<Vec<String>>();
+        first_motifs.sort();
+
+        let mut second_motifs = self
+            .binding_data
+            .0
+            .iter()
+            .filter_map(get_bound_motifs)
+            .collect::<Vec<String>>();
+        second_motifs.sort();
+
+        if unique {
+            first_motifs.dedup();
+            second_motifs.dedup();
+        }
+
+        let first_shared = first_motifs
+            .iter()
+            .filter(|motif| second_motifs.contains(motif))
+            .count() as f32;
+        let second_shared = second_motifs
+            .iter()
+            .filter(|motif| first_motifs.contains(motif))
+            .count() as f32;
+
+        let total_bound = (first_motifs.len() + second_motifs.len()) as f32;
+
+        (first_shared / total_bound, second_shared / total_bound)
+    }
 }
 
 impl Measure {

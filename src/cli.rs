@@ -4,10 +4,12 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 use crate::calc::Measure;
-use crate::reader::*;
-use crate::writer::*;
+use crate::error::Error;
+use crate::io::reader::*;
+use crate::io::writer::*;
 use crate::LOGGING_MODULES;
 
+use crate::meta::{AlleleMeta, BindingMeta};
 use immunoprot::ig_like::kir_ligand::KirLigandMap;
 use log::{info, warn};
 
@@ -30,6 +32,12 @@ pub struct Opt {
     #[structopt(short, long)]
     /// Returns the directory and files where the kir ligand data is stored
     location: bool,
+    #[structopt(short, long)]
+    /// Directory to store outputs
+    output: PathBuf,
+    /// Prefix to assign to all outputs
+    #[structopt(long)]
+    prefix: Option<String>,
     #[structopt(subcommand)]
     pub cmd: Command,
 }
@@ -40,10 +48,7 @@ pub enum Command {
     Allele {
         #[structopt(short, long, parse(from_os_str))]
         /// Path to file containing predicted Class I affinity data (NetMHCpan results)
-        binding_predictions: Vec<PathBuf>,
-        #[structopt(short, long, parse(from_os_str))]
-        /// Location where to store allele vs allele fraction shared calculations
-        output: Option<PathBuf>,
+        binding_predictions: PathBuf,
         #[structopt(long)]
         /// Whether to drop the default measures that are calculated by default
         /// on TCR and KIR motifs.
@@ -97,5 +102,69 @@ impl Opt {
             Some(ligand_map) => Ok(ligand_map),
             _ => Err(crate::error::Error::KirLigandMapError),
         }
+    }
+
+    pub fn output_writers(&self) -> std::result::Result<OutputWriters, Error> {
+        let prefix = match &self.prefix {
+            Some(prefix) => format!("{}_", prefix),
+            _ => String::new(),
+        };
+
+        let output_dir = &self.output;
+
+        if !output_dir.exists() {
+            std::fs::create_dir_all(output_dir).or_else(|_| Err(Error::CouldNotCreateOutputDir))?
+        }
+
+        let allele_path = output_dir.join(format!("{}allele_metadata.csv", prefix));
+        let binding_path = output_dir.join(format!("{}allele_binding_summary.csv", prefix));
+
+        let allele_meta = csv::WriterBuilder::new()
+            .has_headers(true)
+            .delimiter(crate::DEFAULT_DELIM)
+            .from_path(allele_path)
+            .or_else(|_| Err(Error::CouldNotCreateOutputFile))?;
+
+        let binding_meta = csv::WriterBuilder::new()
+            .has_headers(true)
+            .delimiter(crate::DEFAULT_DELIM)
+            .from_path(binding_path)
+            .or_else(|_| Err(Error::CouldNotCreateOutputFile))?;
+
+        Ok(OutputWriters {
+            allele_meta,
+            binding_meta,
+        })
+    }
+}
+
+pub struct OutputWriters {
+    pub allele_meta: csv::Writer<std::fs::File>,
+    pub binding_meta: csv::Writer<std::fs::File>,
+}
+
+impl OutputWriters {
+    pub fn write_allele_meta(
+        &mut self,
+        metadata: &[AlleleMeta],
+    ) -> std::result::Result<Vec<()>, Error> {
+        let write_result = metadata
+            .iter()
+            .map(|meta| self.allele_meta.serialize(meta))
+            .collect::<Result<Vec<_>, _>>();
+
+        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteAlleleMeta))?)
+    }
+
+    pub fn write_binding_meta(
+        &mut self,
+        metadata: &[BindingMeta],
+    ) -> std::result::Result<Vec<()>, Error> {
+        let write_result = metadata
+            .iter()
+            .map(|meta| self.binding_meta.serialize(meta))
+            .collect::<Result<Vec<_>, _>>();
+
+        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteBindingMeta))?)
     }
 }

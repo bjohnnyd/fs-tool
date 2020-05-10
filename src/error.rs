@@ -7,4 +7,12 @@ pub enum Error {
     IncorrectMotifPositions(#[from] std::num::ParseIntError),
     #[error("Could not load any kir ligand information")]
     KirLigandMapError,
+    #[error("Could not create output directory")]
+    CouldNotCreateOutputDir,
+    #[error("Could not create output file")]
+    CouldNotCreateOutputFile,
+    #[error("Could not write allele metadata to output.")]
+    CouldNotWriteAlleleMeta,
+    #[error("Could not write binding metadata to output.")]
+    CouldNotWriteBindingMeta,
 }

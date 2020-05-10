@@ -66,4 +66,6 @@ pub enum IoError {
     CouldNotReadMotif(usize),
     #[error("Could not read or open Kir Ligand Info file")]
     CouldNotReadOrOpenFile(#[from] csv::Error),
+    #[error("Could not read line in Kir Ligand Info Table")]
+    CouldNotParseLine,
 }

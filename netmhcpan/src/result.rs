@@ -9,8 +9,8 @@ use crate::error::Error;
 use immunoprot::mhc::hla::ClassI;
 use log::warn;
 
-pub static WEAK_BOUND_THRESHOLD: f32 = 2.0;
-pub static STRONG_BOUND_THRESHOLD: f32 = 0.5;
+pub const WEAK_TRESHOLD: f32 = 2.0;
+pub const STRONG_THRESHOLD: f32 = 0.5;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum RankThreshold {
@@ -32,6 +32,10 @@ impl NearestNeighbour {
             distance,
             nn,
         }
+    }
+
+    pub fn info(&self) -> (&ClassI, f32, &ClassI) {
+        (&self.index, self.distance, &self.nn)
     }
 }
 
@@ -296,13 +300,12 @@ impl BindingData {
         BindingData::default()
     }
 
-    pub fn get_bound_info(&self, allele: &ClassI, threshold: f32) -> Vec<&BindingInfo> {
+    pub fn get_bound_info(&self, allele: &ClassI) -> Vec<&BindingInfo> {
         let mut bound_info = Vec::<&BindingInfo>::new();
 
         if let Some(peptides) = self.allele_binding.get(allele) {
             peptides
                 .iter()
-                .filter(|binding_info| binding_info.rank < threshold)
                 .for_each(|binding_info| bound_info.push(binding_info))
         } else {
             warn!("{} has no associated binding data", allele);
@@ -313,6 +316,52 @@ impl BindingData {
 
     pub fn list_alleles(&self) -> Vec<&ClassI> {
         self.alleles.iter().map(|nn| &nn.index).collect()
+    }
+
+    pub fn list_nn(&self) -> &HashSet<NearestNeighbour> {
+        &self.alleles
+    }
+
+    pub fn proteins(&self) -> Vec<String> {
+        self.proteome
+            .keys()
+            .map(|identity| identity.to_string())
+            .collect::<Vec<String>>()
+    }
+
+    pub fn pep_lengths(&self) -> Vec<usize> {
+        let mut pep_lengths = self
+            .peptides
+            .iter()
+            .map(|pep| pep.len())
+            .collect::<Vec<usize>>();
+        pep_lengths.sort();
+        pep_lengths.dedup();
+        pep_lengths
+    }
+
+    pub fn strong_threshold(&self) -> f32 {
+        if let Some(threshold) = self.strong_threshold {
+            threshold
+        } else {
+            warn!(
+                "No binding threshold found in NetMHCpan result using default of {}",
+                STRONG_THRESHOLD
+            );
+            STRONG_THRESHOLD
+        }
+    }
+
+    pub fn weak_threshold(&self) -> f32 {
+        if let Some(threshold) = self.weak_threshold {
+            threshold
+        } else {
+            warn!(
+                "No binding threshold found in NetMHCpan result using default of {}",
+                WEAK_TRESHOLD
+            );
+            WEAK_TRESHOLD
+        }
     }
 }
 

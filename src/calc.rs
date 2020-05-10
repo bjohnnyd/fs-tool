@@ -2,7 +2,7 @@
 use crate::error::Error;
 
 use immunoprot::mhc::hla::ClassI;
-use netmhcpan::result::{BindingInfo, Peptide};
+use netmhcpan::result::BindingInfo;
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.
 /// Might be extended by a field representing whether the calculations should take KIR genotypes into
@@ -20,11 +20,11 @@ pub struct CalculatorComb<'a> {
 }
 
 impl<'a> CalculatorComb<'a> {
-    fn new(
+    pub fn new(
         first_allele: &'a ClassI,
         second_allele: &'a ClassI,
-        first_bd: &'a Vec<BindingInfo>,
-        second_bd: &'a Vec<BindingInfo>,
+        first_bd: &'a [BindingInfo],
+        second_bd: &'a [BindingInfo],
     ) -> Self {
         Self {
             alleles: (first_allele, second_allele),
@@ -34,7 +34,7 @@ impl<'a> CalculatorComb<'a> {
 
     /// Calculates shared peptides motifs based on a threshold for determining bound and whether unique motifs should only be considered,
     /// the peptides considered can also optionally be filtered based on length
-    fn calculate_shared_motifs(
+    pub fn calculate_shared_motifs(
         &self,
         motif: &[usize],
         threshold: f32,

@@ -119,6 +119,29 @@ impl KirLigandInfo {
     }
 }
 
+// TODO: CURRENTLY ONLY SUPPORTS TSV files
+impl FromStr for KirLigandInfo {
+    type Err = IoError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let entry = s.split('\t').collect::<Vec<&str>>();
+
+        let allele = entry[0].parse::<ClassI>();
+
+        let motif = entry[1].parse::<LigandMotif>();
+
+        let freq: AlleleFreq = if entry.len() == 3 {
+            entry[2].into()
+        } else {
+            AlleleFreq::Unknown
+        };
+
+        match (allele, motif) {
+            (Ok(allele), Ok(motif)) => Ok(KirLigandInfo::new(allele, motif, freq)),
+            _ => Err(IoError::CouldNotParseLine),
+        }
+    }
+}
 #[derive(Debug, Eq, PartialEq)]
 pub struct KirLigandMap {
     pub alleles: HashSet<ClassI>,
@@ -144,6 +167,7 @@ impl KirLigandMap {
         KirLigandMap::from_loci(&GENE_LOCI)
     }
 
+    // TODO: Could be combined with parse but need to see about error specificity
     pub fn init() -> std::result::Result<Self, IoError> {
         let mut alleles = HashSet::<ClassI>::new();
         let mut cache = HashMap::<ClassI, KirLigandInfo>::new();
@@ -243,7 +267,7 @@ impl KirLigandMap {
     // cannot think of case where more than twice is really necessary but there might be.
     // Decided to for now to only generalise the allele twice. Cases like A02:07,
     // returning A*02:07:01:01 and A*02:07:02 will both have A*02:07:01 and A*02:07:02 present.
-    fn get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
+    pub fn get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
         let mut kir_ligand_info = Vec::<&KirLigandInfo>::new();
 
         if let Some(allele_info) = self.cache.get(allele) {
@@ -266,7 +290,7 @@ impl KirLigandMap {
 }
 
 /// Obtains raw HTL from the EBI website
-pub fn get_ipd_html<T>(gene_locus: T) -> std::result::Result<Html, HtmlParseError>
+fn get_ipd_html<T>(gene_locus: T) -> std::result::Result<Html, HtmlParseError>
 where
     T: AsRef<str> + std::fmt::Display,
 {
@@ -288,7 +312,7 @@ where
 
 // TODO: Need to deal with cases where supplied HLA allele is incorrect format
 /// Finds the first HTML table with the possibility of skipping a set of rows
-pub fn read_table(
+fn read_table(
     html: &Html,
     skip_rows: usize,
 ) -> std::result::Result<Vec<KirLigandInfo>, HtmlParseError> {

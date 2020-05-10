@@ -11,7 +11,7 @@ pub fn read_project_ligand_info() -> Option<KirLigandMap> {
     }
 
     if kir_ligand_map.is_none() {
-        warn!("No local kir ligand info found. Defaulting to: https://raw.githubusercontent.com/bjohnnyd/fs-tool/dev_fs/immunoprot/src/resources/2019-12-29_lg.tsv");
+        warn!("No local kir ligand info found. Defaulting to: https://github.com/bjohnnyd/fs-tool/blob/dev_fs/immunoprot/src/resources/allele_motifs.tsv");
         kir_ligand_map = KirLigandMap::init().ok();
     }
     kir_ligand_map

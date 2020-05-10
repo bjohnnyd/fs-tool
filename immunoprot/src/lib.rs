@@ -2,7 +2,7 @@
 #![allow(dead_code, unused_variables)]
 pub mod error;
 
-pub const LIGAND_MAP_DEF: &str = include_str!("resources/2019-12-29_lg.tsv");
+pub const LIGAND_MAP_DEF: &str = include_str!("resources/allele_motifs.tsv");
 
 pub mod mhc {
     pub mod hla;

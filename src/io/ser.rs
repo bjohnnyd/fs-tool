@@ -105,29 +105,27 @@ where
 }
 
 pub fn optional_bool_serialize<S>(x: Option<bool>, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+where
+    S: Serializer,
 {
     match x {
-        Some(x) => s.serialize_str(if x {"1"} else {"0"}),
+        Some(x) => s.serialize_str(if x { "1" } else { "0" }),
         None => s.serialize_str("NA"),
     }
 }
 
 pub fn optional_bool_deserialize<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     let s: &str = Deserialize::deserialize(deserializer)?;
 
     match s {
         "1" | "Y" | "T" | "TRUE" => Ok(Some(true)),
         "0" | "N" | "F" | "FALSE" => Ok(Some(false)),
-        s =>
-            Err(de::Error::custom(format!(
-                "Could not deduce TRUE/FALSE from {}",
-                s
-            )))
+        s => Err(de::Error::custom(format!(
+            "Could not deduce TRUE/FALSE from {}",
+            s
+        ))),
     }
-
 }

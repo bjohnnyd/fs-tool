@@ -3,10 +3,10 @@
 #![allow(dead_code, unused_variables)]
 mod calc;
 mod cli;
+mod cohort;
 mod error;
 mod io;
 mod meta;
-mod cohort;
 
 pub const LIGAND_TABLE: &str = include_str!("resources/2019-12-29_lg.tsv");
 pub const PROJECT_LIGAND_TABLE: &str = "kir_ligand.tsv";

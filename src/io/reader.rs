@@ -1,5 +1,5 @@
-use crate::error::Error;
 use crate::cohort::CohortTemp;
+use crate::error::Error;
 use immunoprot::ig_like::kir_ligand::KirLigandMap;
 use log::warn;
 
@@ -18,7 +18,9 @@ pub fn read_project_ligand_info() -> Option<KirLigandMap> {
 }
 
 pub fn read_temp_cohort<P>(path: P) -> Result<Vec<CohortTemp>, Error>
-where P: AsRef<std::path::Path> {
+where
+    P: AsRef<std::path::Path>,
+{
     let mut cohort_temp = Vec::<CohortTemp>::new();
 
     let mut rdr = csv::ReaderBuilder::new()

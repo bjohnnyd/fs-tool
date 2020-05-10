@@ -1,3 +1,9 @@
+use crate::meta::{BindingMeta, AlleleMeta};
+use crate::calc::CalcFsResult;
+use crate::error::Error;
+
+
+
 use immunoprot::ig_like::kir_ligand::{KirLigandMap, IPD_KIR_URL};
 use immunoprot::mhc::hla::ClassI;
 use log::warn;
@@ -59,4 +65,51 @@ pub(crate) fn write_project_ligand_info(kir_ligand: &KirLigandMap) {
     } else {
         warn!("Could not access global project directory for this OS")
     }
+}
+
+
+pub struct OutputWriters {
+    pub allele_meta: csv::Writer<std::fs::File>,
+    pub binding_meta: csv::Writer<std::fs::File>,
+    pub allele_fs_result: csv::Writer<std::fs::File>,
+}
+
+impl OutputWriters {
+    pub fn write_allele_meta(
+        &mut self,
+        metadata: &[AlleleMeta],
+    ) -> std::result::Result<Vec<()>, Error> {
+        let write_result = metadata
+            .iter()
+            .map(|meta| self.allele_meta.serialize(meta))
+            .collect::<Result<Vec<_>, _>>();
+
+        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteAlleleMeta))?)
+    }
+
+    pub fn write_binding_meta(
+        &mut self,
+        metadata: &[BindingMeta],
+    ) -> std::result::Result<Vec<()>, Error> {
+        let write_result = metadata
+            .iter()
+            .map(|meta| self.binding_meta.serialize(meta))
+            .collect::<Result<Vec<_>, _>>();
+
+        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteBindingMeta))?)
+    }
+
+    pub fn write_fs_result(
+        &mut self,
+        fs_results: &[CalcFsResult],
+    ) -> std::result::Result<Vec<()>, Error> {
+        let write_result = fs_results
+            .iter()
+            .map(|result| self.allele_fs_result.serialize(result))
+            .collect::<Result<Vec<_>, _>>();
+
+        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteFsResult))?)
+    }
+
+
 }

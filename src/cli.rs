@@ -7,9 +7,8 @@ use crate::calc::Measure;
 use crate::error::Error;
 use crate::io::reader::*;
 use crate::io::writer::*;
-use crate::LOGGING_MODULES;
+use crate::{KIR_DEF, LOGGING_MODULES, TCR_DEF};
 
-use crate::meta::{AlleleMeta, BindingMeta};
 use immunoprot::ig_like::kir_ligand::KirLigandMap;
 use log::{info, warn};
 
@@ -50,7 +49,7 @@ pub enum Command {
         /// Path to file containing predicted Class I affinity data (NetMHCpan results)
         binding_predictions: PathBuf,
         #[structopt(long)]
-        /// Whether to drop the default measures that are calculated by default
+        /// Whether to drop the default measures that are
         /// on TCR and KIR motifs.
         drop_default: bool,
         #[structopt(short, long, possible_values = &PEPTIDE_LENGTHS, default_value = "9")]
@@ -64,7 +63,6 @@ pub enum Command {
         unique: bool,
     },
 }
-
 impl Opt {
     pub fn set_logging(&self) {
         use log::LevelFilter::{self, *};
@@ -121,6 +119,7 @@ impl Opt {
 
         let allele_path = output_dir.join(format!("{}allele_metadata.csv", prefix));
         let binding_path = output_dir.join(format!("{}allele_binding_summary.csv", prefix));
+        let allele_fs_path = output_dir.join(format!("{}allele_fs_result.csv", prefix));
 
         let allele_meta = csv::WriterBuilder::new()
             .has_headers(true)
@@ -134,40 +133,27 @@ impl Opt {
             .from_path(binding_path)
             .or_else(|_| Err(Error::CouldNotCreateOutputFile))?;
 
+        let allele_fs_result = csv::WriterBuilder::new()
+            .has_headers(true)
+            .delimiter(crate::DEFAULT_DELIM)
+            .from_path(allele_fs_path)
+            .or_else(|_| Err(Error::CouldNotCreateOutputFile))?;
+
         Ok(OutputWriters {
             allele_meta,
             binding_meta,
+            allele_fs_result,
         })
     }
 }
 
-pub struct OutputWriters {
-    pub allele_meta: csv::Writer<std::fs::File>,
-    pub binding_meta: csv::Writer<std::fs::File>,
-}
+pub fn get_measures(measures: Option<Vec<Measure>>, drop: bool) -> Vec<Measure> {
+    let mut measures = measures.unwrap_or_default();
 
-impl OutputWriters {
-    pub fn write_allele_meta(
-        &mut self,
-        metadata: &[AlleleMeta],
-    ) -> std::result::Result<Vec<()>, Error> {
-        let write_result = metadata
-            .iter()
-            .map(|meta| self.allele_meta.serialize(meta))
-            .collect::<Result<Vec<_>, _>>();
-
-        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteAlleleMeta))?)
+    if !drop {
+        measures.push(TCR_DEF.parse().unwrap());
+        measures.push(KIR_DEF.parse().unwrap());
     }
 
-    pub fn write_binding_meta(
-        &mut self,
-        metadata: &[BindingMeta],
-    ) -> std::result::Result<Vec<()>, Error> {
-        let write_result = metadata
-            .iter()
-            .map(|meta| self.binding_meta.serialize(meta))
-            .collect::<Result<Vec<_>, _>>();
-
-        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteBindingMeta))?)
-    }
+    measures
 }

@@ -2,7 +2,7 @@ use serde::de::Visitor;
 use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::meta::{AlleleMeta, LigandMeta};
-use immunoprot::ig_like::kir_ligand::KirLigandInfo;
+use immunoprot::ig_like::kir_ligand::{KirLigandInfo, LigandMotif};
 
 struct LigandMetaVisitor;
 
@@ -84,3 +84,27 @@ impl Serialize for AlleleMeta {
         allele_meta.end()
     }
 }
+
+pub fn optional_motif_serialize<S>(x: &Option<LigandMotif>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+
+    match x {
+        Some(motif) => s.serialize_str(motif.to_string().as_str()),
+        None => s.serialize_str("NA")
+    }
+}
+
+pub fn optional_motif_deserialize<'de, D>(deserializer: D) -> Result<Option<LigandMotif>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+
+        let s: &str = Deserialize::deserialize(deserializer)?;
+
+        Ok(s.parse::<LigandMotif>().ok())
+
+
+    }
+

@@ -1,3 +1,4 @@
+// TODO: If binding predicitons file does not exist the error is not good;
 // #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![allow(dead_code, unused_variables)]
 mod calc;
@@ -13,11 +14,11 @@ pub const TCR_DEF: &str = "TCR:3,4,5,6,8,9";
 pub const LOGGING_MODULES: [&str; 3] = ["immunoprot", "netmhcpan", "fstool"];
 pub const DEFAULT_DELIM: u8 = b',';
 
-use crate::cli::{Command::*, Opt};
+use crate::calc::{calculate_fs, create_calc_combs};
+use crate::cli::{get_measures, Command::*, Opt};
 use crate::meta::{create_allele_metadata, create_binding_metadata};
 use netmhcpan::reader::read_raw_netmhcpan;
 use structopt::StructOpt;
-use crate::calc::create_calc_combs;
 
 fn main() -> std::result::Result<(), ()> {
     match main_try() {
@@ -53,8 +54,17 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
             output_writers.write_binding_meta(&binding_meta)?;
 
             let allele_combs = create_calc_combs(&binding_data);
+            let measures = get_measures(measure, drop_default);
 
-
+            let fs_result = calculate_fs(
+                &allele_combs,
+                &measures,
+                &kir_ligand_map,
+                &peptide_length,
+                binding_data.weak_threshold(),
+                unique,
+            );
+            output_writers.write_fs_result(&fs_result)?;
         }
     }
 

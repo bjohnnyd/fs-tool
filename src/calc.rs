@@ -1,10 +1,11 @@
 // TODO: Need a function to create all combinations
 use crate::error::Error;
 
-use immunoprot::ig_like::kir_ligand::LigandMotif;
+use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
 use immunoprot::mhc::hla::ClassI;
-use netmhcpan::result::{BindingInfo, BindingData};
+use netmhcpan::result::{BindingData, BindingInfo};
 
+use serde::{Deserialize, Serialize};
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.
 /// Might be extended by a field representing whether the calculations should take KIR genotypes into
@@ -15,13 +16,23 @@ pub struct Measure {
     pub motif_pos: Vec<usize>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CalcFsResult {
     pub measure: String,
+    #[serde(with = "serde_with::rust::display_fromstr")]
     pub index: ClassI,
+    #[serde(with = "serde_with::rust::display_fromstr")]
     pub non_index: ClassI,
-    pub index_ligand_motif: LigandMotif,
-    pub non_index_ligand_motif: LigandMotif,
+    #[serde(
+        serialize_with = "crate::io::ser::optional_motif_serialize",
+        deserialize_with = "crate::io::ser::optional_motif_deserialize"
+    )]
+    pub index_ligand_motif: Option<LigandMotif>,
+    #[serde(
+        serialize_with = "crate::io::ser::optional_motif_serialize",
+        deserialize_with = "crate::io::ser::optional_motif_deserialize"
+    )]
+    pub non_index_ligand_motif: Option<LigandMotif>,
     pub fraction_shared: f32,
     pub peptide_length: usize,
     pub index_bound: usize,
@@ -151,7 +162,10 @@ impl<'a> CalculatorComb<'a> {
 
         let total_bound = (index_motifs.len() + non_index_motifs.len()) as f32;
 
-        (index_shared / total_bound, non_index_shared / total_bound)
+        (
+            index_shared / index_motifs.len() as f32,
+            non_index_shared / non_index_motifs.len() as f32,
+        )
     }
 }
 
@@ -194,27 +208,86 @@ impl std::str::FromStr for Measure {
 
 /// Creates all possible allele combinations from NetMHCpan predictions
 pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
-    binding_data.list_alleles()
-        .iter()
-        .fold(Vec::<CalculatorComb>::new(), |mut comb, index_allele| {
+    binding_data.list_alleles().iter().fold(
+        Vec::<CalculatorComb>::new(),
+        |mut comb, index_allele| {
+            for non_index_allele in binding_data.list_alleles() {
+                if *index_allele != non_index_allele {
+                    let calc_comb = CalculatorComb {
+                        alleles: (index_allele, non_index_allele),
+                        binding_data: (
+                            binding_data.get_bound_info(index_allele),
+                            binding_data.get_bound_info(non_index_allele),
+                        ),
+                    };
 
-        for non_index_allele in binding_data.list_alleles() {
-
-            if *index_allele != non_index_allele {
-                let calc_comb = CalculatorComb {
-                    alleles: (index_allele, non_index_allele),
-                    binding_data: (binding_data.get_bound_info(index_allele), binding_data.get_bound_info(non_index_allele))
-                };
-
-                comb.push(calc_comb)
+                    comb.push(calc_comb)
+                }
             }
-        }
 
-        comb
-    })
+            comb
+        },
+    )
 }
 
+/// Make calculations for specific measures and peptide lengths
+pub fn calculate_fs(
+    combinations: &[CalculatorComb],
+    measures: &[Measure],
+    ligand_map: &KirLigandMap,
+    pep_lengths: &[usize],
+    threshold: f32,
+    unique: bool,
+) -> Vec<CalcFsResult> {
+    combinations
+        .iter()
+        .fold(Vec::<CalcFsResult>::new(), |mut results, comb| {
+            let index = comb.alleles.0.clone();
+            let non_index = comb.alleles.1.clone();
+            let mut index_motifs = ligand_map.get_allele_info(&index);
+            let mut non_index_motifs = ligand_map.get_allele_info(&non_index);
 
+            index_motifs.sort();
+            non_index_motifs.sort();
+
+            let index_ligand_motif = match index_motifs.iter().next() {
+                Some(info) => Some(info.motif().clone()),
+                _ => None,
+            };
+
+            let non_index_ligand_motif = match non_index_motifs.iter().next() {
+                Some(info) => Some(info.motif().clone()),
+                _ => None,
+            };
+
+            measures.iter().for_each(|measure_group| {
+                pep_lengths.iter().for_each(|pep_length| {
+                    let measure = measure_group.name.to_string();
+                    let motif = &measure_group.motif_pos;
+                    let (index_bound, non_index_bound) =
+                        comb.count_bound(threshold, unique, *pep_length, Some(motif));
+                    let (fraction_shared, _) =
+                        comb.calculate_shared_motifs(motif, threshold, unique, *pep_length);
+
+                    let result = CalcFsResult {
+                        measure,
+                        index: index.clone(),
+                        non_index: non_index.clone(),
+                        index_ligand_motif: index_ligand_motif.clone(),
+                        non_index_ligand_motif: non_index_ligand_motif.clone(),
+                        fraction_shared,
+                        peptide_length: *pep_length,
+                        index_bound,
+                        non_index_bound,
+                    };
+
+                    results.push(result);
+                });
+            });
+
+            results
+        })
+}
 
 #[cfg(test)]
 mod tests {
@@ -235,13 +308,12 @@ mod tests {
         )
     }
 
-   #[test]
+    #[test]
     fn test_calculate_fs() {
-       let binding_data = read_raw_netmhcpan("tests/netmhcpan/netmhcpan_wBA.txt").unwrap();
-       let comb = create_calc_combs(&binding_data);
+        let binding_data = read_raw_netmhcpan("tests/netmhcpan/netmhcpan_wBA.txt").unwrap();
+        let comb = create_calc_combs(&binding_data);
 
-       dbg!(&comb);
-       dbg!(&comb.len());
-
-   }
+        dbg!(&comb);
+        dbg!(&comb.len());
+    }
 }

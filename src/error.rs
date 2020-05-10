@@ -15,4 +15,6 @@ pub enum Error {
     CouldNotWriteAlleleMeta,
     #[error("Could not write binding metadata to output.")]
     CouldNotWriteBindingMeta,
+    #[error("Could not write fraction shared results to output.")]
+    CouldNotWriteFsResult,
 }

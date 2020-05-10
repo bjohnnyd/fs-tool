@@ -59,6 +59,9 @@ pub enum Command {
         /// Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
         #[structopt(short, long)]
         measure: Option<Vec<Measure>>,
+        /// Whether only unique peptide/motif sequences should be considered in the calculations
+        #[structopt(short, long)]
+        unique: bool,
     },
 }
 

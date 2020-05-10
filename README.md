@@ -14,6 +14,12 @@ When the tool is ran, the first time after installation, it will download curren
 
 Precompiled binary that will run on Linux 64 systems is available for each release. You can download the latest binary from the Releases tab.
 
+![picture](https://commons.wikimedia.org/wiki/File:Tux.svg)
+
+![picture](https://commons.wikimedia.org/wiki/File:Windows_logo_%E2%80%93_2012_(dark_blue).svg)
+
+![picture](https://commons.wikimedia.org/wiki/File:Apple_logo_black.svg)
+
 To get the latest binary through CLI and download the latest ligand group assignments from EBI run the following command:
 
 ``` bash

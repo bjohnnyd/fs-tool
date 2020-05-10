@@ -17,6 +17,7 @@ use crate::cli::{Command::*, Opt};
 use crate::meta::{create_allele_metadata, create_binding_metadata};
 use netmhcpan::reader::read_raw_netmhcpan;
 use structopt::StructOpt;
+use crate::calc::create_calc_combs;
 
 fn main() -> std::result::Result<(), ()> {
     match main_try() {
@@ -41,6 +42,7 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
             drop_default,
             peptide_length,
             measure,
+            unique,
         } => {
             let binding_data = read_raw_netmhcpan(binding_predictions)?;
 
@@ -49,6 +51,10 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
 
             output_writers.write_allele_meta(&allele_meta)?;
             output_writers.write_binding_meta(&binding_meta)?;
+
+            let allele_combs = create_calc_combs(&binding_data);
+
+
         }
     }
 

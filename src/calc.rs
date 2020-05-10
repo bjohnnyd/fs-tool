@@ -3,7 +3,8 @@ use crate::error::Error;
 
 use immunoprot::ig_like::kir_ligand::LigandMotif;
 use immunoprot::mhc::hla::ClassI;
-use netmhcpan::result::BindingInfo;
+use netmhcpan::result::{BindingInfo, BindingData};
+
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.
 /// Might be extended by a field representing whether the calculations should take KIR genotypes into
@@ -30,19 +31,19 @@ pub struct CalcFsResult {
 #[derive(Debug)]
 pub struct CalculatorComb<'a> {
     pub alleles: (&'a ClassI, &'a ClassI),
-    pub binding_data: (&'a [BindingInfo], &'a [BindingInfo]),
+    pub binding_data: (Vec<&'a BindingInfo>, Vec<&'a BindingInfo>),
 }
 
 impl<'a> CalculatorComb<'a> {
     pub fn new(
-        first_allele: &'a ClassI,
-        second_allele: &'a ClassI,
-        first_bd: &'a [BindingInfo],
-        second_bd: &'a [BindingInfo],
+        index_allele: &'a ClassI,
+        non_index_allele: &'a ClassI,
+        index_bd: Vec<&'a BindingInfo>,
+        non_index_bd: Vec<&'a BindingInfo>,
     ) -> Self {
         Self {
-            alleles: (first_allele, second_allele),
-            binding_data: (first_bd, second_bd),
+            alleles: (index_allele, non_index_allele),
+            binding_data: (index_bd, non_index_bd),
         }
     }
 
@@ -52,7 +53,7 @@ impl<'a> CalculatorComb<'a> {
         length: usize,
         aa_pos: &[usize],
     ) -> (Vec<String>, Vec<String>) {
-        let bound_motifs = |item: &BindingInfo| {
+        let bound_motifs = |item: &&BindingInfo| {
             if item.rank() < threshold && item.len() == length {
                 Some(item.motif(aa_pos))
             } else {
@@ -60,21 +61,23 @@ impl<'a> CalculatorComb<'a> {
             }
         };
 
-        let first_motifs = self
+        let index_motifs = self
             .binding_data
             .0
             .iter()
             .filter_map(bound_motifs)
             .collect::<Vec<String>>();
-        let second_motifs = self
+        let non_index_motifs = self
             .binding_data
             .0
             .iter()
             .filter_map(bound_motifs)
             .collect::<Vec<String>>();
 
-        (first_motifs, second_motifs)
+        (index_motifs, non_index_motifs)
     }
+
+    /// Counts number of unique bound motifs (if positions provided) or peptides
     pub fn count_bound(
         &self,
         threshold: f32,
@@ -82,19 +85,19 @@ impl<'a> CalculatorComb<'a> {
         length: usize,
         aa_pos: Option<&[usize]>,
     ) -> (usize, usize) {
-        let is_bound = |item: &&BindingInfo| item.rank() < threshold && item.len() == length;
+        let is_bound = |item: &&&BindingInfo| item.rank() < threshold && item.len() == length;
 
-        let (mut first_motifs, mut second_motifs) = match aa_pos {
+        let (mut index_motifs, mut non_index_motifs) = match aa_pos {
             Some(aa_pos) => self.get_motifs(threshold, length, aa_pos),
             _ => {
-                let first_bound = self
+                let index_bound = self
                     .binding_data
                     .0
                     .iter()
                     .filter(is_bound)
                     .map(|info| info.seq().to_string())
                     .collect();
-                let second_bound = self
+                let non_index_bound = self
                     .binding_data
                     .0
                     .iter()
@@ -102,19 +105,19 @@ impl<'a> CalculatorComb<'a> {
                     .map(|info| info.seq().to_string())
                     .collect();
 
-                (first_bound, second_bound)
+                (index_bound, non_index_bound)
             }
         };
 
         if unique {
-            first_motifs.sort();
-            second_motifs.sort();
+            index_motifs.sort();
+            non_index_motifs.sort();
 
-            first_motifs.dedup();
-            second_motifs.dedup();
+            index_motifs.dedup();
+            non_index_motifs.dedup();
         }
 
-        (first_motifs.len(), second_motifs.len())
+        (index_motifs.len(), non_index_motifs.len())
     }
 
     /// Calculates shared peptides motifs based on a threshold for determining bound and whether unique motifs should only be considered,
@@ -126,29 +129,29 @@ impl<'a> CalculatorComb<'a> {
         unique: bool,
         length: usize,
     ) -> (f32, f32) {
-        let (mut first_motifs, mut second_motifs) = self.get_motifs(threshold, length, motif);
+        let (mut index_motifs, mut non_index_motifs) = self.get_motifs(threshold, length, motif);
 
         if unique {
-            first_motifs.sort();
-            second_motifs.sort();
+            index_motifs.sort();
+            non_index_motifs.sort();
 
-            first_motifs.dedup();
-            second_motifs.dedup();
+            index_motifs.dedup();
+            non_index_motifs.dedup();
         }
 
-        let first_shared = first_motifs
+        let index_shared = index_motifs
             .iter()
-            .filter(|motif| second_motifs.contains(motif))
+            .filter(|motif| non_index_motifs.contains(motif))
             .count() as f32;
 
-        let second_shared = second_motifs
+        let non_index_shared = non_index_motifs
             .iter()
-            .filter(|motif| first_motifs.contains(motif))
+            .filter(|motif| index_motifs.contains(motif))
             .count() as f32;
 
-        let total_bound = (first_motifs.len() + second_motifs.len()) as f32;
+        let total_bound = (index_motifs.len() + non_index_motifs.len()) as f32;
 
-        (first_shared / total_bound, second_shared / total_bound)
+        (index_shared / total_bound, non_index_shared / total_bound)
     }
 }
 
@@ -189,40 +192,34 @@ impl std::str::FromStr for Measure {
     }
 }
 
+/// Creates all possible allele combinations from NetMHCpan predictions
+pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
+    binding_data.list_alleles()
+        .iter()
+        .fold(Vec::<CalculatorComb>::new(), |mut comb, index_allele| {
+
+        for non_index_allele in binding_data.list_alleles() {
+
+            if *index_allele != non_index_allele {
+                let calc_comb = CalculatorComb {
+                    alleles: (index_allele, non_index_allele),
+                    binding_data: (binding_data.get_bound_info(index_allele), binding_data.get_bound_info(non_index_allele))
+                };
+
+                comb.push(calc_comb)
+            }
+        }
+
+        comb
+    })
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const NETMHCPAN_RESULT: &str = r#"HLA-A03:01 : Distance to training data  0.000 (using nearest neighbor HLA-A03:01)\n\
-            \n\
-            # Rank Threshold for Strong binding peptides   0.500\n\
-            # Rank Threshold for Weak binding peptides   2.000\n\
-            -----------------------------------------------------------------------------------\n\
-              Pos          HLA         Peptide       Core Of Gp Gl Ip Il        Icore        Identity     Score   %Rank  BindLevel\n\
-            -----------------------------------------------------------------------------------\n\
-                1  HLA-A*03:01     TPQDLNTMLNT  TPQDTMLNT  0  4  2  0  0  TPQDLNTMLNT     Gag_180_209 0.0000160 83.3333\n\
-                2  HLA-A*03:01     PQDLNTMLNTV  PQDLNTMLV  0  8  2  0  0  PQDLNTMLNTV     Gag_180_209 0.0000120 87.0000\n\
-                3  HLA-A*03:01     QDLNTMLNTVG  QDLNTNTVG  0  5  2  0  0  QDLNTMLNTVG     Gag_180_209 0.0000040 96.0000\n\
-                4  HLA-A*03:01     DLNTMLNTVGG  DLNTNTVGG  0  4  2  0  0  DLNTMLNTVGG     Gag_180_209 0.0000040 96.0000\n\
-                5  HLA-A*03:01     LNTMLNTVGGH  LMLNTVGGH  0  1  2  0  0  LNTMLNTVGGH     Gag_180_209 0.0001090 48.8333\n\
-                6  HLA-A*03:01     NTMLNTVGGHQ  NTMTVGGHQ  0  3  2  0  0  NTMLNTVGGHQ     Gag_180_209 0.0001260 46.1429\n\
-                7  HLA-A*03:01     TMLNTVGGHQA  TMLNGGHQA  0  4  2  0  0  TMLNTVGGHQA     Gag_180_209 0.0001260 46.1429\n\
-                8  HLA-A*03:01     MLNTVGGHQAA  MLNGGHQAA  0  3  2  0  0  MLNTVGGHQAA     Gag_180_209 0.0002300 36.4000\n\
-                9  HLA-A*03:01     LNTVGGHQAAM  NTVGGHQAM  1  7  1  0  0   NTVGGHQAAM     Gag_180_209 0.0000530 62.5000\n\
-               10  HLA-A*03:01     NTVGGHQAAMQ  NTVGGAAMQ  0  5  2  0  0  NTVGGHQAAMQ     Gag_180_209 0.0001420 44.1250\n\
-               11  HLA-A*03:01     TVGGHQAAMQM  TVHQAAMQM  0  2  2  0  0  TVGGHQAAMQM     Gag_180_209 0.0004120 28.5000\n\
-               12  HLA-A*03:01     VGGHQAAMQML  VGGAAMQML  0  3  2  0  0  VGGHQAAMQML     Gag_180_209 0.0000120 87.0000\n\
-               13  HLA-A*03:01     GGHQAAMQMLK  GQAAMQMLK  0  1  2  0  0  GGHQAAMQMLK     Gag_180_209 0.0313010  3.8215\n\
-               14  HLA-A*03:01     GHQAAMQMLKE  GQAAMQMLK  0  1  1  0  0   GHQAAMQMLK     Gag_180_209 0.0004080 28.6176\n\
-               15  HLA-A*03:01     HQAAMQMLKET  HQAAMQMLK  0  0  0  0  0    HQAAMQMLK     Gag_180_209 0.0003110 32.0000\n\
-               16  HLA-A*03:01     QAAMQMLKETI  QAAMQMLTI  0  7  2  0  0  QAAMQMLKETI     Gag_180_209 0.0000140 85.0000\n\
-               17  HLA-A*03:01     AAMQMLKETIN  AAMQKETIN  0  4  2  0  0  AAMQMLKETIN     Gag_180_209 0.0000060 93.7500\n\
-               18  HLA-A*03:01     AMQMLKETINE  AMLKETINE  0  1  2  0  0  AMQMLKETINE     Gag_180_209 0.0001620 41.9000\n\
-               19  HLA-A*03:01     MQMLKETINEE  MLKETINEE  0  1  2  0  0  MQMLKETINEE     Gag_180_209 0.0000850 53.5417\n\
-               20  HLA-A*03:01     QMLKETINEEA  QMLKETINA  0  8  2  0  0  QMLKETINEEA     Gag_180_209 0.0000410 67.2727\n\
-               21  HLA-A*03:01       MLKETINEE  MLKETINEE  0  0  0  0  0    MLKETINEE     Gag_180_209 0.0079270  7.4157\n\
-               22  HLA-A*03:01       LKETINEEA  LKETINEEA  0  0  0  0  0    LKETINEEA     Gag_180_209 0.0000450 65.4545\n\
-                "#;
+    use netmhcpan::reader::read_raw_netmhcpan;
 
     #[test]
     fn test_create_measure() {
@@ -237,4 +234,14 @@ mod tests {
             }
         )
     }
+
+   #[test]
+    fn test_calculate_fs() {
+       let binding_data = read_raw_netmhcpan("tests/netmhcpan/netmhcpan_wBA.txt").unwrap();
+       let comb = create_calc_combs(&binding_data);
+
+       dbg!(&comb);
+       dbg!(&comb.len());
+
+   }
 }

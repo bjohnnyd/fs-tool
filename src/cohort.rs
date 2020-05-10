@@ -1,5 +1,8 @@
+use immunoprot::ig_like::kir::Kir;
 use immunoprot::mhc::hla::ClassI;
 use serde::Deserialize;
+
+// TODO: Need to implement a way to deal with cases where an allele in the genotype is missing
 
 #[derive(Debug, Deserialize)]
 pub struct CohortTemp {
@@ -129,15 +132,86 @@ pub struct CohortTemp {
         default
     )]
     pub kir3dl1: Option<bool>,
+    #[serde(
+        alias = "KIR3DL2",
+        alias = "3DL2",
+        deserialize_with = "crate::io::ser::optional_bool_deserialize",
+        default
+    )]
+    pub kir3dl2: Option<bool>,
+}
+
+macro_rules! field_to_kirs {
+    ($struct_name: ident, $($fname:ident),+) => {{
+        let mut v = Vec::<Kir>::new();
+
+
+        $(
+        if let Some(field)  = $struct_name.$fname {
+            if field {
+                let name = stringify!($fname).to_uppercase();
+                 v.push(name.parse::<Kir>().unwrap())
+            }
+        }
+        )*
+
+        v
+
+    }
+    };
+}
+
+impl From<CohortTemp> for Individual {
+    fn from(cohort: CohortTemp) -> Self {
+        let id = cohort.id;
+
+        let kir_genotype = field_to_kirs!(
+            cohort, kir2dl1, kir2dl2, kir2dl3, kir2dl4, kir2dl5, kir2ds1, kir2ds2, kir2ds3,
+            kir2ds4, kir2ds5, kir3ds1, kir3dl1, kir3dl2
+        );
+
+        let hla_genotype = vec![
+            cohort.a1,
+            cohort.a2,
+            cohort.b1.clone(),
+            cohort.b2.clone(),
+            cohort.c1.clone(),
+            cohort.c2.clone(),
+        ];
+
+        Self {
+            id,
+            hla_genotype,
+            kir_genotype,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Individual {
+    pub id: String,
+    pub hla_genotype: Vec<ClassI>,
+    pub kir_genotype: Vec<Kir>,
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::cohort::Individual;
     use crate::io::reader::read_temp_cohort;
 
     #[test]
     fn test_read_cohort() {
         let cohort = read_temp_cohort("tests/example_cohort.csv").unwrap();
-        dbg!(&cohort);
+        println!("{}", cohort.len())
+    }
+
+    #[test]
+    fn test_create_individual() {
+        let cohort = read_temp_cohort("tests/example_cohort.csv").unwrap();
+        let individuals = cohort
+            .into_iter()
+            .map(|temp| Individual::from(temp))
+            .collect::<Vec<Individual>>();
+        dbg!(&individuals[0]);
     }
 }

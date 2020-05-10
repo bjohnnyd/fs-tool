@@ -6,6 +6,11 @@ use std::str::FromStr;
 
 use crate::error::NomenclatureError;
 
+pub const KIR_TYPES: [&str; 13] = [
+    "KIR2DL1", "KIR2DL2", "KIR2DL3", "KIR2DL4", "KIR2DL5", "KIR2DS1", "KIR2DS2", "KIR2DS3",
+    "KIR2DS4", "KIR2DS5", "KIR3DS1", "KIR3DL1", "KIR3DL2",
+];
+
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Tail {
     Long,  // Inhibitory

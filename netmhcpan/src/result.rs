@@ -267,6 +267,13 @@ impl BindingInfo {
         &self.peptide
     }
 
+    pub fn seq(&self) -> &str {
+        self.peptide.seq()
+    }
+    pub fn len(&self) -> usize {
+        self.peptide.len()
+    }
+
     pub fn rank(&self) -> f32 {
         self.rank
     }

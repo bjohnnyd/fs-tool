@@ -1,6 +1,7 @@
 // TODO: Need a function to create all combinations
 use crate::error::Error;
 
+use immunoprot::ig_like::kir_ligand::LigandMotif;
 use immunoprot::mhc::hla::ClassI;
 use netmhcpan::result::BindingInfo;
 
@@ -11,6 +12,19 @@ use netmhcpan::result::BindingInfo;
 pub struct Measure {
     pub name: String,
     pub motif_pos: Vec<usize>,
+}
+
+#[derive(Debug)]
+pub struct CalcFsResult {
+    pub measure: String,
+    pub index: ClassI,
+    pub non_index: ClassI,
+    pub index_ligand_motif: LigandMotif,
+    pub non_index_ligand_motif: LigandMotif,
+    pub fraction_shared: f32,
+    pub peptide_length: usize,
+    pub index_bound: usize,
+    pub non_index_bound: usize,
 }
 
 #[derive(Debug)]
@@ -32,6 +46,77 @@ impl<'a> CalculatorComb<'a> {
         }
     }
 
+    pub fn get_motifs(
+        &self,
+        threshold: f32,
+        length: usize,
+        aa_pos: &[usize],
+    ) -> (Vec<String>, Vec<String>) {
+        let bound_motifs = |item: &BindingInfo| {
+            if item.rank() < threshold && item.len() == length {
+                Some(item.motif(aa_pos))
+            } else {
+                None
+            }
+        };
+
+        let first_motifs = self
+            .binding_data
+            .0
+            .iter()
+            .filter_map(bound_motifs)
+            .collect::<Vec<String>>();
+        let second_motifs = self
+            .binding_data
+            .0
+            .iter()
+            .filter_map(bound_motifs)
+            .collect::<Vec<String>>();
+
+        (first_motifs, second_motifs)
+    }
+    pub fn count_bound(
+        &self,
+        threshold: f32,
+        unique: bool,
+        length: usize,
+        aa_pos: Option<&[usize]>,
+    ) -> (usize, usize) {
+        let is_bound = |item: &&BindingInfo| item.rank() < threshold && item.len() == length;
+
+        let (mut first_motifs, mut second_motifs) = match aa_pos {
+            Some(aa_pos) => self.get_motifs(threshold, length, aa_pos),
+            _ => {
+                let first_bound = self
+                    .binding_data
+                    .0
+                    .iter()
+                    .filter(is_bound)
+                    .map(|info| info.seq().to_string())
+                    .collect();
+                let second_bound = self
+                    .binding_data
+                    .0
+                    .iter()
+                    .filter(is_bound)
+                    .map(|info| info.seq().to_string())
+                    .collect();
+
+                (first_bound, second_bound)
+            }
+        };
+
+        if unique {
+            first_motifs.sort();
+            second_motifs.sort();
+
+            first_motifs.dedup();
+            second_motifs.dedup();
+        }
+
+        (first_motifs.len(), second_motifs.len())
+    }
+
     /// Calculates shared peptides motifs based on a threshold for determining bound and whether unique motifs should only be considered,
     /// the peptides considered can also optionally be filtered based on length
     pub fn calculate_shared_motifs(
@@ -39,43 +124,14 @@ impl<'a> CalculatorComb<'a> {
         motif: &[usize],
         threshold: f32,
         unique: bool,
-        length: Option<usize>,
+        length: usize,
     ) -> (f32, f32) {
-        let get_bound_motifs = |item: &BindingInfo| {
-            if item.rank() < threshold {
-                match length {
-                    Some(length) => {
-                        let pep = item.peptide();
-                        if pep.len() == length {
-                            Some(pep.sequence_motif(motif))
-                        } else {
-                            None
-                        }
-                    }
-                    None => Some(item.peptide().sequence_motif(motif)),
-                }
-            } else {
-                None
-            }
-        };
-
-        let mut first_motifs = self
-            .binding_data
-            .0
-            .iter()
-            .filter_map(get_bound_motifs)
-            .collect::<Vec<String>>();
-        first_motifs.sort();
-
-        let mut second_motifs = self
-            .binding_data
-            .0
-            .iter()
-            .filter_map(get_bound_motifs)
-            .collect::<Vec<String>>();
-        second_motifs.sort();
+        let (mut first_motifs, mut second_motifs) = self.get_motifs(threshold, length, motif);
 
         if unique {
+            first_motifs.sort();
+            second_motifs.sort();
+
             first_motifs.dedup();
             second_motifs.dedup();
         }
@@ -84,6 +140,7 @@ impl<'a> CalculatorComb<'a> {
             .iter()
             .filter(|motif| second_motifs.contains(motif))
             .count() as f32;
+
         let second_shared = second_motifs
             .iter()
             .filter(|motif| first_motifs.contains(motif))

@@ -89,22 +89,17 @@ pub fn optional_motif_serialize<S>(x: &Option<LigandMotif>, s: S) -> Result<S::O
 where
     S: Serializer,
 {
-
     match x {
         Some(motif) => s.serialize_str(motif.to_string().as_str()),
-        None => s.serialize_str("NA")
+        None => s.serialize_str("NA"),
     }
 }
 
 pub fn optional_motif_deserialize<'de, D>(deserializer: D) -> Result<Option<LigandMotif>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
+where
+    D: Deserializer<'de>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
 
-        let s: &str = Deserialize::deserialize(deserializer)?;
-
-        Ok(s.parse::<LigandMotif>().ok())
-
-
-    }
-
+    Ok(s.parse::<LigandMotif>().ok())
+}

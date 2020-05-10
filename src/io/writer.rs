@@ -1,8 +1,6 @@
-use crate::meta::{BindingMeta, AlleleMeta};
 use crate::calc::CalcFsResult;
 use crate::error::Error;
-
-
+use crate::meta::{AlleleMeta, BindingMeta};
 
 use immunoprot::ig_like::kir_ligand::{KirLigandMap, IPD_KIR_URL};
 use immunoprot::mhc::hla::ClassI;
@@ -67,7 +65,6 @@ pub(crate) fn write_project_ligand_info(kir_ligand: &KirLigandMap) {
     }
 }
 
-
 pub struct OutputWriters {
     pub allele_meta: csv::Writer<std::fs::File>,
     pub binding_meta: csv::Writer<std::fs::File>,
@@ -110,6 +107,4 @@ impl OutputWriters {
 
         Ok(write_result.or_else(|_| Err(Error::CouldNotWriteFsResult))?)
     }
-
-
 }

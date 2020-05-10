@@ -17,4 +17,6 @@ pub enum Error {
     CouldNotWriteBindingMeta,
     #[error("Could not write fraction shared results to output.")]
     CouldNotWriteFsResult,
+    #[error("Could not open cohort file.")]
+    CouldNotOpenCohortFile(#[from] csv::Error),
 }

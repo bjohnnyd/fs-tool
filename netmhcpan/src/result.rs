@@ -317,7 +317,6 @@ impl BindingData {
         } else {
             warn!("{} has no associated binding data", allele);
         }
-
         bound_info
     }
 

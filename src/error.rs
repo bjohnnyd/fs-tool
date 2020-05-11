@@ -19,4 +19,6 @@ pub enum Error {
     CouldNotWriteFsResult,
     #[error("Could not open cohort file.")]
     CouldNotOpenCohortFile(#[from] csv::Error),
+    #[error("No global config directory exists")]
+    NoGlobalConfigDir,
 }

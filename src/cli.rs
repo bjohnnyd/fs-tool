@@ -10,6 +10,7 @@ use crate::io::writer::*;
 use crate::{KIR_DEF, LOGGING_MODULES, TCR_DEF};
 
 use immunoprot::ig_like::kir_ligand::KirLigandMap;
+use immunoprot::mhc::hla::ClassI;
 use log::{info, warn};
 
 #[derive(Debug, StructOpt)]
@@ -25,44 +26,41 @@ pub struct Opt {
     #[structopt(short, long)]
     /// Disables any information being printed to terminal (except errors)
     quiet: bool,
-    #[structopt(short, long)]
+    #[structopt(long)]
     /// Updates the current kir ligand group data
     pub update: bool,
-    #[structopt(short, long)]
+    #[structopt(long)]
     /// Returns the directory and files where the kir ligand data is stored
-    location: bool,
+    pub location: bool,
     #[structopt(short, long)]
     /// Directory to store outputs
     output: PathBuf,
     /// Prefix to assign to all outputs
     #[structopt(long)]
     prefix: Option<String>,
-    #[structopt(subcommand)]
-    pub cmd: Command,
+    #[structopt(short, long, parse(from_os_str))]
+    /// Path to file containing predicted Class I affinity data (NetMHCpan results)
+    pub binding_predictions: PathBuf,
+    #[structopt(long)]
+    /// Drop default measures based on TCR and KIR motifs.
+    pub drop_default: bool,
+    #[structopt(short, long, possible_values = &PEPTIDE_LENGTHS, default_value = "9")]
+    /// Which length of input peptide sequence to consider
+    pub peptide_length: Vec<usize>,
+    /// Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
+    #[structopt(short, long)]
+    pub measure: Option<Vec<Measure>>,
+    /// Whether only unique peptide/motif sequences should be considered in the calculations
+    #[structopt(short, long)]
+    pub unique: bool,
+    /// Index allele used for cohort calculations only, all individuals will be compared to these alleles
+    #[structopt(short, long, requires = "cohort")]
+    pub index: Option<Vec<ClassI>>,
+    /// Cohort of individuals for which all measures will be calculated
+    #[structopt(short, long, requires = "index")]
+    pub cohort: Option<PathBuf>,
 }
 
-#[derive(Debug, StructOpt)]
-pub enum Command {
-    /// Allows calculation of fraction shared between Class I alleles from affinity predictions
-    Allele {
-        #[structopt(short, long, parse(from_os_str))]
-        /// Path to file containing predicted Class I affinity data (NetMHCpan results)
-        binding_predictions: PathBuf,
-        #[structopt(long)]
-        /// Whether to drop the default measures that are
-        /// on TCR and KIR motifs.
-        drop_default: bool,
-        #[structopt(short, long, possible_values = &PEPTIDE_LENGTHS, default_value = "9")]
-        /// Which length of input peptide sequence to consider
-        peptide_length: Vec<usize>,
-        /// Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
-        #[structopt(short, long)]
-        measure: Option<Vec<Measure>>,
-        /// Whether only unique peptide/motif sequences should be considered in the calculations
-        #[structopt(short, long)]
-        unique: bool,
-    },
-}
 impl Opt {
     pub fn set_logging(&self) {
         use log::LevelFilter::{self, *};

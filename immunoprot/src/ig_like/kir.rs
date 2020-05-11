@@ -11,7 +11,7 @@ pub const KIR_TYPES: [&str; 13] = [
     "KIR2DS4", "KIR2DS5", "KIR3DS1", "KIR3DL1", "KIR3DL2",
 ];
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum Tail {
     Long,  // Inhibitory
     Short, // Activating
@@ -44,7 +44,7 @@ impl FromStr for Tail {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Domain {
     Two,
     Three,
@@ -74,7 +74,7 @@ impl FromStr for Domain {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum KirProtein {
     KP1,
     KP2,
@@ -118,7 +118,7 @@ impl FromStr for KirProtein {
         }
     }
 }
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct KirAllele {
     series: String,
     cds_syn_sub: Option<String>,
@@ -167,7 +167,7 @@ impl FromStr for KirAllele {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct Kir {
     ig_like_domain: Domain,
     cytoplasmic_tail: Tail,

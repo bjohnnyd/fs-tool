@@ -1,11 +1,15 @@
 // TODO: Need a function to create all combinations
 use crate::error::Error;
+use std::collections::HashMap;
 
 use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
 use immunoprot::mhc::hla::ClassI;
 use netmhcpan::result::{BindingData, BindingInfo};
 
+use log::warn;
 use serde::{Deserialize, Serialize};
+
+/* FS */
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.
 /// Might be extended by a field representing whether the calculations should take KIR genotypes into
@@ -16,7 +20,7 @@ pub struct Measure {
     pub motif_pos: Vec<usize>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CalcFsResult {
     pub measure: String,
     #[serde(with = "serde_with::rust::display_fromstr")]
@@ -287,6 +291,36 @@ pub fn calculate_fs(
 
             results
         })
+}
+
+/* Cohort */
+
+// TODO: Need to unit test
+pub fn create_index_fs_map(
+    index_alleles: Vec<ClassI>,
+    fs_results: Vec<CalcFsResult>,
+) -> HashMap<ClassI, Vec<CalcFsResult>> {
+    index_alleles
+        .into_iter()
+        .fold(HashMap::new(), |mut index_calc_map, index_allele| {
+            let index_results = fs_results.iter().filter(|result| result.index == index_allele).cloned().collect::<Vec<CalcFsResult>>();
+            if index_results.is_empty() {
+                warn!("Index allele '{}' was not present in the NetMHCpan results and no calculations for this allele will be performed.", &index_allele);
+            } else {
+                index_calc_map.insert(index_allele, index_results);
+            }
+            index_calc_map
+        })
+}
+
+/* LILRB */
+
+#[derive(Debug)]
+pub struct LilrbScore {
+    pub first_allele: ClassI,
+    pub second_allele: ClassI,
+    pub lilrb1_score: f32,
+    pub lilrb2_score: f32,
 }
 
 #[cfg(test)]

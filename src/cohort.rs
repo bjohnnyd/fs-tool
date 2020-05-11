@@ -1,6 +1,8 @@
 use immunoprot::ig_like::kir::Kir;
+use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
 use immunoprot::mhc::hla::ClassI;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 // TODO: Need to implement a way to deal with cases where an allele in the genotype is missing
 
@@ -189,20 +191,51 @@ impl From<CohortTemp> for Individual {
 
 #[derive(Debug)]
 pub struct Individual {
-    pub id: String,
-    pub hla_genotype: Vec<ClassI>,
-    pub kir_genotype: Vec<Kir>,
+    id: String,
+    hla_genotype: Vec<ClassI>,
+    kir_genotype: Vec<Kir>,
+}
+
+impl Individual {
+    pub fn kir_bound_motifs<'a>(
+        &self,
+        motif_binding_map: &'a HashMap<Kir, Vec<LigandMotif>>,
+    ) -> Vec<&'a LigandMotif> {
+        self.kir_genotype
+            .iter()
+            .fold(Vec::<&LigandMotif>::new(), |mut bound_motifs, kir| {
+                if let Some(motifs) = motif_binding_map.get(&kir) {
+                    motifs.iter().for_each(|motif| bound_motifs.push(motif));
+                }
+                bound_motifs
+            })
+    }
+
+    // TODO: Needs to be tested in units
+    pub fn get_hla_motifs<'a>(&self, hla_ligand_map: &'a KirLigandMap) -> Vec<&'a LigandMotif> {
+        self.hla_genotype
+            .iter()
+            .fold(Vec::<&LigandMotif>::new(), |mut hla_motifs, hla| {
+                let mut info = hla_ligand_map.get_allele_info(&hla);
+                info.sort();
+
+                if let Some(info) = info.iter().next() {
+                    hla_motifs.push(info.motif())
+                };
+
+                hla_motifs
+            })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::cohort::Individual;
-    use crate::io::reader::read_temp_cohort;
+    use crate::io::reader::{read_kir_motif_binding, read_temp_cohort};
 
     #[test]
     fn test_read_cohort() {
         let cohort = read_temp_cohort("tests/example_cohort.csv").unwrap();
-        println!("{}", cohort.len())
     }
 
     #[test]
@@ -212,6 +245,16 @@ mod tests {
             .into_iter()
             .map(|temp| Individual::from(temp))
             .collect::<Vec<Individual>>();
-        dbg!(&individuals[0]);
+    }
+
+    #[test]
+    fn test_get_bound_motifs() {
+        let cohort = read_temp_cohort("tests/example_cohort.csv").unwrap();
+        let individuals = cohort
+            .into_iter()
+            .map(|temp| Individual::from(temp))
+            .collect::<Vec<Individual>>();
+        let motif_binding_map = read_kir_motif_binding();
+        dbg!(individuals[0].kir_bound_motifs(&motif_binding_map));
     }
 }

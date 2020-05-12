@@ -18,10 +18,10 @@ pub const TCR_DEF: &str = "TCR:2,3,4,5,6,9";
 pub const LOGGING_MODULES: [&str; 3] = ["immunoprot", "netmhcpan", "fstool"];
 pub const DEFAULT_DELIM: u8 = b',';
 
-use crate::calc::{calculate_fs, create_calc_combs, create_index_fs_map};
+use crate::calc::{calculate_fs, calculate_index_cohort_fs, create_calc_combs, IndexCache};
 use crate::cli::{get_measures, Opt};
 use crate::cohort::Individual;
-use crate::io::reader::read_temp_cohort;
+use crate::io::reader::{read_kir_motif_binding, read_temp_cohort};
 use crate::meta::{create_allele_metadata, create_binding_metadata};
 
 use netmhcpan::reader::read_raw_netmhcpan;
@@ -39,16 +39,6 @@ fn main() -> std::result::Result<(), ()> {
 
 fn main_try() -> Result<(), Box<dyn std::error::Error>> {
     let opt = Opt::from_args();
-
-    // if opt.location {
-    //     if let Some(project_dir) = directories::ProjectDirs::from("", "", "fstool") {
-    //         println!("Current allele motif information is stored at {}", project_dir.data_dir().join(PROJECT_LIGAND_TABLE).display())
-    //     } else {
-    //         error!("Could not determine the global config directory");
-    //         return Err(Box::new(crate::error::Error::NoGlobalConfigDir))
-    //     }
-    //     return Ok(())
-    // }
 
     opt.set_logging();
 
@@ -74,6 +64,7 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
         binding_data.weak_threshold(),
         opt.unique,
     );
+
     output_writers.write_fs_result(&fs_result)?;
 
     if let (Some(index_alleles), Some(cohort_path)) = (opt.index, opt.cohort) {
@@ -82,8 +73,17 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
             .map(Individual::from)
             .collect::<Vec<Individual>>();
 
-        let index_map = create_index_fs_map(index_alleles, fs_result);
-        dbg!(index_map);
+        let kir_motif_interactions = read_kir_motif_binding();
+        let index_fs_cache = IndexCache::new(
+            index_alleles,
+            fs_result,
+            &kir_motif_interactions,
+            &measures,
+            &opt.peptide_length,
+        );
+        let cohort_result =
+            calculate_index_cohort_fs(index_fs_cache, &cohort, &kir_motif_interactions);
+        output_writers.write_cohort_result(&cohort_result)?;
     }
     Ok(())
 }

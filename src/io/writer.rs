@@ -1,4 +1,4 @@
-use crate::calc::CalcFsResult;
+use crate::calc::{CalcFsResult, CohortResult};
 use crate::error::Error;
 use crate::meta::{AlleleMeta, BindingMeta};
 
@@ -69,6 +69,7 @@ pub struct OutputWriters {
     pub allele_meta: csv::Writer<std::fs::File>,
     pub binding_meta: csv::Writer<std::fs::File>,
     pub allele_fs_result: csv::Writer<std::fs::File>,
+    pub cohort_result: csv::Writer<std::fs::File>,
 }
 
 impl OutputWriters {
@@ -103,6 +104,18 @@ impl OutputWriters {
         let write_result = fs_results
             .iter()
             .map(|result| self.allele_fs_result.serialize(result))
+            .collect::<Result<Vec<_>, _>>();
+
+        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteFsResult))?)
+    }
+
+    pub fn write_cohort_result(
+        &mut self,
+        cohort_results: &[CohortResult],
+    ) -> std::result::Result<Vec<()>, Error> {
+        let write_result = cohort_results
+            .iter()
+            .map(|result| self.cohort_result.serialize(result))
             .collect::<Result<Vec<_>, _>>();
 
         Ok(write_result.or_else(|_| Err(Error::CouldNotWriteFsResult))?)

@@ -17,6 +17,8 @@ pub enum Error {
     CouldNotWriteBindingMeta,
     #[error("Could not write fraction shared results to output.")]
     CouldNotWriteFsResult,
+    #[error("Could not write cohort calculation results to output")]
+    CouldNotWriteCohortResult,
     #[error("Could not open cohort file.")]
     CouldNotOpenCohortFile(#[from] csv::Error),
     #[error("No global config directory exists")]

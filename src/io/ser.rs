@@ -129,3 +129,13 @@ where
         ))),
     }
 }
+
+pub fn optional_float_serialize<S>(x: &Option<f32>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match x {
+        Some(x) => s.serialize_str(format!("{:.2}", x).as_str()),
+        None => s.serialize_str("NA"),
+    }
+}

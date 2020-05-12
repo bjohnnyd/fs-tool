@@ -191,9 +191,9 @@ impl From<CohortTemp> for Individual {
 
 #[derive(Debug)]
 pub struct Individual {
-    id: String,
-    hla_genotype: Vec<ClassI>,
-    kir_genotype: Vec<Kir>,
+    pub id: String,
+    pub hla_genotype: Vec<ClassI>,
+    pub kir_genotype: Vec<Kir>,
 }
 
 impl Individual {
@@ -255,6 +255,5 @@ mod tests {
             .map(|temp| Individual::from(temp))
             .collect::<Vec<Individual>>();
         let motif_binding_map = read_kir_motif_binding();
-        dbg!(individuals[0].kir_bound_motifs(&motif_binding_map));
     }
 }

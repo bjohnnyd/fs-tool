@@ -118,6 +118,7 @@ impl Opt {
         let allele_path = output_dir.join(format!("{}allele_metadata.csv", prefix));
         let binding_path = output_dir.join(format!("{}allele_binding_summary.csv", prefix));
         let allele_fs_path = output_dir.join(format!("{}allele_fs_result.csv", prefix));
+        let cohort_result_path = output_dir.join(format!("{}cohort_result.csv", prefix));
 
         let allele_meta = csv::WriterBuilder::new()
             .has_headers(true)
@@ -137,10 +138,17 @@ impl Opt {
             .from_path(allele_fs_path)
             .or_else(|_| Err(Error::CouldNotCreateOutputFile))?;
 
+        let cohort_result = csv::WriterBuilder::new()
+            .has_headers(true)
+            .delimiter(crate::DEFAULT_DELIM)
+            .from_path(cohort_result_path)
+            .or_else(|_| Err(Error::CouldNotCreateOutputFile))?;
+
         Ok(OutputWriters {
             allele_meta,
             binding_meta,
             allele_fs_result,
+            cohort_result,
         })
     }
 }

@@ -1,7 +1,10 @@
 // TODO: Need a function to create all combinations
-use crate::error::Error;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use crate::cohort::Individual;
+use crate::error::Error;
+
+use immunoprot::ig_like::kir::Kir;
 use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
 use immunoprot::mhc::hla::ClassI;
 use netmhcpan::result::{BindingData, BindingInfo};
@@ -311,6 +314,243 @@ pub fn create_index_fs_map(
             }
             index_calc_map
         })
+}
+
+#[derive(Debug)]
+pub struct IndexCache {
+    pub indexes: HashSet<ClassI>,
+    pub index_motifs: HashMap<ClassI, LigandMotif>,
+    pub index_act_kirs: HashMap<ClassI, Vec<Kir>>,
+    pub index_inh_kirs: HashMap<ClassI, Vec<Kir>>,
+    pub fs_cache: HashMap<(String, usize), HashMap<(ClassI, ClassI), CalcFsResult>>,
+}
+
+impl IndexCache {
+    pub fn new(
+        index_alleles: Vec<ClassI>,
+        fs_result: Vec<CalcFsResult>,
+        kir_interactions: &HashMap<Kir, Vec<LigandMotif>>,
+        measures: &[Measure],
+        pep_lengths: &[usize],
+    ) -> Self {
+        let mut indexes = HashSet::new();
+        let mut index_motifs = HashMap::new();
+        let mut index_act_kirs = HashMap::<ClassI, Vec<Kir>>::new();
+        let mut index_inh_kirs = HashMap::<ClassI, Vec<Kir>>::new();
+        let mut fs_cache =
+            HashMap::<(String, usize), HashMap<(ClassI, ClassI), CalcFsResult>>::new();
+
+        let measure_combs = measures.iter().fold(Vec::new(), |mut cache_keys, measure| {
+            pep_lengths
+                .iter()
+                .for_each(|length| cache_keys.push((measure.name.to_string(), *length)));
+            cache_keys
+        });
+
+        fs_result.into_iter().for_each(|result| {
+            if index_alleles.contains(&result.index) {
+                let index_allele = result.index.clone();
+                if !index_motifs.contains_key(&index_allele) {
+                    indexes.insert(index_allele.clone());
+                    if let Some(index_motif) = result.index_ligand_motif.clone() {
+                        kir_interactions.iter().for_each(|(kir, kir_motifs)| {
+                            if kir_motifs.contains(&index_motif) {
+                                if kir.is_activating() {
+                                    let act_kirs =
+                                        index_act_kirs.entry(index_allele.clone()).or_default();
+                                    act_kirs.push(kir.clone())
+                                } else if kir.is_inhibitory() {
+                                    let inh_kirs =
+                                        index_inh_kirs.entry(index_allele.clone()).or_default();
+                                    inh_kirs.push(kir.clone())
+                                }
+                            }
+                        });
+
+                        index_motifs.insert(index_allele.clone(), index_motif);
+                    }
+                }
+
+                let index_cache = fs_cache
+                    .entry((result.measure.to_string(), result.peptide_length))
+                    .or_default();
+                index_cache.insert((index_allele, result.non_index.clone()), result);
+            }
+        });
+
+        index_alleles
+            .iter()
+            .for_each(|allele| {
+                if !indexes.contains(allele) {
+                    warn!("Index allele '{}' has no associated NetMHCpan data and will not have cohort results produced", allele);
+                }
+            });
+
+        Self {
+            indexes,
+            index_motifs,
+            index_act_kirs,
+            index_inh_kirs,
+            fs_cache,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CohortResult {
+    #[serde(with = "serde_with::rust::display_fromstr")]
+    pub index: ClassI,
+    pub id: String,
+    pub measure: String,
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub fs: Option<f32>,
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub ikir_fs: Option<f32>,
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub akir_fs: Option<f32>,
+    pub peptide_length: usize,
+    pub alleles_considered: usize,
+}
+
+/// Temporary function to get kirs bound by allele
+fn get_bound_kirs(
+    motif_interactions: &HashMap<Kir, Vec<LigandMotif>>,
+    motif: &LigandMotif,
+) -> Vec<Kir> {
+    motif_interactions
+        .iter()
+        .fold(Vec::new(), |mut result, (kir, kir_motifs)| {
+            if kir_motifs.contains(motif) {
+                result.push(kir.clone())
+            };
+            result
+        })
+}
+
+// TODO: Deal with possible errors and also some are never going to return an error
+pub fn calculate_index_cohort_fs(
+    index_cache: IndexCache,
+    cohort: &[Individual],
+    kir_motif_interactions: &HashMap<Kir, Vec<LigandMotif>>,
+) -> Vec<CohortResult> {
+    use LigandMotif::*;
+
+    cohort.iter().fold(Vec::new(), |mut results, individual| {
+        let genotype = &individual.hla_genotype;
+        let kir_bound = individual.kir_bound_motifs(&kir_motif_interactions);
+
+        index_cache
+            .fs_cache
+            .iter()
+            .for_each(|((measure, length), calc_result)| {
+                index_cache.indexes.iter().for_each(|index| {
+                    let index_motif = index_cache.index_motifs.get(index);
+                    let index_act_kirs = match index_cache.index_act_kirs.get(index) {
+                        Some(act_kirs) => act_kirs.clone(),
+                        _ => Vec::new(),
+                    };
+
+                    let index_inh_kirs = match index_cache.index_inh_kirs.get(index) {
+                        Some(inh_kirs) => inh_kirs.clone(),
+                        _ => Vec::new(),
+                    };
+
+                    let (fs, ikir_fs, akir_fs) = genotype.iter().fold(
+                        (Vec::new(), Vec::new(), Vec::new()),
+                        |(mut fs, mut ikir_fs, mut akir_fs), genotype_allele| {
+                            if let Some(fs_result) =
+                                calc_result.get(&(index.clone(), genotype_allele.clone()))
+                            {
+                                let initial = fs_result.fraction_shared;
+                                let mut akir = initial;
+                                let mut ikir = initial;
+
+                                match (index_motif, &fs_result.non_index_ligand_motif) {
+                                    (Some(Unclassified), Some(Unclassified)) => {
+                                        akir = 1.0;
+                                        ikir = 1.0
+                                    }
+                                    (Some(index_motif), Some(gene_motif)) => {
+                                        let genotype_bound_kirs =
+                                            get_bound_kirs(&kir_motif_interactions, &gene_motif);
+
+                                        let act_bound = genotype_bound_kirs
+                                            .iter()
+                                            .filter(|kir| index_act_kirs.contains(kir))
+                                            .collect::<Vec<&Kir>>();
+                                        let inh_bound = genotype_bound_kirs
+                                            .iter()
+                                            .filter(|kir| index_inh_kirs.contains(kir))
+                                            .collect::<Vec<&Kir>>();
+
+                                        let act_n = act_bound
+                                            .iter()
+                                            .filter(|kir| individual.kir_genotype.contains(kir))
+                                            .count();
+                                        let inh_n = act_bound
+                                            .iter()
+                                            .filter(|kir| individual.kir_genotype.contains(kir))
+                                            .count();
+
+                                        if act_n == 0
+                                            && !(index_act_kirs.is_empty() && act_bound.is_empty())
+                                        {
+                                            akir = 0.0;
+                                        }
+
+                                        if inh_n == 0
+                                            && !(index_inh_kirs.is_empty() && inh_bound.is_empty())
+                                        {
+                                            ikir = 0.0;
+                                        }
+                                    }
+                                    // Should this be only (None, None) and throw or ignore otherwise
+                                    _ => {
+                                        akir = 0.0;
+                                        ikir = 0.0;
+                                    }
+                                }
+
+                                fs.push(initial);
+                                ikir_fs.push(ikir);
+                                akir_fs.push(akir);
+                            }
+
+                            (fs, ikir_fs, akir_fs)
+                        },
+                    );
+
+                    let alleles_considered = fs.len();
+
+                    let fs = fs
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+                    // .unwrap_or_else(|| 0.0);
+                    let ikir_fs = ikir_fs
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+                    // .unwrap_or_else(|| 0.0);
+                    let akir_fs = akir_fs
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+                    // .unwrap_or_else(|| 0.0);
+
+                    let result = CohortResult {
+                        index: index.clone(),
+                        id: individual.id.to_string(),
+                        measure: measure.to_string(),
+                        fs,
+                        ikir_fs,
+                        akir_fs,
+                        peptide_length: *length,
+                        alleles_considered,
+                    };
+                    results.push(result);
+                });
+            });
+
+        results
+    })
 }
 
 /* LILRB */

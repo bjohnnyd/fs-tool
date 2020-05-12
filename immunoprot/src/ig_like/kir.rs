@@ -231,6 +231,16 @@ impl FromStr for Kir {
     }
 }
 
+impl Kir {
+    pub fn is_activating(&self) -> bool {
+        self.cytoplasmic_tail == Tail::Short
+    }
+
+    pub fn is_inhibitory(&self) -> bool {
+        self.cytoplasmic_tail == Tail::Long
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::ig_like::kir::Domain;

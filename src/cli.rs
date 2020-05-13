@@ -20,6 +20,9 @@ use log::{info, warn};
     rename_all = "kebab-case"
 )]
 pub struct Opt {
+    /// Number of threads
+    #[structopt(short, long, default_value = "4")]
+    pub threads: usize,
     /// Determines verbosity of the processing, can be specified multiple times -vvv
     #[structopt(short, long, parse(from_occurrences))]
     verbose: u8,
@@ -138,17 +141,16 @@ impl Opt {
             .from_path(allele_fs_path)
             .or_else(|_| Err(Error::CouldNotCreateOutputFile))?;
 
-        let cohort_result =  match self.cohort {
-
-            Some(_) => Some(csv::WriterBuilder::new()
-            .has_headers(true)
-            .delimiter(crate::DEFAULT_DELIM)
-            .from_path(cohort_result_path)
-            .or_else(|_| Err(Error::CouldNotCreateOutputFile))?),
-            _ => None
+        let cohort_result = match self.cohort {
+            Some(_) => Some(
+                csv::WriterBuilder::new()
+                    .has_headers(true)
+                    .delimiter(crate::DEFAULT_DELIM)
+                    .from_path(cohort_result_path)
+                    .or_else(|_| Err(Error::CouldNotCreateOutputFile))?,
+            ),
+            _ => None,
         };
-
-
 
         Ok(OutputWriters {
             allele_meta,

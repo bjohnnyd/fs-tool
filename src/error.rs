@@ -31,19 +31,19 @@ trait ErrorKindDisplay {
 
 impl ErrorKindDisplay for csv::ErrorKind {
     fn display(&self) -> String {
-        use csv::ErrorKind::*;
         use csv::DeserializeErrorKind::*;
+        use csv::ErrorKind::*;
         match self {
-            Deserialize { pos: Some(i), err} => {
+            Deserialize { pos: Some(i), err } => {
                 let n = i.line();
                 let message = match err.kind() {
-                    Message(s) | Unsupported(s) =>  s.to_string(),
-                    _ => "".to_string()
+                    Message(s) | Unsupported(s) => s.to_string(),
+                    _ => "".to_string(),
                 };
 
                 format!("{}, line {}", message, n)
-            },
-            _ => "".to_string()
+            }
+            _ => "".to_string(),
         }
     }
 }

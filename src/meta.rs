@@ -5,6 +5,8 @@ use netmhcpan::result::BindingData;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
+use log::debug;
+
 #[derive(Debug)]
 pub struct LigandMeta {
     pub kir_ligand_allele: ClassI,
@@ -54,6 +56,7 @@ pub fn create_allele_metadata(
         .iter()
         .map(|nn| {
             let (allele, netmhcpan_nn_distance, netmhcpan_nn) = nn.info();
+            debug!("Storing metadata information for nearest neighbour with index {}, distance {} and neighbour {}", &allele, &netmhcpan_nn_distance, &netmhcpan_nn);
             let mut ligand_info = kir_ligand_map.get_allele_info(allele);
             ligand_info.sort();
 
@@ -87,6 +90,7 @@ pub fn create_binding_metadata(binding_data: &BindingData) -> Vec<BindingMeta> {
         if let Some(binding_info) = binding_info {
         proteins.iter().for_each(|protein| {
             pep_lengths.iter().for_each(|pep_length| {
+                debug!("Creating binding metadata info for {} on peptides in protein {} with length {}", &allele, &protein, &pep_length);
                 let mut n_strong_bound = 0;
                 let mut n_weak_bound = 0;
 

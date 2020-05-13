@@ -122,8 +122,5 @@ impl OutputWriters {
         } else {
             Ok(Vec::new())
         }
-
-
-
     }
 }

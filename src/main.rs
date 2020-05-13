@@ -42,6 +42,10 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
 
     opt.set_logging();
 
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(opt.threads)
+        .build_global()?;
+
     let kir_ligand_map = opt.setup_kir_ligand_info()?;
     let mut output_writers = opt.output_writers()?;
 

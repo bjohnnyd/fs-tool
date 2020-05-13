@@ -5,49 +5,46 @@
 Command-line tool to calculate fraction of shared bound peptides between HLA alleles from NetMHCpan binding predictions.
 The tool currently reports fraction of shared peptides based on default motifs in the peptide but additional positions can be supplied by the user.
 
-Upcoming releases will add the ability to compare fraction shared between an HLA allele and an individual taking into account the HLA and KIR genotypes.
-
 Current HLA allele ligand group assignments that is included with this tool was obtained from `https://www.ebi.ac.uk/` on `2019-12-29`.
-When the tool is ran, the first time after installation, it will download current ligand group information and will report where locally it has been stored (OS dependent location).
+The kir ligand motifs can be updated using the tool.
 
 ## Install
 
-Precompiled binary that will run on Linux 64 systems is available for each release. You can download the latest binary from the Releases tab.
+The simplest way to install is using the precompiled binaries provided below:
 
-![picture](https://commons.wikimedia.org/wiki/File:Tux.svg)
+| ![picture](static/64px-Tux.png) | ![picture](static/64px-MacOS_logo.png)  | ![picture](static/64px-Windows_logo_2012.png) |
+| :-----------------------------: | :-------------------------------------: |:--------------------------------------------: |
+| [tar.gz](path to release archive) | [tar.gz](path to release archive)  | [tar.gz](path to release archive) |
+| [zip](path to release archive) | [zip](path to release archive)  | [zip](path to release archive) |
 
-![picture](https://commons.wikimedia.org/wiki/File:Windows_logo_%E2%80%93_2012_(dark_blue).svg)
-
-![picture](https://commons.wikimedia.org/wiki/File:Apple_logo_black.svg)
-
-To get the latest binary through CLI and download the latest ligand group assignments from EBI run the following command:
+Using the command line you can obtain the binary using:
 
 ``` bash
-$ curl -LO https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.3/fs-tool && chmod +x fs-tool && ./fs-tool
+$ curl -LO https://github.com/bjohnnyd/fs-tool/releases/latest/fstool && chmod +x fstool && ./fs-tool -h
 ```
 
 To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  After installing rustup download the release archive file and build:
 
 ``` bash
-$ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.1.3.tar.gz |  tar xvz && cd fs-tool-0.1.3 && cargo build --release --bin fs-tool
+$ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.2.0.tar.gz |  tar xvz && cd fs-tool-0.2.0 && cargo build --release --bin fs-tool
 ```
 
-The resulting binary can then be ran to download the updated ligand data with:
+The compiled binary can then be ran using:
 
 ``` bash
-$ ./target/release/fs-tool
+$ ./target/release/fs-tool -u
 ```
 
 ## Usage
 
-Running `fs-tool -h` will list all possible arguments:
+Running `fstool -h` will list all possible arguments:
 
 ``` bash
-$ ./fs-tool -h
+$ ./fstool -h
 ```
 
 ```
-    fs-tool 0.1.1
+    fs-tool 0.2.0
     Calculates fraction of shared peptides between HLA alleles based on NetMHCpan predictions
 
     USAGE:
@@ -70,37 +67,20 @@ $ ./fs-tool -h
 
 ## Example
 
-To run comparison on positions `1,3,7`, and to name the output measure `Random` while updating data from EBI:
+### Allele calculations only 
+To run comparison on positions `1,3,7`, and to name the output measure `Example` while updating data from EBI:
 
 ``` bash
-$ ./fs-tool -n resources/netmhcpan/example_netmhcpan_wBA.txt -m "Random:1,3,7" --update-ligand-groups -o random_result.tsv
+$ ./fstool -n resources/netmhcpan/example_netmhcpan_wBA.txt -m "Random:1,3,7" -u -o example
 ```
 
-will result in:
 
-```
-    Measure Index   NonIndex        FS      PeptideLength   IndexBound      NonIndexBound
-    TCR     B*2705  A*0301  1       9       1       Bw4-80T 1       A3
-    TCR     A*0301  B*2705  1       9       1       A3      1       Bw4-80T
-    TCR     B*2705  A*0301  0       10      0       Bw4-80T 1       A3
-    TCR     A*0301  B*2705  0       10      1       A3      0       Bw4-80T
-    TCR     B*2705  A*0301  0       11      0       Bw4-80T 1       A3
-    TCR     A*0301  B*2705  0       11      1       A3      0       Bw4-80T
-    Random  B*2705  A*0301  1       9       1       Bw4-80T 1       A3
-    Random  A*0301  B*2705  1       9       1       A3      1       Bw4-80T
-    Random  B*2705  A*0301  0       10      0       Bw4-80T 1       A3
-    Random  A*0301  B*2705  0       10      1       A3      0       Bw4-80T
-    Random  B*2705  A*0301  0       11      0       Bw4-80T 1       A3
-    Random  A*0301  B*2705  0       11      1       A3      0       Bw4-80T
-    KIR     B*2705  A*0301  1       9       1       Bw4-80T 1       A3
-    KIR     A*0301  B*2705  1       9       1       A3      1       Bw4-80T
-    KIR     B*2705  A*0301  0       10      0       Bw4-80T 1       A3
-    KIR     A*0301  B*2705  0       10      1       A3      0       Bw4-80T
-    KIR     B*2705  A*0301  0       11      0       Bw4-80T 1       A3
-    KIR     A*0301  B*2705  0       11      1       A3      0       Bw4-80T
-```
+to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` can be used.
 
- to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` can be used.
+The created directory `example` will contain the following results:
+
+
+
 
 ## Authors and Citation
 

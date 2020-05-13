@@ -313,7 +313,8 @@ fn read_table(
 ) -> std::result::Result<Vec<KirLigandInfo>, HtmlParseError> {
     let mut result = Vec::<KirLigandInfo>::new();
 
-    let selector = Selector::parse("tr").or_else(|_| Err(HtmlParseError::CouldNotCreateParserForTable))?;
+    let selector =
+        Selector::parse("tr").or_else(|_| Err(HtmlParseError::CouldNotCreateParserForTable))?;
     info!("Found HLA allele table! Reading rows...");
 
     for row in html.select(&selector).skip(skip_rows) {

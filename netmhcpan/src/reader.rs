@@ -68,7 +68,7 @@ where
 
                 let allele_binding = binding_data.allele_binding.entry(allele).or_default();
                 allele_binding.push(binding_info);
-               }
+            }
         }
     }
     Ok(binding_data)

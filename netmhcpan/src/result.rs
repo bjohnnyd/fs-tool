@@ -310,7 +310,9 @@ impl BindingData {
 
     pub fn get_binding_info(&self, allele: &ClassI) -> Option<&Vec<BindingInfo>> {
         let binding_info = self.allele_binding.get(allele);
-        if binding_info.is_none() {warn!("{} has no associated binding data", allele);};
+        if binding_info.is_none() {
+            warn!("{} has no associated binding data", allele);
+        };
         binding_info
     }
 

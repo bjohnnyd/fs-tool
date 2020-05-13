@@ -9,6 +9,7 @@ use immunoprot::mhc::hla::ClassI;
 use netmhcpan::result::{BindingData, BindingInfo};
 
 use log::{debug, warn};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /* FS */
@@ -213,7 +214,7 @@ impl std::str::FromStr for Measure {
 /// Creates all possible allele combinations from NetMHCpan predictions
 /// TODO: IMPORTANT this is memory intensive
 pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
-    binding_data.list_alleles().iter().fold(
+    binding_data.list_alleles().par_iter().fold(||
         Vec::<CalculatorComb>::new(),
         |mut comb, index_allele| {
             for non_index_allele in binding_data.list_alleles() {
@@ -239,6 +240,7 @@ pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
             comb
         },
     )
+        .reduce(|| Vec::new(), |mut a , b| {a.extend(b); a})
 }
 
 /// Make calculations for specific measures and peptide lengths
@@ -251,53 +253,67 @@ pub fn calculate_fs(
     unique: bool,
 ) -> Vec<CalcFsResult> {
     combinations
-        .iter()
-        .fold(Vec::<CalcFsResult>::new(), |mut results, comb| {
-            let index = comb.alleles.0.clone();
-            let non_index = comb.alleles.1.clone();
-            let mut index_motifs = ligand_map.get_allele_info(&index);
-            let mut non_index_motifs = ligand_map.get_allele_info(&non_index);
+        .par_iter()
+        .fold(
+            || Vec::<CalcFsResult>::new(),
+            |mut results, comb| {
+                let index = comb.alleles.0.clone();
+                let non_index = comb.alleles.1.clone();
+                let mut index_motifs = ligand_map.get_allele_info(&index);
+                let mut non_index_motifs = ligand_map.get_allele_info(&non_index);
 
-            index_motifs.sort();
-            non_index_motifs.sort();
+                index_motifs.sort();
+                non_index_motifs.sort();
 
-            let index_ligand_motif = match index_motifs.iter().next() {
-                Some(info) => Some(info.motif().clone()),
-                _ => None,
-            };
+                let index_ligand_motif = match index_motifs.iter().next() {
+                    Some(info) => Some(info.motif().clone()),
+                    _ => None,
+                };
 
-            let non_index_ligand_motif = match non_index_motifs.iter().next() {
-                Some(info) => Some(info.motif().clone()),
-                _ => None,
-            };
+                let non_index_ligand_motif = match non_index_motifs.iter().next() {
+                    Some(info) => Some(info.motif().clone()),
+                    _ => None,
+                };
 
-            measures.iter().for_each(|measure_group| {
-                pep_lengths.iter().for_each(|pep_length| {
-                    let measure = measure_group.name.to_string();
-                    let motif = &measure_group.motif_pos;
-                    let (index_bound, non_index_bound) =
-                        comb.count_bound(threshold, unique, *pep_length, Some(motif));
-                    let (fraction_shared, _) =
-                        comb.calculate_shared_motifs(motif, threshold, unique, *pep_length);
+                measures.iter().for_each(|measure_group| {
+                    pep_lengths.iter().for_each(|pep_length| {
+                        debug!(
+                            "Calculating FS for index {}, non index {}, measure {}  and length {}",
+                            &index, &non_index, &measure_group.name, &pep_length
+                        );
+                        let measure = measure_group.name.to_string();
+                        let motif = &measure_group.motif_pos;
+                        let (index_bound, non_index_bound) =
+                            comb.count_bound(threshold, unique, *pep_length, Some(motif));
+                        let (fraction_shared, _) =
+                            comb.calculate_shared_motifs(motif, threshold, unique, *pep_length);
 
-                    let result = CalcFsResult {
-                        measure,
-                        index: index.clone(),
-                        non_index: non_index.clone(),
-                        index_ligand_motif: index_ligand_motif.clone(),
-                        non_index_ligand_motif: non_index_ligand_motif.clone(),
-                        fraction_shared,
-                        peptide_length: *pep_length,
-                        index_bound,
-                        non_index_bound,
-                    };
+                        let result = CalcFsResult {
+                            measure,
+                            index: index.clone(),
+                            non_index: non_index.clone(),
+                            index_ligand_motif: index_ligand_motif.clone(),
+                            non_index_ligand_motif: non_index_ligand_motif.clone(),
+                            fraction_shared,
+                            peptide_length: *pep_length,
+                            index_bound,
+                            non_index_bound,
+                        };
 
-                    results.push(result);
+                        results.push(result);
+                    });
                 });
-            });
 
-            results
-        })
+                results
+            },
+        )
+        .reduce(
+            || Vec::new(),
+            |mut a, b| {
+                a.extend(b);
+                a
+            },
+        )
 }
 
 /* Cohort */
@@ -308,8 +324,8 @@ pub fn create_index_fs_map(
     fs_results: Vec<CalcFsResult>,
 ) -> HashMap<ClassI, Vec<CalcFsResult>> {
     index_alleles
-        .into_iter()
-        .fold(HashMap::new(), |mut index_calc_map, index_allele| {
+        .into_par_iter()
+        .fold(|| HashMap::new(), |mut index_calc_map, index_allele| {
             let index_results = fs_results.iter().filter(|result| result.index == index_allele).cloned().collect::<Vec<CalcFsResult>>();
             if index_results.is_empty() {
                 warn!("Index allele '{}' was not present in the NetMHCpan results and no calculations for this allele will be performed.", &index_allele);
@@ -318,6 +334,7 @@ pub fn create_index_fs_map(
             }
             index_calc_map
         })
+        .reduce(|| HashMap::new(), | mut a , b| {a.extend(b); a})
 }
 
 #[derive(Debug)]
@@ -446,21 +463,25 @@ pub fn calculate_index_cohort_fs(
 ) -> Vec<CohortResult> {
     use LigandMotif::*;
 
-    cohort.iter().fold(Vec::new(), |mut results, individual| {
+    cohort.par_iter().fold(|| Vec::new(), |mut results, individual| {
         let genotype = &individual.hla_genotype;
         let kir_bound = individual.kir_bound_motifs(&kir_motif_interactions);
+        debug!("Started processing individual {}", &individual.id);
+
 
         index_cache
             .fs_cache
             .iter()
             .for_each(|((measure, length), calc_result)| {
                 index_cache.indexes.iter().for_each(|index| {
+                    debug!("Started processing {} for peptide lengths {} with index allele {} and individual {}", &measure, &length, &index, &individual.id);
                     let index_motif = index_cache.index_motifs.get(index);
                     let index_lilrb_scores = lilrb_scores.iter().get_matching(&index);
                     if index_lilrb_scores.is_empty() {
                         warn!("Index allele '{}', has no associated LILRB binding similarity scores", &index);
                     }
 
+                    debug!("Got lilrb scores for index allele");
                     let index_act_kirs = match index_cache.index_act_kirs.get(index) {
                         Some(act_kirs) => act_kirs.clone(),
                         _ => Vec::new(),
@@ -589,6 +610,7 @@ pub fn calculate_index_cohort_fs(
 
         results
     })
+        .reduce(|| Vec::new(), | mut a , b| {a.extend(b); a})
 }
 
 /* LILRB */

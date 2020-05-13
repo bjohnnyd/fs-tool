@@ -408,6 +408,12 @@ pub struct CohortResult {
     pub ikir_fs: Option<f32>,
     #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
     pub akir_fs: Option<f32>,
+    // TODO: Move LILRB outside of this output as it is independent of measure or peptide length
+    // and is inefficiently calculated
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub lilrb1: Option<f32>,
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub lilrb2: Option<f32>,
     pub peptide_length: usize,
     pub alleles_considered: usize,
 }
@@ -432,6 +438,7 @@ pub fn calculate_index_cohort_fs(
     index_cache: IndexCache,
     cohort: &[Individual],
     kir_motif_interactions: &HashMap<Kir, Vec<LigandMotif>>,
+    lilrb_scores: &[LilrbScore],
 ) -> Vec<CohortResult> {
     use LigandMotif::*;
 
@@ -445,6 +452,11 @@ pub fn calculate_index_cohort_fs(
             .for_each(|((measure, length), calc_result)| {
                 index_cache.indexes.iter().for_each(|index| {
                     let index_motif = index_cache.index_motifs.get(index);
+                    let index_lilrb_scores = lilrb_scores.iter().get_matching(&index);
+                    if index_lilrb_scores.is_empty() {
+                        warn!("Index allele '{}', has no associated LILRB binding similarity scores", &index);
+                    }
+
                     let index_act_kirs = match index_cache.index_act_kirs.get(index) {
                         Some(act_kirs) => act_kirs.clone(),
                         _ => Vec::new(),
@@ -455,9 +467,26 @@ pub fn calculate_index_cohort_fs(
                         _ => Vec::new(),
                     };
 
-                    let (fs, ikir_fs, akir_fs) = genotype.iter().fold(
-                        (Vec::new(), Vec::new(), Vec::new()),
-                        |(mut fs, mut ikir_fs, mut akir_fs), genotype_allele| {
+                    let (fs, ikir_fs, akir_fs, lilrb1, lilrb2) = genotype.iter().fold(
+                        (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+                        |(mut fs, mut ikir_fs, mut akir_fs, mut lilrb1, mut lilrb2), genotype_allele| {
+
+                            if !index_lilrb_scores.is_empty() {
+                                let lilrb_scores = index_lilrb_scores.iter().copied().get_matching(genotype_allele);
+
+                                match lilrb_scores.len() {
+                                    0 => { warn!("No LILRB binding scores found for allele '{}' in individual {}", &genotype_allele, individual.id) },
+                                    1 => {
+                                        lilrb1.push(lilrb_scores[0].lilrb1_score);
+                                        lilrb2.push(lilrb_scores[0].lilrb2_score);
+                                    },
+                                    n => {
+                                        lilrb1.push(lilrb_scores.iter().map(|score| score.lilrb1_score ).sum::<f32>() / n as f32);
+                                        lilrb2.push(lilrb_scores.iter().map(|score| score.lilrb2_score ).sum::<f32>() / n as f32);
+                                    },
+                                }
+                            }
+
                             if let Some(fs_result) =
                                 calc_result.get(&(index.clone(), genotype_allele.clone()))
                             {
@@ -516,7 +545,7 @@ pub fn calculate_index_cohort_fs(
                                 akir_fs.push(akir);
                             }
 
-                            (fs, ikir_fs, akir_fs)
+                            (fs, ikir_fs, akir_fs, lilrb1, lilrb2)
                         },
                     );
 
@@ -525,15 +554,18 @@ pub fn calculate_index_cohort_fs(
                     let fs = fs
                         .into_iter()
                         .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
-                    // .unwrap_or_else(|| 0.0);
                     let ikir_fs = ikir_fs
                         .into_iter()
                         .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
-                    // .unwrap_or_else(|| 0.0);
                     let akir_fs = akir_fs
                         .into_iter()
                         .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
-                    // .unwrap_or_else(|| 0.0);
+                    let lilrb1 = lilrb1
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+                    let lilrb2 = lilrb2
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
 
                     let result = CohortResult {
                         index: index.clone(),
@@ -542,6 +574,8 @@ pub fn calculate_index_cohort_fs(
                         fs,
                         ikir_fs,
                         akir_fs,
+                        lilrb1,
+                        lilrb2,
                         peptide_length: *length,
                         alleles_considered,
                     };
@@ -563,9 +597,43 @@ pub struct LilrbScore {
     pub lilrb2_score: f32,
 }
 
+trait ExhaustiveSearch<'a> {
+    fn get_matching(&self, allele: &ClassI) -> Vec<&'a LilrbScore>;
+}
+
+impl<'a, I> ExhaustiveSearch<'a> for I
+where
+    I: Iterator<Item = &'a LilrbScore> + Clone,
+{
+    fn get_matching(&self, allele: &ClassI) -> Vec<&'a LilrbScore> {
+        let (allele_group, exact) =
+            self.clone()
+                .fold((Vec::new(), Vec::new()), |(mut group, mut exact), score| {
+                    if score.first_allele.allele_group() == allele.allele_group()
+                        || score.second_allele.allele_group() == allele.allele_group()
+                    {
+                        group.push(score);
+
+                        if score.first_allele == *allele || score.second_allele == *allele {
+                            exact.push(score)
+                        }
+                    }
+
+                    (group, exact)
+                });
+
+        if exact.is_empty() {
+            allele_group
+        } else {
+            exact
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::io::reader::read_lilrb_scores;
     use netmhcpan::reader::read_raw_netmhcpan;
 
     #[test]
@@ -589,5 +657,15 @@ mod tests {
 
         dbg!(&comb);
         dbg!(&comb.len());
+    }
+
+    #[test]
+    fn test_lilrb_search() {
+        let lilrb_scores = read_lilrb_scores();
+        let test_allele = "A*03:02".parse::<ClassI>().unwrap();
+        let ref_scores = lilrb_scores.iter().collect::<Vec<&LilrbScore>>();
+
+        dbg!(lilrb_scores.iter().get_matching(&test_allele));
+        dbg!(ref_scores.iter().copied().get_matching(&test_allele));
     }
 }

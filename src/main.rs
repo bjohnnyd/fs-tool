@@ -21,7 +21,7 @@ pub const DEFAULT_DELIM: u8 = b',';
 use crate::calc::{calculate_fs, calculate_index_cohort_fs, create_calc_combs, IndexCache};
 use crate::cli::{get_measures, Opt};
 use crate::cohort::Individual;
-use crate::io::reader::{read_kir_motif_binding, read_temp_cohort};
+use crate::io::reader::{read_kir_motif_binding, read_lilrb_scores, read_temp_cohort};
 use crate::meta::{create_allele_metadata, create_binding_metadata};
 
 use netmhcpan::reader::read_raw_netmhcpan;
@@ -81,8 +81,13 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
             &measures,
             &opt.peptide_length,
         );
-        let cohort_result =
-            calculate_index_cohort_fs(index_fs_cache, &cohort, &kir_motif_interactions);
+        let lilrb_scores = read_lilrb_scores();
+        let cohort_result = calculate_index_cohort_fs(
+            index_fs_cache,
+            &cohort,
+            &kir_motif_interactions,
+            &lilrb_scores,
+        );
         output_writers.write_cohort_result(&cohort_result)?;
     }
     Ok(())

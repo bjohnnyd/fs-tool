@@ -61,9 +61,11 @@ pub fn read_kir_motif_binding() -> HashMap<Kir, Vec<LigandMotif>> {
         })
 }
 
+// TODO: might be better with a proper reader and serializing
 pub fn read_lilrb_scores() -> Vec<LilrbScore> {
     crate::LILRB_SIMSCORES
         .lines()
+        .filter(|line| !line.contains("lilrb") && !line.starts_with('#'))
         .fold(Vec::new(), |mut scores, line| {
             let entry = line.split('\t').collect::<Vec<&str>>();
 

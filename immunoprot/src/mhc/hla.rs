@@ -227,6 +227,10 @@ impl ClassI {
 
         generalized_fields.parse::<ClassI>().ok()
     }
+
+    pub fn allele_group(&self) -> String {
+        format!("{}{}", self.gene, self.allele_group)
+    }
 }
 
 impl std::str::FromStr for ClassI {

@@ -219,7 +219,7 @@ pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
             for non_index_allele in binding_data.list_alleles() {
                 if *index_allele != non_index_allele {
                     debug!("Storing binding data info for {}, {}", &index_allele, &non_index_allele);
-                    match (binding_data.get_bound_info(index_allele), binding_data.get_bound_info(non_index_allele)) {
+                    match (binding_data.get_binding_info(index_allele), binding_data.get_binding_info(non_index_allele)) {
                         (Some(index_data), Some(non_index_data)) => {
                             let calc_comb = CalculatorComb {
                                 alleles: (index_allele, non_index_allele),

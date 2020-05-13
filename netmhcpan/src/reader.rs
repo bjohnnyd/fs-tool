@@ -94,7 +94,7 @@ mod tests {
         let motif_pos = vec![2, 3, 4, 5, 7, 8];
         let expected_motif = "AAMQLK";
 
-        let bound = bd.get_bound_info(&allele, WEAK_BOUND_THRESHOLD);
+        let bound = bd.get_bound_info(&allele);
         assert_eq!(bound[0].motif(&motif_pos), expected_motif.to_string());
     }
 }

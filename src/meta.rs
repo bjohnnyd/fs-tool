@@ -82,7 +82,7 @@ pub fn create_binding_metadata(binding_data: &BindingData) -> Vec<BindingMeta> {
     let weak_threshold = binding_data.weak_threshold();
 
     alleles.iter().for_each(|allele| {
-        let binding_info = binding_data.get_bound_info(allele);
+        let binding_info = binding_data.get_binding_info(allele);
 
         if let Some(binding_info) = binding_info {
         proteins.iter().for_each(|protein| {

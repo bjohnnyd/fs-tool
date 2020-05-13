@@ -123,6 +123,7 @@ where
     match s {
         "1" | "Y" | "T" | "TRUE" => Ok(Some(true)),
         "0" | "N" | "F" | "FALSE" => Ok(Some(false)),
+        "NA" | "Unknown" => Ok(None),
         s => Err(de::Error::custom(format!(
             "Could not deduce TRUE/FALSE from {}",
             s

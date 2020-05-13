@@ -12,6 +12,8 @@ pub struct CohortTemp {
     #[serde(
         alias = "ID",
         alias = "sample",
+        alias = "rowid",
+        alias = "id",
         with = "serde_with::rust::display_fromstr"
     )]
     pub id: String,

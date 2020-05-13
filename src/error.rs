@@ -19,8 +19,31 @@ pub enum Error {
     CouldNotWriteFsResult,
     #[error("Could not write cohort calculation results to output")]
     CouldNotWriteCohortResult,
-    #[error("Could not open cohort file.")]
+    #[error("Could not open cohort file:\n{:?}", .0.kind().display())]
     CouldNotOpenCohortFile(#[from] csv::Error),
     #[error("No global config directory exists")]
     NoGlobalConfigDir,
+}
+
+trait ErrorKindDisplay {
+    fn display(&self) -> String;
+}
+
+impl ErrorKindDisplay for csv::ErrorKind {
+    fn display(&self) -> String {
+        use csv::ErrorKind::*;
+        use csv::DeserializeErrorKind::*;
+        match self {
+            Deserialize { pos: Some(i), err} => {
+                let n = i.line();
+                let message = match err.kind() {
+                    Message(s) | Unsupported(s) =>  s.to_string(),
+                    _ => "".to_string()
+                };
+
+                format!("{}, line {}", message, n)
+            },
+            _ => "".to_string()
+        }
+    }
 }

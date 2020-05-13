@@ -69,7 +69,7 @@ pub struct OutputWriters {
     pub allele_meta: csv::Writer<std::fs::File>,
     pub binding_meta: csv::Writer<std::fs::File>,
     pub allele_fs_result: csv::Writer<std::fs::File>,
-    pub cohort_result: csv::Writer<std::fs::File>,
+    pub cohort_result: Option<csv::Writer<std::fs::File>>,
 }
 
 impl OutputWriters {
@@ -113,11 +113,17 @@ impl OutputWriters {
         &mut self,
         cohort_results: &[CohortResult],
     ) -> std::result::Result<Vec<()>, Error> {
-        let write_result = cohort_results
-            .iter()
-            .map(|result| self.cohort_result.serialize(result))
-            .collect::<Result<Vec<_>, _>>();
+        if let Some(ref mut cohort_result_file) = self.cohort_result {
+            let write_result = cohort_results
+                .iter()
+                .map(|result| cohort_result_file.serialize(result))
+                .collect::<Result<Vec<_>, _>>();
+            Ok(write_result.or_else(|_| Err(Error::CouldNotWriteFsResult))?)
+        } else {
+            Ok(Vec::new())
+        }
 
-        Ok(write_result.or_else(|_| Err(Error::CouldNotWriteFsResult))?)
+
+
     }
 }

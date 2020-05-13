@@ -86,7 +86,7 @@ impl<'a> CalculatorComb<'a> {
             .collect::<Vec<String>>();
         let non_index_motifs = self
             .binding_data
-            .0
+            .1
             .iter()
             .filter_map(bound_motifs)
             .collect::<Vec<String>>();
@@ -116,7 +116,7 @@ impl<'a> CalculatorComb<'a> {
                     .collect();
                 let non_index_bound = self
                     .binding_data
-                    .0
+                    .1
                     .iter()
                     .filter(is_bound)
                     .map(|info| info.seq().to_string())
@@ -165,8 +165,6 @@ impl<'a> CalculatorComb<'a> {
             .iter()
             .filter(|motif| index_motifs.contains(motif))
             .count() as f32;
-
-        let total_bound = (index_motifs.len() + non_index_motifs.len()) as f32;
 
         (
             index_shared / index_motifs.len() as f32,

@@ -1,4 +1,4 @@
-// TODO: Curently motifs are assigned by sorting by allele field (e.g. protein number), Ligand motif, then frequency
+// NOTE: Currently motifs are assigned by sorting by allele field (e.g. protein number), Ligand motif, then frequency
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
@@ -119,7 +119,7 @@ impl KirLigandInfo {
     }
 }
 
-// TODO: CURRENTLY ONLY SUPPORTS TSV files
+// NOTE: Only supports TSV files
 impl FromStr for KirLigandInfo {
     type Err = IoError;
 
@@ -263,10 +263,6 @@ impl KirLigandMap {
         Ok(map)
     }
 
-    // TODO: Look at ebd55784dc5a2d11645c0a754650b705b7407705 for previous messier implementation
-    // cannot think of case where more than twice is really necessary but there might be.
-    // Decided to for now to only generalise the allele twice. Cases like A02:07,
-    // returning A*02:07:01:01 and A*02:07:02 will both have A*02:07:01 and A*02:07:02 present.
     pub fn get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
         let mut kir_ligand_info = Vec::<&KirLigandInfo>::new();
 
@@ -310,7 +306,6 @@ where
     Ok(Html::parse_document(&text))
 }
 
-// TODO: Need to deal with cases where supplied HLA allele is incorrect format
 /// Finds the first HTML table with the possibility of skipping a set of rows
 fn read_table(
     html: &Html,
@@ -318,8 +313,7 @@ fn read_table(
 ) -> std::result::Result<Vec<KirLigandInfo>, HtmlParseError> {
     let mut result = Vec::<KirLigandInfo>::new();
 
-    // TODO: Deal with error
-    let selector = Selector::parse("tr").unwrap();
+    let selector = Selector::parse("tr").or_else(|_| Err(HtmlParseError::CouldNotCreateParserForTable))?;
     info!("Found HLA allele table! Reading rows...");
 
     for row in html.select(&selector).skip(skip_rows) {

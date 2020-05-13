@@ -69,7 +69,6 @@ pub struct Peptide {
     pub(crate) ins: Range<usize>,
 }
 
-//TODO: FIX has too many arguments should convert the modification info into a struct
 impl Peptide {
     pub fn new(
         pos: usize,
@@ -123,7 +122,9 @@ impl Peptide {
         &self.identity
     }
 
-    // TODO: Are there any cases where there is a gap and insertion?
+    // TODO: Need to see what happens or if there are cases with gap + ins
+    /// Converts a peptide sequence to core representation.  Undefined behaviour with cases where there
+    /// are both gaps and insertions in the alignment
     pub fn core(&self) -> String {
         if self.gap_region().len() != 0 {
             self.seq()

@@ -5,7 +5,8 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 // TODO: Need to implement a way to deal with cases where an allele in the genotype is missing
-
+// TODO: Need to create an alternative cohort representation
+// TODO: implement a macro for `CohortTemp` definition
 #[derive(Debug, Deserialize)]
 pub struct CohortTemp {
     #[serde(
@@ -211,7 +212,6 @@ impl Individual {
             })
     }
 
-    // TODO: Needs to be tested in units
     pub fn get_hla_motifs<'a>(&self, hla_ligand_map: &'a KirLigandMap) -> Vec<&'a LigandMotif> {
         self.hla_genotype
             .iter()

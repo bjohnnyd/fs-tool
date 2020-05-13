@@ -236,8 +236,7 @@ impl ClassI {
 impl std::str::FromStr for ClassI {
     type Err = NomenclatureError;
 
-    // TODO: WARNING this might still catch all possibilities had to so far:
-    // 1. Fix an empty string passing through
+    // TODO: WARNING this might still not catch all possibilities
     fn from_str(s: &str) -> Result<Self> {
         if s.is_empty() {
             return Err(EmptyAlleleString);

@@ -1,4 +1,3 @@
-// TODO: Need a function to create all combinations
 use std::collections::{HashMap, HashSet};
 
 use crate::cohort::Individual;
@@ -408,7 +407,7 @@ pub struct CohortResult {
     pub ikir_fs: Option<f32>,
     #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
     pub akir_fs: Option<f32>,
-    // TODO: Move LILRB outside of this output as it is independent of measure or peptide length
+    // TODO: Need to move LILRB outside of this output as it is independent of measure or peptide length
     // and is inefficiently calculated
     #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
     pub lilrb1: Option<f32>,

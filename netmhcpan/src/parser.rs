@@ -33,7 +33,6 @@ pub fn take_word(i: &str) -> IResult<&str, &str> {
     Ok((remainder, word))
 }
 
-// TODO: Need to deal with error
 pub fn take_hla_allele(i: &str) -> IResult<&str, ClassI> {
     let allele_prefix = opt(tag("HLA-"));
     let take_allele = take_while(|c: char| {

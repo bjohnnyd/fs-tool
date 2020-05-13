@@ -361,7 +361,7 @@ mod tests {
 
     #[test]
     fn test_ligand_info() {
-        let lg_info = include_str!("../resources/2019-12-29_lg.tsv");
+        let lg_info = include_str!("../resources/allele_motifs.tsv");
 
         lg_info.lines().for_each(|l| {
             dbg!(l);

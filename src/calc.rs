@@ -49,15 +49,15 @@ pub struct CalcFsResult {
 #[derive(Debug)]
 pub struct CalculatorComb<'a> {
     pub alleles: (&'a ClassI, &'a ClassI),
-    pub binding_data: (&'a Vec<BindingInfo>, &'a Vec<BindingInfo>),
+    pub binding_data: (&'a [BindingInfo], &'a [BindingInfo]),
 }
 
 impl<'a> CalculatorComb<'a> {
     pub fn new(
         index_allele: &'a ClassI,
         non_index_allele: &'a ClassI,
-        index_bd: &'a Vec<BindingInfo>,
-        non_index_bd: &'a Vec<BindingInfo>,
+        index_bd: &'a [BindingInfo],
+        non_index_bd: &'a [BindingInfo],
     ) -> Self {
         Self {
             alleles: (index_allele, non_index_allele),

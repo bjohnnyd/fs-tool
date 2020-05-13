@@ -86,15 +86,17 @@ mod tests {
     }
     #[test]
     fn read_hla_bound_at_threshold() {
-        use crate::result::WEAK_BOUND_THRESHOLD;
-
         let bd = read_raw_netmhcpan("tests/netmhcpan_wBA.txt").unwrap();
         let allele = "B27:05".parse().unwrap();
 
-        let motif_pos = vec![2, 3, 4, 5, 7, 8];
-        let expected_motif = "AAMQLK";
+        let motif_pos = vec![2usize, 7usize, 8usize, 9usize]
+            .iter()
+            .map(|i| i - 1)
+            .collect::<Vec<usize>>();
+        let expected_motif = "PTML";
 
-        let bound = bd.get_bound_info(&allele);
+        let bound = bd.get_binding_info(&allele).unwrap();
+        dbg!(&bound[0]);
         assert_eq!(bound[0].motif(&motif_pos), expected_motif.to_string());
     }
 }

@@ -1,6 +1,7 @@
 # fs-tool 
 
 [![Software License][ico-license]](LICENSE.md)
+[![Build Status](https://travis-ci.com/bjohnnyd/fs-tool.svg?branch=dev_fs)](https://travis-ci.com/bjohnnyd/fs-tool)
 
 Command-line tool to calculate fraction of shared bound peptides between HLA alleles from NetMHCpan binding predictions.
 The tool currently reports fraction of shared peptides based on default motifs in the peptide but additional positions can be supplied by the user.

@@ -5,12 +5,10 @@ use std::hash::{Hash, Hasher};
 use std::ops::Range;
 
 use crate::error::Error;
+use crate::{STRONG_THRESHOLD, WEAK_TRESHOLD};
 
 use immunoprot::mhc::hla::ClassI;
 use log::warn;
-
-pub const WEAK_TRESHOLD: f32 = 2.0;
-pub const STRONG_THRESHOLD: f32 = 0.5;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum RankThreshold {

@@ -84,6 +84,7 @@ pub fn create_binding_metadata(binding_data: &BindingData) -> Vec<BindingMeta> {
     alleles.iter().for_each(|allele| {
         let binding_info = binding_data.get_bound_info(allele);
 
+        if let Some(binding_info) = binding_info {
         proteins.iter().for_each(|protein| {
             pep_lengths.iter().for_each(|pep_length| {
                 let mut n_strong_bound = 0;
@@ -114,7 +115,8 @@ pub fn create_binding_metadata(binding_data: &BindingData) -> Vec<BindingMeta> {
                 })
             })
         })
-    });
+    }
+});
 
     binding_meta
 }

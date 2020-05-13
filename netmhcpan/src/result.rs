@@ -308,17 +308,10 @@ impl BindingData {
         BindingData::default()
     }
 
-    pub fn get_bound_info(&self, allele: &ClassI) -> Vec<&BindingInfo> {
-        let mut bound_info = Vec::<&BindingInfo>::new();
-
-        if let Some(peptides) = self.allele_binding.get(allele) {
-            peptides
-                .iter()
-                .for_each(|binding_info| bound_info.push(binding_info))
-        } else {
-            warn!("{} has no associated binding data", allele);
-        }
-        bound_info
+    pub fn get_bound_info(&self, allele: &ClassI) -> Option<&Vec<BindingInfo>> {
+        let binding_info = self.allele_binding.get(allele);
+        if binding_info.is_none() {warn!("{} has no associated binding data", allele);};
+        binding_info
     }
 
     pub fn list_alleles(&self) -> Vec<&ClassI> {

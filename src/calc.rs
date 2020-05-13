@@ -48,15 +48,15 @@ pub struct CalcFsResult {
 #[derive(Debug)]
 pub struct CalculatorComb<'a> {
     pub alleles: (&'a ClassI, &'a ClassI),
-    pub binding_data: (Vec<&'a BindingInfo>, Vec<&'a BindingInfo>),
+    pub binding_data: (&'a Vec<BindingInfo>, &'a Vec<BindingInfo>),
 }
 
 impl<'a> CalculatorComb<'a> {
     pub fn new(
         index_allele: &'a ClassI,
         non_index_allele: &'a ClassI,
-        index_bd: Vec<&'a BindingInfo>,
-        non_index_bd: Vec<&'a BindingInfo>,
+        index_bd: &'a Vec<BindingInfo>,
+        non_index_bd: &'a Vec<BindingInfo>,
     ) -> Self {
         Self {
             alleles: (index_allele, non_index_allele),
@@ -70,7 +70,7 @@ impl<'a> CalculatorComb<'a> {
         length: usize,
         aa_pos: &[usize],
     ) -> (Vec<String>, Vec<String>) {
-        let bound_motifs = |item: &&BindingInfo| {
+        let bound_motifs = |item: &BindingInfo| {
             if item.rank() < threshold && item.len() == length {
                 Some(item.motif(aa_pos))
             } else {
@@ -102,7 +102,7 @@ impl<'a> CalculatorComb<'a> {
         length: usize,
         aa_pos: Option<&[usize]>,
     ) -> (usize, usize) {
-        let is_bound = |item: &&&BindingInfo| item.rank() < threshold && item.len() == length;
+        let is_bound = |item: &&BindingInfo| item.rank() < threshold && item.len() == length;
 
         let (mut index_motifs, mut non_index_motifs) = match aa_pos {
             Some(aa_pos) => self.get_motifs(threshold, length, aa_pos),
@@ -219,22 +219,26 @@ pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
             for non_index_allele in binding_data.list_alleles() {
                 if *index_allele != non_index_allele {
                     debug!("Storing binding data info for {}, {}", &index_allele, &non_index_allele);
-                    let calc_comb = CalculatorComb {
-                        alleles: (index_allele, non_index_allele),
-                        binding_data: (
-                            binding_data.get_bound_info(index_allele),
-                            binding_data.get_bound_info(non_index_allele),
-                        ),
-                    };
+                    match (binding_data.get_bound_info(index_allele), binding_data.get_bound_info(non_index_allele)) {
+                        (Some(index_data), Some(non_index_data)) => {
+                            let calc_comb = CalculatorComb {
+                                alleles: (index_allele, non_index_allele),
+                                binding_data: (
+                                    index_data,
+                                    non_index_data,
+                                ),
+                            };
+                            comb.push(calc_comb);
+                        },
+                        _ => warn!("Since binding data is not present for both, no fs will be made between {} and {}", &index_allele, &non_index_allele)
+                    }
 
-                    comb.push(calc_comb)
                 }
             }
 
             comb
         },
     )
-    }
 }
 
 /// Make calculations for specific measures and peptide lengths

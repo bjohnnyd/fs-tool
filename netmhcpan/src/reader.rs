@@ -5,6 +5,8 @@ use std::path::Path;
 use crate::parser::*;
 use crate::result::*;
 
+use log::debug;
+
 // TODO: Needs refactoring and error handling not finished converting from nom::Err
 /// Reads a netmhcpan output file.  Not optimized to skip peptides already processed.
 pub fn read_raw_netmhcpan<T>(path: T) -> Result<BindingData, Box<dyn std::error::Error>>
@@ -18,7 +20,8 @@ where
 
     let mut binding_data = BindingData::new();
 
-    for line in rdr.lines() {
+    for (n, line) in rdr.lines().enumerate() {
+        debug!("Parsing line number {} in netMHCpan output", n);
         let line = line?;
         let (i, nn_line) = is_nn_line(line.as_str()).unwrap();
 
@@ -65,7 +68,7 @@ where
 
                 let allele_binding = binding_data.allele_binding.entry(allele).or_default();
                 allele_binding.push(binding_info);
-            }
+               }
         }
     }
     Ok(binding_data)

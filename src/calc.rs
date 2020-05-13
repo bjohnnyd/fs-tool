@@ -8,7 +8,7 @@ use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
 use immunoprot::mhc::hla::ClassI;
 use netmhcpan::result::{BindingData, BindingInfo};
 
-use log::warn;
+use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 
 /* FS */
@@ -211,12 +211,14 @@ impl std::str::FromStr for Measure {
 }
 
 /// Creates all possible allele combinations from NetMHCpan predictions
+/// TODO: IMPORTANT this is memory intensive
 pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
     binding_data.list_alleles().iter().fold(
         Vec::<CalculatorComb>::new(),
         |mut comb, index_allele| {
             for non_index_allele in binding_data.list_alleles() {
                 if *index_allele != non_index_allele {
+                    debug!("Storing binding data info for {}, {}", &index_allele, &non_index_allele);
                     let calc_comb = CalculatorComb {
                         alleles: (index_allele, non_index_allele),
                         binding_data: (
@@ -232,6 +234,7 @@ pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
             comb
         },
     )
+    }
 }
 
 /// Make calculations for specific measures and peptide lengths

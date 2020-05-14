@@ -38,8 +38,21 @@ fn main() -> std::result::Result<(), ()> {
 }
 
 fn main_try() -> Result<(), Box<dyn std::error::Error>> {
-    let opt = Opt::from_args();
+    let matches = Opt::clap().get_matches();
 
+    if matches.is_present("location") {
+        if let Some(project_dir) = directories::ProjectDirs::from("", "", "fstool") {
+            println!(
+                "Data is stored at {}",
+                project_dir.data_dir().join(PROJECT_LIGAND_TABLE).display()
+            );
+            return Ok(());
+        } else {
+            return Err("Could not create/or read the global data directory".into());
+        }
+    }
+
+    let opt = Opt::from_args();
     opt.set_logging();
 
     rayon::ThreadPoolBuilder::new()

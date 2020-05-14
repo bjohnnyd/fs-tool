@@ -44,25 +44,42 @@ $ ./fstool -h
 ```
 
 ```
-    fs-tool 0.2.0
-    Calculates fraction of shared peptides between HLA alleles based on NetMHCpan predictions
 
-    USAGE:
-        fs-tool [FLAGS] [OPTIONS]
+fstool 0.2.0
+Calculates fraction of shared bound motifs between HLA alleles while incorporating KIR ligand and LILRB binding
+information.
 
-    FLAGS:
-        -d, --debug
-            --drop-default-measures
-        -h, --help                     Prints help information
-            --update-ligand-groups
-        -V, --version                  Prints version information
+USAGE:
+    fstool [FLAGS] [OPTIONS] --binding-predictions <binding-predictions> --output <output>
 
-    OPTIONS:
-        -m, --measures <measures>...
-        -n, --netmhcpan <netmhcpan>
-        -o, --output <output>
-        -p, --peptide-length <peptide-length>...     [default: 9 10 11]
-        -t, --threads <threads>                      [default: 4]
+FLAGS:
+        --drop-default    Drop default measures based on TCR and KIR motifs.
+    -h, --help            Prints help information
+        --location        Returns the directory and files where the kir ligand data is stored
+    -q, --quiet           Disables any information being printed to terminal (except errors)
+    -u, --unique          Whether only unique peptide/motif sequences should be considered in the calculations
+        --update          Updates the current kir ligand group data
+    -V, --version         Prints version information
+    -v, --verbose         Determines verbosity of the processing, can be specified multiple times -vvv
+
+OPTIONS:
+    -b, --binding-predictions <binding-predictions>
+            Path to file containing predicted Class I affinity data (NetMHCpan results)
+
+    -c, --cohort <cohort>                              Cohort of individuals for which all measures will be calculated
+    -i, --index <index>...
+            Index allele used for cohort calculations only, all individuals will be compared to these alleles
+
+    -m, --measure <measure>...
+            Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
+
+    -o, --output <output>                              Directory to store outputs
+    -p, --peptide-length <peptide-length>...
+            Which length of input peptide sequence to consider [default: 9]  [possible values: 8, 9, 10, 11]
+
+        --prefix <prefix>                              Prefix to assign to all outputs
+    -t, --threads <threads>                            Number of threads [default: 4]
+
 ```
 
 ## Example

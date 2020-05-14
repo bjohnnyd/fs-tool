@@ -35,13 +35,13 @@ pub struct Opt {
     #[structopt(long)]
     /// Returns the directory and files where the kir ligand data is stored
     pub location: bool,
-    #[structopt(short, long)]
+    #[structopt(short, long, required_unless = "location")]
     /// Directory to store outputs
     output: PathBuf,
     /// Prefix to assign to all outputs
     #[structopt(long)]
     prefix: Option<String>,
-    #[structopt(short, long, parse(from_os_str))]
+    #[structopt(short, long, parse(from_os_str), required_unless = "location")]
     /// Path to file containing predicted Class I affinity data (NetMHCpan results)
     pub binding_predictions: PathBuf,
     #[structopt(long)]

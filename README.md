@@ -9,7 +9,9 @@ Command-line tool to calculate fraction of shared bound peptides between HLA all
 Current HLA allele ligand group assignments that is included with this tool was obtained from `https://www.ebi.ac.uk/` on `2019-12-29`.
 The kir ligand motifs can be updated using the tool.
 
-Detailed instructions and descriptions are available in the [Documentation](https://bjohnnyd.github.io/fs-tool/public)
+Detailed instructions and descriptions are available in the [Documentation](https://bjohnnyd.github.io/fs-tool/public) (documentation will be available soon).
+
+
 
 ## Install
 
@@ -118,7 +120,7 @@ The created directory `example_result` will contain the following output:
 | **example_cohort_Gag_180_209_cohort_result.csv** |  lists per cohort subject calculations for each index allele, peptide length, measure |  |
 
 
-Additional information can be found in the [Output](https://bjohnnyd.github.io/fs-tool/public/output) section of the [Documentation](https://bjohnnyd.github.io/fs-tool/public).
+Additional information can be found in the [Output](https://bjohnnyd.github.io/fs-tool/public/output) section of the [Documentation](https://bjohnnyd.github.io/fs-tool/public) (documentation will be available soon).
 
 
 ## Authors and Citation

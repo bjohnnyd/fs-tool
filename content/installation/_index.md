@@ -1,6 +1,7 @@
 +++
 title="Installation"
 description="Detailed instructions on installing on different OS"
+weight=1
 +++
 
 The following sections describe how to install from but the in most cases the available binaries should work as is.

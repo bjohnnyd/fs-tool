@@ -12,7 +12,11 @@ highlight_code = true
 build_search_index = true
 
 theme="book"
-highlight_theme="Tomorrow"
+#highlight_theme="base16-ocean-light"
+#highlight_theme="one-dark"
+#highlight_theme="gruvbox-dark"
+highlight_theme="solarized-dark"
+
 
 title="fstool"
 description="CLI tool to calculate fraction of shared peptides between alleles based on addinity predictions"

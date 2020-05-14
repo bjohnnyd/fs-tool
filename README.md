@@ -15,18 +15,8 @@ Detailed instructions and descriptions are available in the [Documentation](http
 
 ## Install
 
-<<<<<<< HEAD
 ### Binary
-Precompiled binaries are available, you can download the latest binary for [Windows](https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.4/x86_64-pc-windows-gnu.zip) and [Linux64](https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.4/x86_64-unknown-linux-gnu.tar.gz) (N.B. some `CentOS` releases need compiling from source).
 
-### Build 
-To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  
-
-After installing rustup download clone the repository and build:
-
-``` bash
-$ git clone https://github.com/bjohnnyd/fs-tool.git  && cd fs-tool && RUSTFLAGS="-Awarnings" cargo build --release --bin fs-tool
-=======
 The simplest way to install is using the precompiled binaries provided below:
 
 | ![picture](static/64px-Tux.png) | ![picture](static/64px-MacOS_logo.png)  | ![picture](static/64px-Windows_logo_2012.png) |
@@ -39,6 +29,8 @@ Using the command line you can obtain the binary using:
 ``` bash
 $ curl -LO https://github.com/bjohnnyd/fs-tool/releases/latest/fstool && chmod +x fstool && ./fs-tool -h
 ```
+
+### Build 
 
 To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  After installing rustup download the release archive file and build:
 

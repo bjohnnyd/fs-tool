@@ -44,7 +44,7 @@ The compiled binary can then be ran using:
 $ ./target/release/fstool -h
 ```
 
-All releases and associated binaries and archives are accessible under [Releases](https://github.com/bjohnnyd/fs-tool/releases/latest).
+All releases and associated binaries and archives are accessible under [Releases](https://github.com/bjohnnyd/fs-tool/releases).
 
 ## Usage
 

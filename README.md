@@ -9,6 +9,8 @@ Command-line tool to calculate fraction of shared bound peptides between HLA all
 Current HLA allele ligand group assignments that is included with this tool was obtained from `https://www.ebi.ac.uk/` on `2019-12-29`.
 The kir ligand motifs can be updated using the tool.
 
+Detailed instructions and descriptions are available in the [Documentation](https://bjohnnyd.github.io/fs-tool/public)
+
 ## Install
 
 The simplest way to install is using the precompiled binaries provided below:
@@ -110,18 +112,14 @@ The created directory `example_result` will contain the following output:
 
 | File name | Description  | 
 | :-----------------------------: | :-------------------------------------: |
-| example_cohort_Gag_180_209_allele_binding_summary.csv |  summary of allele peptide binding counts per protein  |  |
-| example_cohort_Gag_180_209_allele_fs_result.csv | fraction shared calculation results for all combinations of alleles in the binding predictions |  |
-| example_cohort_Gag_180_209_allele_metadata.csv | lists netmhcpan nearest neighbour information and what allele was the ligand motif assignment based on  |  |
-| example_cohort_Gag_180_209_cohort_result.csv |  lists per cohort subject calculations for each index allele, peptide length, measure |  |
+| **example_cohort_Gag_180_209_allele_binding_summary.csv** |  summary of allele peptide binding counts per protein  |  |
+| **example_cohort_Gag_180_209_allele_fs_result.csv** | fraction shared calculation results for all combinations of alleles in the binding predictions |  |
+| **example_cohort_Gag_180_209_allele_metadata.csv** | lists netmhcpan nearest neighbour information and what allele was the ligand motif assignment based on  |  |
+| **example_cohort_Gag_180_209_cohort_result.csv** |  lists per cohort subject calculations for each index allele, peptide length, measure |  |
 
 
-More detailed explanation of results can be found in the [Output]() section of the documentation.
+Additional information can be found in the [Output](https://bjohnnyd.github.io/fs-tool/public/output) section of the [Documentation](https://bjohnnyd.github.io/fs-tool/public).
 
-
-## Documentation and Tutorial
-
-Detailed instructions and descriptions are available [HERE](https://bjohnnyd.github.io/fs-tool/public/output)
 
 ## Authors and Citation
 
@@ -139,7 +137,7 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 
 [ico-version]: https://img.shields.io/github/v/release/bjohnnyd/fs-tool?include_prereleases
 [ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
-[ico-travis]: https://img.shields.io/travis/com/bjohnnyd/fs-tool/dev_fs?stype=flat-square
+[ico-travis]: https://img.shields.io/travis/com/bjohnnyd/fs-tool/dev_fs?style=flat-square
 [ico-downloads]: https://img.shields.io/packagist/dt/:vendor/fs-tool.svg?style=flat-square
 
 [link-version]: https://github.com/bjohnnyd/fs-tool/releases

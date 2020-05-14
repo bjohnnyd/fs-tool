@@ -7,6 +7,11 @@
         </url>
     
         <url>
+            <loc>https://bjohnnyd.github.io/fs-tool/public/installation/</loc>
+            
+        </url>
+    
+        <url>
             <loc>https://bjohnnyd.github.io/fs-tool/public/introduction/</loc>
             
         </url>
@@ -17,7 +22,12 @@
         </url>
     
         <url>
-            <loc>https://bjohnnyd.github.io/fs-tool/public/output/</loc>
+            <loc>https://bjohnnyd.github.io/fs-tool/public/usage/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://bjohnnyd.github.io/fs-tool/public/usage/input/</loc>
             
         </url>
     

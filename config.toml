@@ -1,5 +1,5 @@
 # The URL the site will be built for
-base_url = "https://bjohnnyd.github.io/fstool"
+base_url = "https://bjohnnyd.github.io/fs-tool/public"
 
 # Whether to automatically compile all Sass files in the sass directory
 compile_sass = false
@@ -10,6 +10,12 @@ highlight_code = true
 
 # Whether to build a search index to be used later on by a JavaScript library
 build_search_index = true
+
+theme="book"
+highlight_theme="Tomorrow"
+
+title="fstool"
+description="CLI tool to calculate fraction of shared peptides between alleles based on addinity predictions"
 
 [extra]
 # Put all your custom variables here

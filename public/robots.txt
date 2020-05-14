@@ -1,2 +1,2 @@
 User-agent: *
-Sitemap: https://bjohnnyd.github.io/fstool/sitemap.xml
+Sitemap: https://bjohnnyd.github.io/fs-tool/public/sitemap.xml

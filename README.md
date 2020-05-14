@@ -24,27 +24,27 @@ The simplest way to install is using the precompiled binaries provided below:
 | [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz) | (COMING SOON)  | [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz) |
 | [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) | (COMING SOON)  | [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) |
 
-Using the command line you can obtain the binary using:
+Using the command line you can obtain the binary using (Linux):
 
 ``` bash
-$ curl -LO https://github.com/bjohnnyd/fs-tool/releases/latest/fstool && chmod +x fstool && ./fs-tool -h
+$ curl -sL https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz | tar xvz && chmod +x fstool && ./fstool -h
 ```
 
 ### Build 
 
 To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  After installing rustup download the release archive file and build:
 
-``` bash
-$ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.2.0.tar.gz |  tar xvz && cd fs-tool-0.2.0 && cargo build --release --bin fs-tool
+```bash
+$ git clone https://github.com/bjohnnyd/fs-tool.git && cd fs-tool && cargo build --release --bin fs-tool
 ```
 
 The compiled binary can then be ran using:
 
 ``` bash
-$ ./target/release/fs-tool -u
+$ ./target/release/fstool -h
 ```
 
-All releases and associated binaries and archives are accessible here [https://github.com/bjohnnyd/fs-tool/releases](https://github.com/bjohnnyd/fs-tool/releases).
+All releases and associated binaries and archives are accessible here [Releases](https://github.com/bjohnnyd/fs-tool/releases/latest).
 
 ## Usage
 
@@ -98,6 +98,7 @@ OPTIONS:
 ## Example
 
 ### Allele calculations only 
+
 To run comparison on positions `1,3,7`, and to name the output measure `Example` while updating data from EBI:
 
 ``` bash
@@ -108,6 +109,7 @@ $ ./fstool cargo run --bin fstool --  -b tests/netmhcpan/netmhcpan_wBA.txt  --pr
 to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` can be used.
 
 ### Cohort calculations
+
 To perform calculations, using the default measures, for `A02:01` and `C08:02` the following command can be ran:
 
 ``` bash
@@ -145,7 +147,7 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 
 [ico-version]: https://img.shields.io/github/v/release/bjohnnyd/fs-tool?include_prereleases
 [ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
-[ico-travis]: https://img.shields.io/travis/com/bjohnnyd/fs-tool/dev_fs?style=flat-square
+[ico-travis]: https://img.shields.io/travis/com/bjohnnyd/fs-tool/master?style=flat-square
 [ico-downloads]: https://img.shields.io/packagist/dt/:vendor/fs-tool.svg?style=flat-square
 
 [link-version]: https://github.com/bjohnnyd/fs-tool/releases

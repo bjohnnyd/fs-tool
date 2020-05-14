@@ -1,242 +1,669 @@
-use crate::prelude::collections::HashMap;
-use crate::prelude::fs_tool::{LigandGroup, NetMHCpanSummary, HLA};
-use crate::prelude::io::Write;
-use crate::prelude::traits::FromStr;
+use std::collections::{HashMap, HashSet};
 
+use crate::cohort::Individual;
+use crate::error::Error;
+
+use immunoprot::ig_like::kir::Kir;
+use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
+use immunoprot::mhc::hla::ClassI;
+use netmhcpan::result::{BindingData, BindingInfo};
+
+use log::{debug, warn};
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+
+/* FS */
+
+/// Represents the motif positions to be used for calculating fraction of shared peptides.
+/// Might be extended by a field representing whether the calculations should take KIR genotypes into
+/// consideration.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Measure {
     pub name: String,
-    pub pos: Vec<usize>,
+    pub motif_pos: Vec<usize>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CalcFsResult {
+    pub measure: String,
+    #[serde(with = "serde_with::rust::display_fromstr")]
+    pub index: ClassI,
+    #[serde(with = "serde_with::rust::display_fromstr")]
+    pub non_index: ClassI,
+    #[serde(
+        serialize_with = "crate::io::ser::optional_motif_serialize",
+        deserialize_with = "crate::io::ser::optional_motif_deserialize"
+    )]
+    pub index_ligand_motif: Option<LigandMotif>,
+    #[serde(
+        serialize_with = "crate::io::ser::optional_motif_serialize",
+        deserialize_with = "crate::io::ser::optional_motif_deserialize"
+    )]
+    pub non_index_ligand_motif: Option<LigandMotif>,
+    pub fraction_shared: f32,
+    pub peptide_length: usize,
+    pub index_bound: usize,
+    pub non_index_bound: usize,
 }
 
 #[derive(Debug)]
-pub struct Calculator<'a> {
-    pub netmhcpan_summary: &'a NetMHCpanSummary,
-    pub measures: Vec<Measure>,
-    pub results: HashMap<String, Vec<(&'a HLA, &'a HLA, f32, usize, usize, usize)>>,
-    pub peptide_lengths: Vec<usize>,
+pub struct CalculatorComb<'a> {
+    pub alleles: (&'a ClassI, &'a ClassI),
+    pub binding_data: (&'a [BindingInfo], &'a [BindingInfo]),
 }
 
-impl<'a> Calculator<'a> {
+impl<'a> CalculatorComb<'a> {
     pub fn new(
-        netmhcpan_summary: &'a NetMHCpanSummary,
-        measures: Vec<Measure>,
-        peptide_lengths: Vec<usize>,
+        index_allele: &'a ClassI,
+        non_index_allele: &'a ClassI,
+        index_bd: &'a [BindingInfo],
+        non_index_bd: &'a [BindingInfo],
     ) -> Self {
         Self {
-            netmhcpan_summary,
-            measures,
-            results: HashMap::<String, Vec<(&'a HLA, &'a HLA, f32, usize, usize, usize)>>::new(),
-            peptide_lengths,
+            alleles: (index_allele, non_index_allele),
+            binding_data: (index_bd, non_index_bd),
         }
     }
 
-    pub fn process_measures(&mut self) {
-        let results = std::mem::take(&mut self.results);
-        let peptide_lengths = &self.peptide_lengths;
-        self.results = self.measures.iter().fold(results, |mut results, measure| {
-            if !results.contains_key(&measure.name) {
-                let mut calcs = self
-                    .netmhcpan_summary
-                    .combinations
-                    .iter()
-                    .map(|comb| {
-                        peptide_lengths
-                            .iter()
-                            .map(|pep_length| {
-                                let bound_motifs_1 = self.netmhcpan_summary.get_bound_motifs(
-                                    &comb.0,
-                                    None,
-                                    &measure.pos,
-                                    *pep_length,
-                                );
-                                let bound_motifs_2 = self.netmhcpan_summary.get_bound_motifs(
-                                    &comb.1,
-                                    None,
-                                    &measure.pos,
-                                    *pep_length,
-                                );
-
-                                let fs = calc_fs(&bound_motifs_1, &bound_motifs_2);
-                                //                                println!("HLA-{} / HLA- {} has {} / {} bound peptides at length {}", &comb.0, &comb.1, bound_motifs_1.len(), bound_motifs_2.len(), pep_length);
-
-                                vec![
-                                    (
-                                        &comb.0,
-                                        &comb.1,
-                                        fs.0,
-                                        *pep_length,
-                                        bound_motifs_1.len(),
-                                        bound_motifs_2.len(),
-                                    ),
-                                    (
-                                        &comb.1,
-                                        &comb.0,
-                                        fs.1,
-                                        *pep_length,
-                                        bound_motifs_2.len(),
-                                        bound_motifs_1.len(),
-                                    ),
-                                ]
-                            })
-                            .flatten()
-                            .collect::<Vec<(&HLA, &HLA, f32, usize, usize, usize)>>()
-                    })
-                    .flatten()
-                    .collect::<Vec<(&HLA, &HLA, f32, usize, usize, usize)>>();
-
-                let current_calcs = results.entry(measure.name.to_string()).or_insert(Vec::<(
-                    &HLA,
-                    &HLA,
-                    f32,
-                    usize,
-                    usize,
-                    usize,
-                )>::new(
-                ));
-                current_calcs.append(&mut calcs);
+    pub fn get_motifs(
+        &self,
+        threshold: f32,
+        length: usize,
+        aa_pos: &[usize],
+    ) -> (Vec<String>, Vec<String>) {
+        let bound_motifs = |item: &BindingInfo| {
+            if item.rank() < threshold && item.len() == length {
+                Some(item.motif(aa_pos))
+            } else {
+                None
             }
-            results
-        });
+        };
+
+        let index_motifs = self
+            .binding_data
+            .0
+            .iter()
+            .filter_map(bound_motifs)
+            .collect::<Vec<String>>();
+        let non_index_motifs = self
+            .binding_data
+            .1
+            .iter()
+            .filter_map(bound_motifs)
+            .collect::<Vec<String>>();
+
+        (index_motifs, non_index_motifs)
     }
 
-    pub fn write_calculations(&self, out: &mut impl Write) -> Result<usize, std::io::Error> {
-        out.write(
-            "Measure\tIndex\tNonIndex\tFS\tPeptideLength\tIndexBound\tNonIndexBound\n".as_ref(),
-        )?;
-        out.write(format!("{}", self).as_ref())
+    /// Counts number of unique bound motifs (if positions provided) or peptides
+    pub fn count_bound(
+        &self,
+        threshold: f32,
+        unique: bool,
+        length: usize,
+        aa_pos: Option<&[usize]>,
+    ) -> (usize, usize) {
+        let is_bound = |item: &&BindingInfo| item.rank() < threshold && item.len() == length;
+
+        let (mut index_motifs, mut non_index_motifs) = match aa_pos {
+            Some(aa_pos) => self.get_motifs(threshold, length, aa_pos),
+            _ => {
+                let index_bound = self
+                    .binding_data
+                    .0
+                    .iter()
+                    .filter(is_bound)
+                    .map(|info| info.seq().to_string())
+                    .collect();
+                let non_index_bound = self
+                    .binding_data
+                    .1
+                    .iter()
+                    .filter(is_bound)
+                    .map(|info| info.seq().to_string())
+                    .collect();
+
+                (index_bound, non_index_bound)
+            }
+        };
+
+        if unique {
+            index_motifs.sort();
+            non_index_motifs.sort();
+
+            index_motifs.dedup();
+            non_index_motifs.dedup();
+        }
+
+        (index_motifs.len(), non_index_motifs.len())
+    }
+
+    /// Calculates shared peptides motifs based on a threshold for determining bound and whether unique motifs should only be considered,
+    /// the peptides considered can also optionally be filtered based on length
+    pub fn calculate_shared_motifs(
+        &self,
+        motif: &[usize],
+        threshold: f32,
+        unique: bool,
+        length: usize,
+    ) -> (f32, f32) {
+        let (mut index_motifs, mut non_index_motifs) = self.get_motifs(threshold, length, motif);
+
+        if unique {
+            index_motifs.sort();
+            non_index_motifs.sort();
+
+            index_motifs.dedup();
+            non_index_motifs.dedup();
+        }
+
+        let index_shared = index_motifs
+            .iter()
+            .filter(|motif| non_index_motifs.contains(motif))
+            .count() as f32;
+
+        let non_index_shared = non_index_motifs
+            .iter()
+            .filter(|motif| index_motifs.contains(motif))
+            .count() as f32;
+
+        (
+            index_shared / index_motifs.len() as f32,
+            non_index_shared / non_index_motifs.len() as f32,
+        )
     }
 }
 
-/* Need to deal with Error */
-impl FromStr for Measure {
-    type Err = &'static str;
+impl Measure {
+    fn parse_indices(s: &str) -> Result<Vec<usize>, Error> {
+        Ok(s.split(',')
+            .map(|digit| digit.parse::<usize>())
+            .collect::<Result<Vec<_>, _>>()?)
+    }
+}
+
+impl std::str::FromStr for Measure {
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let name_pos = s.split(':').collect::<Vec<&str>>();
         let mut name = String::new();
-        let mut pos = Vec::<usize>::new();
+        let mut motif_pos = Vec::<usize>::new();
 
-        if name_pos.len() < 2 {
-            return Err("Incorrect measure speicifier");
-        } else {
-            let name = name_pos[0].to_string();
-            let pos = name_pos[1]
-                .split(',')
-                .filter_map(|digit| digit.parse::<usize>().ok())
-                .collect::<Vec<usize>>();
-            Ok(Self { name, pos })
+        let mut name_pos = s.split(':');
+
+        if let Some(field) = name_pos.next() {
+            match name_pos.next() {
+                Some(measure_pos) => {
+                    name = field.to_string();
+                    motif_pos = Measure::parse_indices(measure_pos)?
+                }
+                _ => {
+                    motif_pos = Measure::parse_indices(field)?;
+                    name = motif_pos
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<String>>()
+                        .join("_");
+                }
+            }
         }
+        Ok(Self { name, motif_pos })
     }
 }
 
-impl<'a> std::fmt::Display for Calculator<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let mut description = String::new();
-        self.results.iter().for_each(|(measure, values)| {
-            values.iter().for_each(
-                |(index, non_index, fs, pep_length, index_bound, non_index_bound)| {
-                    description.push_str(
-                        format!(
-                            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+/// Creates all possible allele combinations from NetMHCpan predictions
+/// TODO: IMPORTANT this is memory intensive
+pub fn create_calc_combs(binding_data: &BindingData) -> Vec<CalculatorComb> {
+    binding_data.list_alleles().par_iter().fold(||
+        Vec::<CalculatorComb>::new(),
+        |mut comb, index_allele| {
+            for non_index_allele in binding_data.list_alleles() {
+                if *index_allele != non_index_allele {
+                    debug!("Storing binding data info for {}, {}", &index_allele, &non_index_allele);
+                    match (binding_data.get_binding_info(index_allele), binding_data.get_binding_info(non_index_allele)) {
+                        (Some(index_data), Some(non_index_data)) => {
+                            let calc_comb = CalculatorComb {
+                                alleles: (index_allele, non_index_allele),
+                                binding_data: (
+                                    index_data,
+                                    non_index_data,
+                                ),
+                            };
+                            comb.push(calc_comb);
+                        },
+                        _ => warn!("Since binding data is not present for both, no fs will be made between {} and {}", &index_allele, &non_index_allele)
+                    }
+
+                }
+            }
+
+            comb
+        },
+    )
+        .reduce(|| Vec::new(), |mut a , b| {a.extend(b); a})
+}
+
+/// Make calculations for specific measures and peptide lengths
+pub fn calculate_fs(
+    combinations: &[CalculatorComb],
+    measures: &[Measure],
+    ligand_map: &KirLigandMap,
+    pep_lengths: &[usize],
+    threshold: f32,
+    unique: bool,
+) -> Vec<CalcFsResult> {
+    combinations
+        .par_iter()
+        .fold(
+            || Vec::<CalcFsResult>::new(),
+            |mut results, comb| {
+                let index = comb.alleles.0.clone();
+                let non_index = comb.alleles.1.clone();
+                let mut index_motifs = ligand_map.get_allele_info(&index);
+                let mut non_index_motifs = ligand_map.get_allele_info(&non_index);
+
+                index_motifs.sort();
+                non_index_motifs.sort();
+
+                let index_ligand_motif = match index_motifs.iter().next() {
+                    Some(info) => Some(info.motif().clone()),
+                    _ => None,
+                };
+
+                let non_index_ligand_motif = match non_index_motifs.iter().next() {
+                    Some(info) => Some(info.motif().clone()),
+                    _ => None,
+                };
+
+                measures.iter().for_each(|measure_group| {
+                    pep_lengths.iter().for_each(|pep_length| {
+                        debug!(
+                            "Calculating FS for index {}, non index {}, measure {}  and length {}",
+                            &index, &non_index, &measure_group.name, &pep_length
+                        );
+                        let measure = measure_group.name.to_string();
+                        let motif = &measure_group.motif_pos;
+                        let (index_bound, non_index_bound) =
+                            comb.count_bound(threshold, unique, *pep_length, Some(motif));
+                        let (fraction_shared, _) =
+                            comb.calculate_shared_motifs(motif, threshold, unique, *pep_length);
+
+                        let result = CalcFsResult {
                             measure,
-                            index,
-                            non_index,
-                            fs,
-                            pep_length,
+                            index: index.clone(),
+                            non_index: non_index.clone(),
+                            index_ligand_motif: index_ligand_motif.clone(),
+                            non_index_ligand_motif: non_index_ligand_motif.clone(),
+                            fraction_shared,
+                            peptide_length: *pep_length,
                             index_bound,
-                            index.lg_as_str(),
                             non_index_bound,
-                            non_index.lg_as_str()
-                        )
-                        .as_str(),
-                    );
-                },
-            )
+                        };
+
+                        results.push(result);
+                    });
+                });
+
+                results
+            },
+        )
+        .reduce(
+            || Vec::new(),
+            |mut a, b| {
+                a.extend(b);
+                a
+            },
+        )
+}
+
+/* Cohort */
+
+// TODO: Need to unit test
+pub fn create_index_fs_map(
+    index_alleles: Vec<ClassI>,
+    fs_results: Vec<CalcFsResult>,
+) -> HashMap<ClassI, Vec<CalcFsResult>> {
+    index_alleles
+        .into_par_iter()
+        .fold(|| HashMap::new(), |mut index_calc_map, index_allele| {
+            let index_results = fs_results.iter().filter(|result| result.index == index_allele).cloned().collect::<Vec<CalcFsResult>>();
+            if index_results.is_empty() {
+                warn!("Index allele '{}' was not present in the NetMHCpan results and no calculations for this allele will be performed.", &index_allele);
+            } else {
+                index_calc_map.insert(index_allele, index_results);
+            }
+            index_calc_map
+        })
+        .reduce(|| HashMap::new(), | mut a , b| {a.extend(b); a})
+}
+
+#[derive(Debug)]
+pub struct IndexCache {
+    pub indexes: HashSet<ClassI>,
+    pub index_motifs: HashMap<ClassI, LigandMotif>,
+    pub index_act_kirs: HashMap<ClassI, Vec<Kir>>,
+    pub index_inh_kirs: HashMap<ClassI, Vec<Kir>>,
+    pub fs_cache: HashMap<(String, usize), HashMap<(ClassI, ClassI), CalcFsResult>>,
+}
+
+impl IndexCache {
+    pub fn new(
+        index_alleles: Vec<ClassI>,
+        fs_result: Vec<CalcFsResult>,
+        kir_interactions: &HashMap<Kir, Vec<LigandMotif>>,
+        measures: &[Measure],
+        pep_lengths: &[usize],
+    ) -> Self {
+        let mut indexes = HashSet::new();
+        let mut index_motifs = HashMap::new();
+        let mut index_act_kirs = HashMap::<ClassI, Vec<Kir>>::new();
+        let mut index_inh_kirs = HashMap::<ClassI, Vec<Kir>>::new();
+        let mut fs_cache =
+            HashMap::<(String, usize), HashMap<(ClassI, ClassI), CalcFsResult>>::new();
+
+        let measure_combs = measures.iter().fold(Vec::new(), |mut cache_keys, measure| {
+            pep_lengths
+                .iter()
+                .for_each(|length| cache_keys.push((measure.name.to_string(), *length)));
+            cache_keys
         });
 
-        write!(f, "{}", description)
-    }
-}
+        fs_result.into_iter().for_each(|result| {
+            if index_alleles.contains(&result.index) {
+                let index_allele = result.index.clone();
+                if !index_motifs.contains_key(&index_allele) {
+                    indexes.insert(index_allele.clone());
+                    if let Some(index_motif) = result.index_ligand_motif.clone() {
+                        kir_interactions.iter().for_each(|(kir, kir_motifs)| {
+                            if kir_motifs.contains(&index_motif) {
+                                if kir.is_activating() {
+                                    let act_kirs =
+                                        index_act_kirs.entry(index_allele.clone()).or_default();
+                                    act_kirs.push(kir.clone())
+                                } else if kir.is_inhibitory() {
+                                    let inh_kirs =
+                                        index_inh_kirs.entry(index_allele.clone()).or_default();
+                                    inh_kirs.push(kir.clone())
+                                }
+                            }
+                        });
 
-pub fn intersection_count_sorted_motifs(a: &[String], b: &[String]) -> u32 {
-    let mut count = 0;
-    let mut b_iter = b.iter().map(String::as_bytes);
+                        index_motifs.insert(index_allele.clone(), index_motif);
+                    }
+                }
 
-    if let Some(mut current_b) = b_iter.next() {
-        for current_a in a.iter().map(String::as_bytes) {
-            while current_b < current_a {
-                current_b = match b_iter.next() {
-                    Some(current_b) => current_b,
-                    None => return count,
-                };
+                let index_cache = fs_cache
+                    .entry((result.measure.to_string(), result.peptide_length))
+                    .or_default();
+                index_cache.insert((index_allele, result.non_index.clone()), result);
             }
-            if current_a == current_b {
-                count += 1;
-            }
+        });
+
+        index_alleles
+            .iter()
+            .for_each(|allele| {
+                if !indexes.contains(allele) {
+                    warn!("Index allele '{}' has no associated NetMHCpan data and will not have cohort results produced", allele);
+                }
+            });
+
+        Self {
+            indexes,
+            index_motifs,
+            index_act_kirs,
+            index_inh_kirs,
+            fs_cache,
         }
     }
-    count
 }
 
-pub fn calc_fs(a: &[String], b: &[String]) -> (f32, f32) {
-    let intersection_count = intersection_count_sorted_motifs(a, b) as f32;
-    let mut fs1 = 0_f32;
-    let mut fs2 = 0_f32;
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CohortResult {
+    #[serde(with = "serde_with::rust::display_fromstr")]
+    pub index: ClassI,
+    pub id: String,
+    pub measure: String,
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub fs: Option<f32>,
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub ikir_fs: Option<f32>,
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub akir_fs: Option<f32>,
+    // TODO: Need to move LILRB outside of this output as it is independent of measure or peptide length
+    // and is inefficiently calculated
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub lilrb1: Option<f32>,
+    #[serde(serialize_with = "crate::io::ser::optional_float_serialize")]
+    pub lilrb2: Option<f32>,
+    pub peptide_length: usize,
+    pub alleles_considered: usize,
+}
 
-    if !a.is_empty() {
-        fs1 = intersection_count / a.len() as f32;
+/// Temporary function to get kirs bound by allele
+fn get_bound_kirs(
+    motif_interactions: &HashMap<Kir, Vec<LigandMotif>>,
+    motif: &LigandMotif,
+) -> Vec<Kir> {
+    motif_interactions
+        .iter()
+        .fold(Vec::new(), |mut result, (kir, kir_motifs)| {
+            if kir_motifs.contains(motif) {
+                result.push(kir.clone())
+            };
+            result
+        })
+}
+
+// TODO: Deal with possible errors and also some are never going to return an error
+pub fn calculate_index_cohort_fs(
+    index_cache: IndexCache,
+    cohort: &[Individual],
+    kir_motif_interactions: &HashMap<Kir, Vec<LigandMotif>>,
+    lilrb_scores: &[LilrbScore],
+) -> Vec<CohortResult> {
+    use LigandMotif::*;
+
+    cohort.par_iter().fold(|| Vec::new(), |mut results, individual| {
+        let genotype = &individual.hla_genotype;
+        let kir_bound = individual.kir_bound_motifs(&kir_motif_interactions);
+        debug!("Started processing individual {}", &individual.id);
+
+
+        index_cache
+            .fs_cache
+            .iter()
+            .for_each(|((measure, length), calc_result)| {
+                index_cache.indexes.iter().for_each(|index| {
+                    debug!("Started processing {} for peptide lengths {} with index allele {} and individual {}", &measure, &length, &index, &individual.id);
+                    let index_motif = index_cache.index_motifs.get(index);
+                    let index_lilrb_scores = lilrb_scores.iter().get_matching(&index);
+                    if index_lilrb_scores.is_empty() {
+                        warn!("Index allele '{}', has no associated LILRB binding similarity scores", &index);
+                    }
+
+                    debug!("Got lilrb scores for index allele");
+                    let index_act_kirs = match index_cache.index_act_kirs.get(index) {
+                        Some(act_kirs) => act_kirs.clone(),
+                        _ => Vec::new(),
+                    };
+
+                    let index_inh_kirs = match index_cache.index_inh_kirs.get(index) {
+                        Some(inh_kirs) => inh_kirs.clone(),
+                        _ => Vec::new(),
+                    };
+
+                    let (fs, ikir_fs, akir_fs, lilrb1, lilrb2) = genotype.iter().fold(
+                        (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+                        |(mut fs, mut ikir_fs, mut akir_fs, mut lilrb1, mut lilrb2), genotype_allele| {
+
+                            if !index_lilrb_scores.is_empty() {
+                                let lilrb_scores = index_lilrb_scores.iter().copied().get_matching(genotype_allele);
+
+                                match lilrb_scores.len() {
+                                    0 => { warn!("No LILRB binding scores found for allele '{}' in individual {}", &genotype_allele, individual.id) },
+                                    1 => {
+                                        lilrb1.push(lilrb_scores[0].lilrb1_score);
+                                        lilrb2.push(lilrb_scores[0].lilrb2_score);
+                                    },
+                                    n => {
+                                        lilrb1.push(lilrb_scores.iter().map(|score| score.lilrb1_score ).sum::<f32>() / n as f32);
+                                        lilrb2.push(lilrb_scores.iter().map(|score| score.lilrb2_score ).sum::<f32>() / n as f32);
+                                    },
+                                }
+                            }
+
+                            if let Some(fs_result) =
+                                calc_result.get(&(index.clone(), genotype_allele.clone()))
+                            {
+                                let initial = fs_result.fraction_shared;
+                                let mut akir = initial;
+                                let mut ikir = initial;
+
+                                match (index_motif, &fs_result.non_index_ligand_motif) {
+                                    (Some(Unclassified), Some(Unclassified)) => {
+                                        akir = 1.0;
+                                        ikir = 1.0
+                                    }
+                                    (Some(index_motif), Some(gene_motif)) => {
+                                        let genotype_bound_kirs =
+                                            get_bound_kirs(&kir_motif_interactions, &gene_motif);
+
+                                        let act_bound = genotype_bound_kirs
+                                            .iter()
+                                            .filter(|kir| index_act_kirs.contains(kir))
+                                            .collect::<Vec<&Kir>>();
+                                        let inh_bound = genotype_bound_kirs
+                                            .iter()
+                                            .filter(|kir| index_inh_kirs.contains(kir))
+                                            .collect::<Vec<&Kir>>();
+
+                                        let act_n = act_bound
+                                            .iter()
+                                            .filter(|kir| individual.kir_genotype.contains(kir))
+                                            .count();
+                                        let inh_n = act_bound
+                                            .iter()
+                                            .filter(|kir| individual.kir_genotype.contains(kir))
+                                            .count();
+
+                                        if act_n == 0
+                                            && !(index_act_kirs.is_empty() && act_bound.is_empty())
+                                        {
+                                            akir = 0.0;
+                                        }
+
+                                        if inh_n == 0
+                                            && !(index_inh_kirs.is_empty() && inh_bound.is_empty())
+                                        {
+                                            ikir = 0.0;
+                                        }
+                                    }
+                                    // Should this be only (None, None) and throw or ignore otherwise
+                                    _ => {
+                                        akir = 0.0;
+                                        ikir = 0.0;
+                                    }
+                                }
+
+                                fs.push(initial);
+                                ikir_fs.push(ikir);
+                                akir_fs.push(akir);
+                            }
+
+                            (fs, ikir_fs, akir_fs, lilrb1, lilrb2)
+                        },
+                    );
+
+                    let alleles_considered = fs.len();
+
+                    let fs = fs
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+                    let ikir_fs = ikir_fs
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+                    let akir_fs = akir_fs
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+                    let lilrb1 = lilrb1
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+                    let lilrb2 = lilrb2
+                        .into_iter()
+                        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"));
+
+                    let result = CohortResult {
+                        index: index.clone(),
+                        id: individual.id.to_string(),
+                        measure: measure.to_string(),
+                        fs,
+                        ikir_fs,
+                        akir_fs,
+                        lilrb1,
+                        lilrb2,
+                        peptide_length: *length,
+                        alleles_considered,
+                    };
+                    results.push(result);
+                });
+            });
+
+        results
+    })
+        .reduce(|| Vec::new(), | mut a , b| {a.extend(b); a})
+}
+
+/* LILRB */
+
+#[derive(Debug)]
+pub struct LilrbScore {
+    pub first_allele: ClassI,
+    pub second_allele: ClassI,
+    pub lilrb1_score: f32,
+    pub lilrb2_score: f32,
+}
+
+trait ExhaustiveSearch<'a> {
+    fn get_matching(&self, allele: &ClassI) -> Vec<&'a LilrbScore>;
+}
+
+impl<'a, I> ExhaustiveSearch<'a> for I
+where
+    I: Iterator<Item = &'a LilrbScore> + Clone,
+{
+    fn get_matching(&self, allele: &ClassI) -> Vec<&'a LilrbScore> {
+        let (allele_group, exact) =
+            self.clone()
+                .fold((Vec::new(), Vec::new()), |(mut group, mut exact), score| {
+                    if score.first_allele.allele_group() == allele.allele_group()
+                        || score.second_allele.allele_group() == allele.allele_group()
+                    {
+                        group.push(score);
+
+                        if score.first_allele == *allele || score.second_allele == *allele {
+                            exact.push(score)
+                        }
+                    }
+
+                    (group, exact)
+                });
+
+        if exact.is_empty() {
+            allele_group
+        } else {
+            exact
+        }
     }
-
-    if !b.is_empty() {
-        fs2 = intersection_count / b.len() as f32;
-    }
-
-    (fs1, fs2)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::netmhcpan::parser::{BindingInfo, PepInfo};
-    use crate::prelude::collections::{HashMap, HashSet};
-    use crate::prelude::fs_tool::*;
-    use crate::prelude::traits::FromStr;
-
-    const netmhcpan: &str =
-        "HLA-A03:01 : Distance to training data  0.000 (using nearest neighbor HLA-A03:01)\n\
-            \n\
-            # Rank Threshold for Strong binding peptides   0.500\n\
-            # Rank Threshold for Weak binding peptides   2.000\n\
-            -----------------------------------------------------------------------------------\n\
-              Pos          HLA         Peptide       Core Of Gp Gl Ip Il        Icore        Identity     Score   %Rank  BindLevel\n\
-            -----------------------------------------------------------------------------------\n\
-                1  HLA-A*03:01     TPQDLNTMLNT  TPQDTMLNT  0  4  2  0  0  TPQDLNTMLNT     Gag_180_209 0.0000160 83.3333\n\
-                2  HLA-A*03:01     PQDLNTMLNTV  PQDLNTMLV  0  8  2  0  0  PQDLNTMLNTV     Gag_180_209 0.0000120 87.0000\n\
-                3  HLA-A*03:01     QDLNTMLNTVG  QDLNTNTVG  0  5  2  0  0  QDLNTMLNTVG     Gag_180_209 0.0000040 96.0000\n\
-                4  HLA-A*03:01     DLNTMLNTVGG  DLNTNTVGG  0  4  2  0  0  DLNTMLNTVGG     Gag_180_209 0.0000040 96.0000\n\
-                5  HLA-A*03:01     LNTMLNTVGGH  LMLNTVGGH  0  1  2  0  0  LNTMLNTVGGH     Gag_180_209 0.0001090 48.8333\n\
-                6  HLA-A*03:01     NTMLNTVGGHQ  NTMTVGGHQ  0  3  2  0  0  NTMLNTVGGHQ     Gag_180_209 0.0001260 46.1429\n\
-                7  HLA-A*03:01     TMLNTVGGHQA  TMLNGGHQA  0  4  2  0  0  TMLNTVGGHQA     Gag_180_209 0.0001260 46.1429\n\
-                8  HLA-A*03:01     MLNTVGGHQAA  MLNGGHQAA  0  3  2  0  0  MLNTVGGHQAA     Gag_180_209 0.0002300 36.4000\n\
-                9  HLA-A*03:01     LNTVGGHQAAM  NTVGGHQAM  1  7  1  0  0   NTVGGHQAAM     Gag_180_209 0.0000530 62.5000\n\
-               10  HLA-A*03:01     NTVGGHQAAMQ  NTVGGAAMQ  0  5  2  0  0  NTVGGHQAAMQ     Gag_180_209 0.0001420 44.1250\n\
-               11  HLA-A*03:01     TVGGHQAAMQM  TVHQAAMQM  0  2  2  0  0  TVGGHQAAMQM     Gag_180_209 0.0004120 28.5000\n\
-               12  HLA-A*03:01     VGGHQAAMQML  VGGAAMQML  0  3  2  0  0  VGGHQAAMQML     Gag_180_209 0.0000120 87.0000\n\
-               13  HLA-A*03:01     GGHQAAMQMLK  GQAAMQMLK  0  1  2  0  0  GGHQAAMQMLK     Gag_180_209 0.0313010  3.8215\n\
-               14  HLA-A*03:01     GHQAAMQMLKE  GQAAMQMLK  0  1  1  0  0   GHQAAMQMLK     Gag_180_209 0.0004080 28.6176\n\
-               15  HLA-A*03:01     HQAAMQMLKET  HQAAMQMLK  0  0  0  0  0    HQAAMQMLK     Gag_180_209 0.0003110 32.0000\n\
-               16  HLA-A*03:01     QAAMQMLKETI  QAAMQMLTI  0  7  2  0  0  QAAMQMLKETI     Gag_180_209 0.0000140 85.0000\n\
-               17  HLA-A*03:01     AAMQMLKETIN  AAMQKETIN  0  4  2  0  0  AAMQMLKETIN     Gag_180_209 0.0000060 93.7500\n\
-               18  HLA-A*03:01     AMQMLKETINE  AMLKETINE  0  1  2  0  0  AMQMLKETINE     Gag_180_209 0.0001620 41.9000\n\
-               19  HLA-A*03:01     MQMLKETINEE  MLKETINEE  0  1  2  0  0  MQMLKETINEE     Gag_180_209 0.0000850 53.5417\n\
-               20  HLA-A*03:01     QMLKETINEEA  QMLKETINA  0  8  2  0  0  QMLKETINEEA     Gag_180_209 0.0000410 67.2727\n\
-               21  HLA-A*03:01       MLKETINEE  MLKETINEE  0  0  0  0  0    MLKETINEE     Gag_180_209 0.0079270  7.4157\n\
-               22  HLA-A*03:01       LKETINEEA  LKETINEEA  0  0  0  0  0    LKETINEEA     Gag_180_209 0.0000450 65.4545\n\
-                ";
+    use crate::io::reader::read_lilrb_scores;
+    use netmhcpan::reader::read_raw_netmhcpan;
 
     #[test]
-    fn test_measure() {
+    fn test_create_measure() {
         let input_measure = "CD8:2,3,4,5,6,9";
         let measure = input_measure.parse::<Measure>().unwrap();
 
@@ -244,51 +671,27 @@ mod tests {
             measure,
             Measure {
                 name: "CD8".to_string(),
-                pos: vec![2, 3, 4, 5, 6, 9]
+                motif_pos: vec![2, 3, 4, 5, 6, 9]
             }
         )
     }
+
     #[test]
-    fn test_get_motifs() {
-        let mut f = std::fs::File::open("resources/netmhcout.txt").unwrap();
-        let measure_cd8 = "CD8:2,3,4,5,6,9".parse::<Measure>().unwrap();
-        let measure_nk = "NK:2,7,8,9".parse::<Measure>().unwrap();
+    fn test_calculate_fs() {
+        let binding_data = read_raw_netmhcpan("tests/netmhcpan/netmhcpan_wBA.txt").unwrap();
+        let comb = create_calc_combs(&binding_data);
 
-        let mut netmhcpan_summary = read_netmhcpan(f, None).unwrap();
-        let hla1 = "HLA-C03:04".parse::<HLA>().unwrap();
-        let hla2 = "HLA-C08:01".parse::<HLA>().unwrap();
-
-        let hla1_bound = netmhcpan_summary.get_bound(&hla1, Some(10_f32), 9usize);
-        let hla2_bound = netmhcpan_summary.get_bound(&hla2, Some(10_f32), 9usize);
-
-        let motifs1_cd8 = netmhcpan_summary.get_motifs(&hla1_bound, &measure_cd8.pos);
-        let motifs2_cd8 = netmhcpan_summary.get_motifs(&hla2_bound, &measure_cd8.pos);
-
-        let motifs1_nk = netmhcpan_summary.get_motifs(&hla1_bound, &measure_nk.pos);
-        let motifs2_nk = netmhcpan_summary.get_motifs(&hla2_bound, &measure_nk.pos);
-
-        dbg!(
-            intersection_count_sorted_motifs(&motifs1_cd8, &motifs2_cd8) as f32
-                / motifs1_cd8.len() as f32
-        );
-        dbg!(
-            intersection_count_sorted_motifs(&motifs1_nk, &motifs2_nk) as f32
-                / motifs1_nk.len() as f32
-        );
+        dbg!(&comb);
+        dbg!(&comb.len());
     }
 
     #[test]
-    fn test_calculator() {
-        let mut f = std::fs::File::open("resources/netmhcout.txt").unwrap();
+    fn test_lilrb_search() {
+        let lilrb_scores = read_lilrb_scores();
+        let test_allele = "A*03:02".parse::<ClassI>().unwrap();
+        let ref_scores = lilrb_scores.iter().collect::<Vec<&LilrbScore>>();
 
-        let measures = "CD8:2,3,4,5,6,9 NK:2,7,8,9"
-            .split_whitespace()
-            .filter_map(|measure| measure.parse::<Measure>().ok())
-            .collect::<Vec<Measure>>();
-        let mut netmhcpan_summary = read_netmhcpan(f, None).unwrap();
-
-        let mut calc = Calculator::new(&netmhcpan_summary, measures, vec![8, 9, 10, 11]);
-        calc.process_measures();
-        println!("{}", calc);
+        dbg!(lilrb_scores.iter().get_matching(&test_allele));
+        dbg!(ref_scores.iter().copied().get_matching(&test_allele));
     }
 }

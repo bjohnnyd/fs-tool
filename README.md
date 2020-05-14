@@ -1,17 +1,21 @@
 # fs-tool 
 
+[![Release][ico-version]][link-version]
+[![Build Status][ico-travis]][link-travis]
 [![Software License][ico-license]](LICENSE.md)
 
-Command-line tool to calculate fraction of shared bound peptides between HLA alleles from NetMHCpan binding predictions.
-The tool currently reports fraction of shared peptides based on default motifs in the peptide but additional positions can be supplied by the user.
-
-Upcoming releases will add the ability to compare fraction shared between an HLA allele and an individual taking into account the HLA and KIR genotypes.
+Command-line tool to calculate fraction of shared bound peptides between HLA alleles from NetMHCpan binding predictions.  The tool currently reports fraction of shared peptides based on default motifs in the peptide but additional positions can be supplied by the user.
 
 Current HLA allele ligand group assignments that is included with this tool was obtained from `https://www.ebi.ac.uk/` on `2019-12-29`.
-When the tool is ran, the first time after installation, it will download current ligand group information and will report where locally it has been stored (OS dependent location).
+The kir ligand motifs can be updated using the tool.
+
+Detailed instructions and descriptions are available in the [Documentation](https://bjohnnyd.github.io/fs-tool/public) (documentation will be available soon).
+
+
 
 ## Install
 
+<<<<<<< HEAD
 ### Binary
 Precompiled binaries are available, you can download the latest binary for [Windows](https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.4/x86_64-pc-windows-gnu.zip) and [Linux64](https://github.com/bjohnnyd/fs-tool/releases/download/v0.1.4/x86_64-unknown-linux-gnu.tar.gz) (N.B. some `CentOS` releases need compiling from source).
 
@@ -22,79 +26,117 @@ After installing rustup download clone the repository and build:
 
 ``` bash
 $ git clone https://github.com/bjohnnyd/fs-tool.git  && cd fs-tool && RUSTFLAGS="-Awarnings" cargo build --release --bin fs-tool
-```
+=======
+The simplest way to install is using the precompiled binaries provided below:
 
-The resulting binary can then be ran to download the updated ligand data with:
+| ![picture](static/64px-Tux.png) | ![picture](static/64px-MacOS_logo.png)  | ![picture](static/64px-Windows_logo_2012.png) |
+| :-----------------------------: | :-------------------------------------: |:--------------------------------------------: |
+| [TAR](path to release archive) | [TAR](path to release archive)  | [TAR](path to release archive) |
+| [ZIP](path to release archive) | [ZIP](path to release archive)  | [ZIP](path to release archive) |
+
+Using the command line you can obtain the binary using:
 
 ``` bash
-$ ./target/release/fs-tool
+$ curl -LO https://github.com/bjohnnyd/fs-tool/releases/latest/fstool && chmod +x fstool && ./fs-tool -h
+```
+
+To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  After installing rustup download the release archive file and build:
+
+``` bash
+$ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.2.0.tar.gz |  tar xvz && cd fs-tool-0.2.0 && cargo build --release --bin fs-tool
+>>>>>>> dev_fs
+```
+
+The compiled binary can then be ran using:
+
+``` bash
+$ ./target/release/fs-tool -u
 ```
 
 All releases and associated binaries and archives are accessible here [https://github.com/bjohnnyd/fs-tool/releases](https://github.com/bjohnnyd/fs-tool/releases).
 
 ## Usage
 
-Running `fs-tool -h` will list all possible arguments:
+Running `fstool -h` will list all possible arguments:
 
 ``` bash
-$ ./fs-tool -h
+$ ./fstool -h
 ```
 
 ```
-    fs-tool 0.1.1
-    Calculates fraction of shared peptides between HLA alleles based on NetMHCpan predictions
 
-    USAGE:
-        fs-tool [FLAGS] [OPTIONS]
+fstool 0.2.0
+Calculates fraction of shared bound motifs between HLA alleles while incorporating KIR ligand and LILRB binding
+information.
 
-    FLAGS:
-        -d, --debug
-            --drop-default-measures
-        -h, --help                     Prints help information
-            --update-ligand-groups
-        -V, --version                  Prints version information
+USAGE:
+    fstool [FLAGS] [OPTIONS] --binding-predictions <binding-predictions> --output <output>
 
-    OPTIONS:
-        -m, --measures <measures>...
-        -n, --netmhcpan <netmhcpan>
-        -o, --output <output>
-        -p, --peptide-length <peptide-length>...     [default: 9 10 11]
-        -t, --threads <threads>                      [default: 4]
+FLAGS:
+        --drop-default    Drop default measures based on TCR and KIR motifs.
+    -h, --help            Prints help information
+    -q, --quiet           Disables any information being printed to terminal (except errors)
+        --settings        Lists default measure names and motif positions as well as the default location updated kir
+                          ligand will be stored
+    -u, --unique          Whether only unique peptide/motif sequences should be considered in the calculations
+        --update          Updates the current kir ligand group data
+    -V, --version         Prints version information
+    -v, --verbose         Determines verbosity of the processing, can be specified multiple times -vvv
+
+OPTIONS:
+    -b, --binding-predictions <binding-predictions>
+            Path to file containing predicted Class I affinity data (NetMHCpan results)
+
+    -c, --cohort <cohort>                              Cohort of individuals for which all measures will be calculated
+    -i, --index <index>...
+            Index allele used for cohort calculations only, all individuals will be compared to these alleles
+
+    -m, --measure <measure>...
+            Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
+
+    -o, --output <output>                              Directory to store outputs
+    -p, --peptide-length <peptide-length>...
+            Which length of input peptide sequence to consider [default: 9]  [possible values: 8, 9, 10, 11]
+
+        --prefix <prefix>                              Prefix to assign to all outputs
+    -t, --threads <threads>                            Number of threads [default: 4]
+
+
 ```
 
 ## Example
 
-To run comparison on positions `1,3,7`, and to name the output measure `Random` while updating data from EBI:
+### Allele calculations only 
+To run comparison on positions `1,3,7`, and to name the output measure `Example` while updating data from EBI:
 
 ``` bash
-$ ./fs-tool -n resources/netmhcpan/example_netmhcpan_wBA.txt -m "Random:1,3,7" --update-ligand-groups -o random_result.tsv
+$ ./fstool cargo run --bin fstool --  -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result
 ```
 
-will result in:
 
-```
-    Measure Index   NonIndex        FS      PeptideLength   IndexBound      NonIndexBound
-    TCR     B*2705  A*0301  1       9       1       Bw4-80T 1       A3
-    TCR     A*0301  B*2705  1       9       1       A3      1       Bw4-80T
-    TCR     B*2705  A*0301  0       10      0       Bw4-80T 1       A3
-    TCR     A*0301  B*2705  0       10      1       A3      0       Bw4-80T
-    TCR     B*2705  A*0301  0       11      0       Bw4-80T 1       A3
-    TCR     A*0301  B*2705  0       11      1       A3      0       Bw4-80T
-    Random  B*2705  A*0301  1       9       1       Bw4-80T 1       A3
-    Random  A*0301  B*2705  1       9       1       A3      1       Bw4-80T
-    Random  B*2705  A*0301  0       10      0       Bw4-80T 1       A3
-    Random  A*0301  B*2705  0       10      1       A3      0       Bw4-80T
-    Random  B*2705  A*0301  0       11      0       Bw4-80T 1       A3
-    Random  A*0301  B*2705  0       11      1       A3      0       Bw4-80T
-    KIR     B*2705  A*0301  1       9       1       Bw4-80T 1       A3
-    KIR     A*0301  B*2705  1       9       1       A3      1       Bw4-80T
-    KIR     B*2705  A*0301  0       10      0       Bw4-80T 1       A3
-    KIR     A*0301  B*2705  0       10      1       A3      0       Bw4-80T
-    KIR     B*2705  A*0301  0       11      0       Bw4-80T 1       A3
-    KIR     A*0301  B*2705  0       11      1       A3      0       Bw4-80T
+to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` can be used.
+
+### Cohort calculations
+To perform calculations, using the default measures, for `A02:01` and `C08:02` the following command can be ran:
+
+``` bash
+$ ./fstool cargo run --bin fstool --  -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result -i A03:01 C08:02 -c tests/example_cohort.csv
 ```
 
- to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` can be used.
+### Output
+
+The created directory `example_result` will contain the following output: 
+
+| File name | Description  | 
+| :-----------------------------: | :-------------------------------------: |
+| **example_cohort_Gag_180_209_allele_binding_summary.csv** |  summary of allele peptide binding counts per protein  |  |
+| **example_cohort_Gag_180_209_allele_fs_result.csv** | fraction shared calculation results for all combinations of alleles in the binding predictions |  |
+| **example_cohort_Gag_180_209_allele_metadata.csv** | lists netmhcpan nearest neighbour information and what allele was the ligand motif assignment based on  |  |
+| **example_cohort_Gag_180_209_cohort_result.csv** |  lists per cohort subject calculations for each index allele, peptide length, measure |  |
+
+
+Additional information can be found in the [Output](https://bjohnnyd.github.io/fs-tool/public/output) section of the [Documentation](https://bjohnnyd.github.io/fs-tool/public) (documentation will be available soon).
+
 
 ## Authors and Citation
 
@@ -110,18 +152,14 @@ Please cite [eLife 2020;9:e54558](https://doi.org/10.7554/eLife.54558).
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
-[ico-version]: https://img.shields.io/packagist/v/:vendor/fs-tool.svg?style=flat-square
+[ico-version]: https://img.shields.io/github/v/release/bjohnnyd/fs-tool?include_prereleases
 [ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
-[ico-travis]: https://img.shields.io/travis/:vendor/fs-tool/master.svg?style=flat-square
-[ico-scrutinizer]: https://img.shields.io/scrutinizer/coverage/g/:vendor/fs-tool.svg?style=flat-square
-[ico-code-quality]: https://img.shields.io/scrutinizer/g/:vendor/fs-tool.svg?style=flat-square
+[ico-travis]: https://img.shields.io/travis/com/bjohnnyd/fs-tool/dev_fs?style=flat-square
 [ico-downloads]: https://img.shields.io/packagist/dt/:vendor/fs-tool.svg?style=flat-square
 
-[link-packagist]: https://packagist.org/packages/:vendor/fs-tool
-[link-travis]: https://travis-ci.org/:vendor/fs-tool
-[link-scrutinizer]: https://scrutinizer-ci.com/g/:vendor/fs-tool/code-structure
-[link-code-quality]: https://scrutinizer-ci.com/g/:vendor/fs-tool
-[link-downloads]: https://packagist.org/packages/:vendor/fs-tool
+[link-version]: https://github.com/bjohnnyd/fs-tool/releases
+[link-travis]: https://travis-ci.com/bjohnnyd/fs-tool
+[link-downloads]: https://packagist.org/packages/bjohnnyd/fs-tool
 [link-author]: https://github.com/bjohnnyd
 [link-author1]: https://github.com/becca-asquith
 [link-author2]: https://github.com/liesb

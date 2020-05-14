@@ -8,3 +8,11 @@
 /resources/netmhcout_large_ba.txt
 /resources/netmhcout.txt
 /test.tsv
+/immunoprot/.idea
+/immunoprot/target
+/netmhcpan/.idea
+/netmhcpan/target
+/local_data
+/test_out
+/themes
+/example_result

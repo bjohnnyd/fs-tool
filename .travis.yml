@@ -1,3 +1,7 @@
+branches:
+  only:
+    - master
+    - dev_fs
 os:
   - linux
   - osx

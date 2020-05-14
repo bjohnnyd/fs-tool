@@ -35,7 +35,7 @@ $ curl -sL https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-u
 To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  After installing rustup download the release archive file and build:
 
 ```bash
-$ git clone https://github.com/bjohnnyd/fs-tool.git && cd fs-tool && cargo build --release --bin fs-tool
+$ git clone https://github.com/bjohnnyd/fs-tool.git && cd fs-tool && cargo build --release --bin fstool
 ```
 
 The compiled binary can then be ran using:
@@ -44,7 +44,7 @@ The compiled binary can then be ran using:
 $ ./target/release/fstool -h
 ```
 
-All releases and associated binaries and archives are accessible here [Releases](https://github.com/bjohnnyd/fs-tool/releases/latest).
+All releases and associated binaries and archives are accessible under [Releases](https://github.com/bjohnnyd/fs-tool/releases/latest).
 
 ## Usage
 
@@ -97,12 +97,16 @@ OPTIONS:
 
 ## Example
 
+The following are short examples on a linux/osx based system and for further details and other OS directions see the [docs][link-docs]. 
+
+The `target/release/fstool` is for examples after building the tool from source if you downloaded the binary replace it with the path to the binary.
+
 ### Allele calculations only 
 
 To run comparison on positions `1,3,7`, and to name the output measure `Example` while updating data from EBI:
 
 ``` bash
-$ ./fstool cargo run --bin fstool --  -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result
+$ ./target/release/fstool -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result
 ```
 
 
@@ -113,7 +117,7 @@ to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` 
 To perform calculations, using the default measures, for `A02:01` and `C08:02` the following command can be ran:
 
 ``` bash
-$ ./fstool cargo run --bin fstool --  -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result -i A03:01 C08:02 -c tests/example_cohort.csv
+$ ./target/release/fstool   -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result -i A03:01 C08:02 -c tests/example_cohort.csv
 ```
 
 ### Output

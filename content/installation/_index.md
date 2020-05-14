@@ -4,9 +4,7 @@ description="Detailed instructions on installing on different OS"
 weight=1
 +++
 
-The following sections describe how to install from but the in most cases the available binaries should work as is.
-
-Therefore, the simplest installation steps are to download the appropriate version of the binary for you OS:
+The following sections describe how to install from source but in most cases the available binaries should work as is.  Therefore, the simplest installation steps are to download the appropriate version for your OS:
 
 - Windows
     - [Zip](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip)
@@ -48,5 +46,5 @@ the output should look similar to this:
 where `path/to/your/os/data/dir` will be an OS specific directory where global data will be stored.
 
 
-The following are detailed instructions on building and installing on different OS if the above fails (Some releases of CentOS will not work with the above Linux binary).
+The following installation instructions on building and installing is if the above fails (some releases of CentOS will not work with the above Linux binary).
 

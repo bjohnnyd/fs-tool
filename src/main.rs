@@ -19,7 +19,7 @@ pub const LOGGING_MODULES: [&str; 3] = ["immunoprot", "netmhcpan", "fstool"];
 pub const DEFAULT_DELIM: u8 = b',';
 
 use crate::calc::{calculate_fs, calculate_index_cohort_fs, create_calc_combs, IndexCache};
-use crate::cli::{get_measures, Opt};
+use crate::cli::{get_measures, print_defaults, Opt};
 use crate::cohort::Individual;
 use crate::io::reader::{read_kir_motif_binding, read_lilrb_scores, read_temp_cohort};
 use crate::meta::{create_allele_metadata, create_binding_metadata};
@@ -40,18 +40,8 @@ fn main() -> std::result::Result<(), ()> {
 fn main_try() -> Result<(), Box<dyn std::error::Error>> {
     let matches = Opt::clap().get_matches();
 
-    if matches.is_present("location") {
-        if let Some(project_dir) = directories::ProjectDirs::from("", "", "fstool") {
-            let data_file = project_dir.data_dir().join(PROJECT_LIGAND_TABLE);
-            let s = if data_file.exists() {"Data is"} else {"Updated data will be"};
-            println!(
-                "{} stored at {}",
-                s, data_file.display()
-            );
-            return Ok(());
-        } else {
-            return Err("Could not create/or read the global data directory".into());
-        }
+    if matches.is_present("settings") {
+        return print_defaults();
     }
 
     let opt = Opt::from_args();

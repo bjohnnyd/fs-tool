@@ -7,7 +7,7 @@ use crate::calc::Measure;
 use crate::error::Error;
 use crate::io::reader::*;
 use crate::io::writer::*;
-use crate::{KIR_DEF, LOGGING_MODULES, TCR_DEF};
+use crate::{KIR_DEF, LOGGING_MODULES, PROJECT_LIGAND_TABLE, TCR_DEF};
 
 use immunoprot::ig_like::kir_ligand::KirLigandMap;
 use immunoprot::mhc::hla::ClassI;
@@ -33,15 +33,16 @@ pub struct Opt {
     /// Updates the current kir ligand group data
     pub update: bool,
     #[structopt(long)]
-    /// Returns the directory and files where the kir ligand data is stored
-    pub location: bool,
-    #[structopt(short, long, required_unless = "location")]
+    /// Lists default measure names and motif positions as well as the default location
+    /// updated kir ligand will be stored
+    pub settings: bool,
+    #[structopt(short, long, required_unless = "settings")]
     /// Directory to store outputs
     output: PathBuf,
     /// Prefix to assign to all outputs
     #[structopt(long)]
     prefix: Option<String>,
-    #[structopt(short, long, parse(from_os_str), required_unless = "location")]
+    #[structopt(short, long, parse(from_os_str), required_unless = "settings")]
     /// Path to file containing predicted Class I affinity data (NetMHCpan results)
     pub binding_predictions: PathBuf,
     #[structopt(long)]
@@ -161,6 +162,22 @@ impl Opt {
     }
 }
 
+pub fn print_defaults() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Default Measures:\n  - {}\n  - {}\n", TCR_DEF, KIR_DEF);
+
+    if let Some(project_dir) = directories::ProjectDirs::from("", "", "fstool") {
+        let data_file = project_dir.data_dir().join(PROJECT_LIGAND_TABLE);
+        let s = if data_file.exists() {
+            "Data is"
+        } else {
+            "Updated data will be"
+        };
+        println!("{} stored at:  '{}'", s, data_file.display());
+        return Ok(());
+    } else {
+        return Err("Could not create/or read the global data directory".into());
+    }
+}
 pub fn get_measures(measures: Option<Vec<Measure>>, drop: bool) -> Vec<Measure> {
     let mut measures = measures.unwrap_or_default();
 

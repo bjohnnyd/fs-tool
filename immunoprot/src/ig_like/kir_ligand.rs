@@ -172,7 +172,8 @@ impl KirLigandMap {
         let mut alleles = HashSet::<ClassI>::new();
         let mut cache = HashMap::<ClassI, KirLigandInfo>::new();
 
-        for (row, line) in crate::LIGAND_MAP_DEF.lines().enumerate() {
+
+        for (row, line) in crate::LIGAND_MAP_DEF.lines().enumerate().filter(|(_, line)| !line.starts_with('#')) {
             let entry = line.split('\t').collect::<Vec<&str>>();
 
             let allele = entry[0]

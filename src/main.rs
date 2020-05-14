@@ -42,9 +42,11 @@ fn main_try() -> Result<(), Box<dyn std::error::Error>> {
 
     if matches.is_present("location") {
         if let Some(project_dir) = directories::ProjectDirs::from("", "", "fstool") {
+            let data_file = project_dir.data_dir().join(PROJECT_LIGAND_TABLE);
+            let s = if data_file.exists() {"Data is"} else {"Updated data will be"};
             println!(
-                "Data is stored at {}",
-                project_dir.data_dir().join(PROJECT_LIGAND_TABLE).display()
+                "{} stored at {}",
+                s, data_file.display()
             );
             return Ok(());
         } else {

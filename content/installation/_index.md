@@ -36,5 +36,16 @@ fstool --settings
 
 the output should look similar to this:
 
+```
+   Default Measures:
+      - TCR:2,3,4,5,6,9
+      - KIR,2,7,8,9
+   
+   Updated data will be storead at: 'path/to/your/os/data/dir'
+```
 
+where `path/to/your/os/data/dir` will be an OS specific directory where global data will be stored.
+
+
+The following are detailed instructions on building and installing on different OS if the above fails (Some releases of CentOS will not work with the above Linux binary).
 

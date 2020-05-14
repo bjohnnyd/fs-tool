@@ -97,7 +97,7 @@ OPTIONS:
 
 ## Example
 
-The following are short examples on a linux/osx based system and for further details and other OS directions see the [docs][link-docs]. 
+The following are short examples on a linux/osx based system and for further details and other OS directions see the [documentation][link-docs]. 
 
 The `target/release/fstool` is for examples after building the tool from source if you downloaded the binary replace it with the path to the binary.
 
@@ -132,8 +132,7 @@ The created directory `example_result` will contain the following output:
 | **example_cohort_Gag_180_209_cohort_result.csv** |  lists per cohort subject calculations for each index allele, peptide length, measure |  |
 
 
-Additional information can be found in the [Output][link-docs] section of the [Documentation][link-docs] (documentation will be available soon).
-
+Additional information can be found in the [Output](https://bjohnnyd.github.io/fs-tool/public/output) section of the documentation (coming soon).
 
 ## Authors and Citation
 

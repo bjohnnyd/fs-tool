@@ -21,8 +21,8 @@ The simplest way to install is using the precompiled binaries provided below:
 
 | ![picture](static/64px-Tux.png) | ![picture](static/64px-MacOS_logo.png)  | ![picture](static/64px-Windows_logo_2012.png) |
 | :-----------------------------: | :-------------------------------------: |:--------------------------------------------: |
-| [TAR](path to release archive) | [TAR](path to release archive)  | [TAR](path to release archive) |
-| [ZIP](path to release archive) | [ZIP](path to release archive)  | [ZIP](path to release archive) |
+| [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz) | (COMING SOON)  | [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz) |
+| [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) | (COMING SOON)  | [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) |
 
 Using the command line you can obtain the binary using:
 
@@ -36,7 +36,6 @@ To compile from source rustup is required and can be obtained [HERE](https://rus
 
 ``` bash
 $ curl -sL https://github.com/bjohnnyd/fs-tool/archive/v0.2.0.tar.gz |  tar xvz && cd fs-tool-0.2.0 && cargo build --release --bin fs-tool
->>>>>>> dev_fs
 ```
 
 The compiled binary can then be ran using:

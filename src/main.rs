@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-use ::fs_tool::error::CouldNotOpenFile;
-use ::fs_tool::prelude::external::{Opt, StructOpt};
-use ::fs_tool::prelude::fs_tool::{
-    get_ligand_table, parse_ligand_table, read_netmhcpan, Calculator, LigandInfo, Measure,
-    NetMHCpanSummary, HLA,
-};
-use ::fs_tool::prelude::io::*;
-use ::fs_tool::prelude::logging::*;
-use ::fs_tool::prelude::snafu_error::ResultExt;
-use ::fs_tool::prelude::traits::TryFrom;
-=======
 // TODO: If binding predicitons file does not exist the error is not good;
 // #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
 #![allow(dead_code, unused_variables)]
@@ -38,7 +26,6 @@ use crate::meta::{create_allele_metadata, create_binding_metadata};
 
 use netmhcpan::reader::read_raw_netmhcpan;
 use structopt::StructOpt;
->>>>>>> dev_fs
 
 fn main() -> std::result::Result<(), ()> {
     match main_try() {

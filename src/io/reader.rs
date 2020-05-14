@@ -4,7 +4,7 @@ use crate::error::Error;
 use immunoprot::ig_like::kir::Kir;
 use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
 use immunoprot::mhc::hla::ClassI;
-use log::warn;
+use log::info;
 use std::collections::HashMap;
 
 pub fn read_project_ligand_info() -> Option<KirLigandMap> {
@@ -15,7 +15,7 @@ pub fn read_project_ligand_info() -> Option<KirLigandMap> {
     }
 
     if kir_ligand_map.is_none() {
-        warn!("No local kir ligand info found. Defaulting to: https://raw.githubusercontent.com/bjohnnyd/fs-tool/dev_fs/immunoprot/src/resources/allele_motifs.tsv");
+        info!("No local kir ligand info found. Defaulting to: https://raw.githubusercontent.com/bjohnnyd/fs-tool/dev_fs/immunoprot/src/resources/allele_motifs.tsv");
         kir_ligand_map = KirLigandMap::init().ok();
     }
     kir_ligand_map

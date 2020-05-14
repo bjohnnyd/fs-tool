@@ -3,8 +3,7 @@
 [![Software License][ico-license]](LICENSE.md)
 [![Build Status](https://travis-ci.com/bjohnnyd/fs-tool.svg?branch=dev_fs)](https://travis-ci.com/bjohnnyd/fs-tool)
 
-Command-line tool to calculate fraction of shared bound peptides between HLA alleles from NetMHCpan binding predictions.
-The tool currently reports fraction of shared peptides based on default motifs in the peptide but additional positions can be supplied by the user.
+Command-line tool to calculate fraction of shared bound peptides between HLA alleles from NetMHCpan binding predictions.  The tool currently reports fraction of shared peptides based on default motifs in the peptide but additional positions can be supplied by the user.
 
 Current HLA allele ligand group assignments that is included with this tool was obtained from `https://www.ebi.ac.uk/` on `2019-12-29`.
 The kir ligand motifs can be updated using the tool.
@@ -15,8 +14,8 @@ The simplest way to install is using the precompiled binaries provided below:
 
 | ![picture](static/64px-Tux.png) | ![picture](static/64px-MacOS_logo.png)  | ![picture](static/64px-Windows_logo_2012.png) |
 | :-----------------------------: | :-------------------------------------: |:--------------------------------------------: |
-| [tar.gz](path to release archive) | [tar.gz](path to release archive)  | [tar.gz](path to release archive) |
-| [zip](path to release archive) | [zip](path to release archive)  | [zip](path to release archive) |
+| [TAR](path to release archive) | [TAR](path to release archive)  | [TAR](path to release archive) |
+| [ZIP](path to release archive) | [ZIP](path to release archive)  | [ZIP](path to release archive) |
 
 Using the command line you can obtain the binary using:
 
@@ -82,6 +81,9 @@ The created directory `example` will contain the following results:
 
 
 
+## Usage
+
+Detailed usage instructions are available [HERE](https://bjohnnyd.github.io/fs-tool/public/)
 
 ## Authors and Citation
 

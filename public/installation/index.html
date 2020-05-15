@@ -59,6 +59,31 @@
                                     Installation
                                 </a>
                                 
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;installation&#x2F;linux&#x2F;">
+                                                    <strong>2.1.</strong>
+                                                    Manual - Linux (CentOS)
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;installation&#x2F;osx&#x2F;">
+                                                    <strong>2.2.</strong>
+                                                    Manual - MacOS
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;installation&#x2F;windows&#x2F;">
+                                                    <strong>2.3.</strong>
+                                                    Manual - Windows
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
                             </li>
                         
                             
@@ -114,29 +139,25 @@
                 <div class="book-content">
                     
     <h1>Installation</h1>
-    <p>The following sections describe how to install from source but in most cases the available binaries should work as is.  Therefore, the simplest installation steps are to download the appropriate version for your OS:</p>
+    <p>The simplest way to use <code>fstool</code> is to download the provided binary for your OS (MacOS will be available soon).</p>
+<h2 id="binary">Binary</h2>
 <ul>
-<li>
-<p>Windows</p>
-<ul>
-<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip">Zip</a></li>
-<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz">Tar</a></li>
-</ul>
-</li>
-<li>
-<p>Linux</p>
+<li>Windows
 <ul>
 <li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip">Zip</a></li>
 <li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz">Tar</a></li>
 </ul>
 </li>
-<li>
-<p>MacOS (Not available yet)</p>
+<li>Linux
+<ul>
+<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip">Zip</a></li>
+<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz">Tar</a></li>
+</ul>
 </li>
 </ul>
-<p>After downloading and uncompressing the archive to test the download open a Terminal or Command Prompt on Windows and navigate to the download location:</p>
+<p>After downloading and uncompressing the archive to test the download open Terminal/Command Prompt and navigate to the download location:</p>
 <pre style="background-color:#002b36;">
-<span style="color:#859900;">cd </span><span style="color:#657b83;">&lt;</span><span style="color:#839496;">path/to/uncompressed archive</span><span style="color:#657b83;">&gt;
+<span style="color:#859900;">cd </span><span style="color:#657b83;">&lt;</span><span style="color:#839496;">path/to/uncompressed archive/</span><span style="color:#657b83;">&gt;
 </span></pre>
 <p>and run the command:</p>
 <pre style="background-color:#002b36;">
@@ -152,10 +173,13 @@
       - TCR:2,3,4,5,6,9
       - KIR,2,7,8,9
    
-   Updated data will be storead at: &#39;path/to/your/os/data/dir&#39;
+   Updated data will be storead at: &#39;&lt;path/to/your/os/data/dir&gt;&#39;
 </span></pre>
-<p>where <code>path/to/your/os/data/dir</code> will be an OS specific directory where global data will be stored.</p>
-<p>The following installation instructions on building and installing is if the above fails (some releases of CentOS will not work with the above Linux binary).</p>
+<p>where <code>path/to/your/os/data/dir</code> will be an OS specific directory where global data will be stored (not the output just metadata).</p>
+<h2 id="install-manually">Install Manually</h2>
+<p>The following sections describe how to install from source for each OS separately.</p>
+<p>To install manually (build from source) you will first need to download and install <a href="https://rustup.rs/">Rustup</a>.</p>
+<p>Building from source should be needed in rare cases that the above binary does not work, the following installation instructions on building and installing is for those rare fail cases (exception is CentOS, where some releases will not work with the above Linux binary and will be needed to build from source).</p>
 
 
                 </div>
@@ -196,27 +220,7 @@
                 
     
         
-        
-        
-        
-            
-            
-            
-        
-            
-            
-            
-                
-            
-        
-            
-            
-                <a class="next" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;usage&#x2F;">></a>
-                
-                
-            
-            
-        
+        <a class="next" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;installation&#x2F;linux&#x2F;">></a>
     
 
             </div>

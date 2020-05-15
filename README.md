@@ -148,12 +148,14 @@ Please cite [eLife 2020;9:e54558](https://doi.org/10.7554/eLife.54558).
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
-[ico-version]: https://img.shields.io/github/v/release/bjohnnyd/fs-tool?include_prereleases
-[ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
-[ico-travis]: https://img.shields.io/travis/com/bjohnnyd/fs-tool/master?style=flat-square
+
+
+[ico-version]: https://img.shields.io/github/v/release/bjohnnyd/fs-tool?include_prereleases&style=flat-square
+[ico-license]: https://img.shields.io/github/license/bjohnnyd/fs-tool?color=purple&style=flat-square
+[ico-travis]: https://img.shields.io/travis/com/bjohnnyd/fs-tool?style=flat-square
 [ico-downloads]: https://img.shields.io/packagist/dt/:vendor/fs-tool.svg?style=flat-square
 
-[link-version]: https://github.com/bjohnnyd/fs-tool/releases
+[link-version]: https://github.com/bjohnnyd/fs-tool/releases/latest
 [link-travis]: https://travis-ci.com/bjohnnyd/fs-tool
 [link-downloads]: https://packagist.org/packages/bjohnnyd/fs-tool
 [link-author]: https://github.com/bjohnnyd

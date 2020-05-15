@@ -6,7 +6,7 @@
 
 Command-line tool to calculate fraction of shared bound peptides between HLA alleles from NetMHCpan binding predictions.  The tool currently reports fraction of shared peptides based on default motifs in the peptide but additional positions can be supplied by the user.
 
-Current HLA allele ligand group assignments that is included with this tool was obtained from `https://www.ebi.ac.uk/` on `2019-12-29`.
+Current HLA allele ligand group assignments that is included with this tool was obtained from [https://www.ebi.ac.uk/](https://www.ebi.ac.uk/) on *2019-12-29*.
 The kir ligand motifs can be updated using the tool.
 
 Detailed instructions and descriptions are available in the [Documentation][link-docs] (documentation will be available soon).

@@ -27,7 +27,7 @@ The simplest way to install is using the precompiled binaries provided below:
 Using the command line you can obtain the binary using (Linux):
 
 ``` bash
-$ curl -sL https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz | tar xvz && chmod +x fstool && ./fstool -h
+$ curl -sL https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz | tar xvz && chmod +x fs-tool && ./fs-tool -h
 ```
 
 ### Build 
@@ -35,33 +35,33 @@ $ curl -sL https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-u
 To compile from source rustup is required and can be obtained [HERE](https://rustup.rs/).  After installing rustup download the release archive file and build:
 
 ```bash
-$ git clone https://github.com/bjohnnyd/fs-tool.git && cd fs-tool && cargo build --release --bin fstool
+$ git clone https://github.com/bjohnnyd/fs-tool.git && cd fs-tool && cargo build --release --bin fs-tool
 ```
 
 The compiled binary can then be ran using:
 
 ``` bash
-$ ./target/release/fstool -h
+$ ./target/release/fs-tool -h
 ```
 
 All releases and associated binaries and archives are accessible under [Releases](https://github.com/bjohnnyd/fs-tool/releases).
 
 ## Usage
 
-Running `fstool -h` will list all possible arguments:
+Running `fs-tool -h` will list all possible arguments:
 
 ``` bash
-$ ./fstool -h
+$ ./fs-tool -h
 ```
 
 ```
 
-fstool 0.2.0
+fs-tool 0.2.0
 Calculates fraction of shared bound motifs between HLA alleles while incorporating KIR ligand and LILRB binding
 information.
 
 USAGE:
-    fstool [FLAGS] [OPTIONS] --binding-predictions <binding-predictions> --output <output>
+    fs-tool [FLAGS] [OPTIONS] --binding-predictions <binding-predictions> --output <output>
 
 FLAGS:
         --drop-default    Drop default measures based on TCR and KIR motifs.
@@ -99,14 +99,14 @@ OPTIONS:
 
 The following are short examples on a linux/osx based system and for further details and other OS directions see the [documentation][link-docs]. 
 
-The `target/release/fstool` is for examples after building the tool from source if you downloaded the binary replace it with the path to the binary.
+The `target/release/fs-tool` is for examples after building the tool from source if you downloaded the binary replace it with the path to the binary.
 
 ### Allele calculations only 
 
 To run comparison on positions `1,3,7`, and to name the output measure `Example` while updating data from EBI:
 
 ``` bash
-$ ./target/release/fstool -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result
+$ ./target/release/fs-tool -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result
 ```
 
 
@@ -117,7 +117,7 @@ to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` 
 To perform calculations, using the default measures, for `A02:01` and `C08:02` the following command can be ran:
 
 ``` bash
-$ ./target/release/fstool   -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result -i A03:01 C08:02 -c tests/example_cohort.csv
+$ ./target/release/fs-tool   -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result -i A03:01 C08:02 -c tests/example_cohort.csv
 ```
 
 ### Output

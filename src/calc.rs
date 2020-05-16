@@ -678,7 +678,7 @@ mod tests {
 
     #[test]
     fn test_calculate_fs() {
-        let binding_data = read_raw_netmhcpan("tests/netmhcpan/netmhcpan_wBA.txt").unwrap();
+        let binding_data = read_raw_netmhcpan(vec!["tests/netmhcpan/netmhcpan_wBA.txt"]).unwrap();
         let comb = create_calc_combs(&binding_data);
 
         dbg!(&comb);

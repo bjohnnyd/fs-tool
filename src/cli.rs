@@ -44,7 +44,7 @@ pub struct Opt {
     prefix: Option<String>,
     #[structopt(short, long, parse(from_os_str), required_unless = "settings")]
     /// Path to file containing predicted Class I affinity data (NetMHCpan results)
-    pub binding_predictions: PathBuf,
+    pub binding_predictions: Vec<PathBuf>,
     #[structopt(long)]
     /// Drop default measures based on TCR and KIR motifs.
     pub drop_default: bool,
@@ -173,9 +173,9 @@ pub fn print_defaults() -> Result<(), Box<dyn std::error::Error>> {
             "Updated data will be"
         };
         println!("{} stored at:  '{}'", s, data_file.display());
-        return Ok(());
+        Ok(())
     } else {
-        return Err("Could not create/or read the global data directory".into());
+        Err("Could not create/or read the global data directory".into())
     }
 }
 pub fn get_measures(measures: Option<Vec<Measure>>, drop: bool) -> Vec<Measure> {

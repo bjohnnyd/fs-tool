@@ -185,7 +185,7 @@ mod tests {
     fn test_identify_nn_line() {
         let netmhcout = std::fs::read_to_string("tests/netmhcpan_woBA.txt").unwrap();
 
-        let nn_neighbours =
+        let _ =
             netmhcout
                 .lines()
                 .fold(Vec::<NearestNeighbour>::new(), |mut nn_neighbours, line| {
@@ -244,7 +244,7 @@ mod tests {
             &alignment_info.0,
         );
 
-        let (i, binding_info) = get_netmhc_binding_info(i, peptide).unwrap();
+        let (_, binding_info) = get_netmhc_binding_info(i, peptide).unwrap();
         dbg!(&binding_info);
     }
 }

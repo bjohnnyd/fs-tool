@@ -3,8 +3,8 @@ title="Introduction"
 description="Introduction to the aim and usage of the tool"
 +++
 
-This document is meant to be a simple guide to the technical aspects of using `fstool`. It is not
-meant to cover the underlying idea of `fstool` nor why you might want to use it; for this you should
+This document is meant to be a simple guide to the technical aspects of using `fs-tool`. It is not
+meant to cover the underlying idea of `fs-tool` nor why you might want to use it; for this you should
 read our paper, *Debebe et al Identifying the immune interactions underlying HLA class I disease
 associations* [eLife 2020; 9:e54558](https://doi.org/10.7554/eLife.54558)
 

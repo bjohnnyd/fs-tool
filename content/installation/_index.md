@@ -5,16 +5,21 @@ weight=1
 +++
 
 
-The simplest way to use `fstool` is to download the provided binary for your OS (MacOS will be available soon).
+The simplest way to use `fs-tool` is to download the provided binary for your OS (MacOS will be available soon).
 
 ## Binary
 
 - Windows
     - [Zip](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip)
     - [Tar](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz)
+
 - Linux
     - [Zip](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip)
     - [Tar](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz)
+
+- MacOS
+    - [Zip](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.zip)
+    - [Tar](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.tar.gz)
     
 After downloading and uncompressing the archive to test the download open Terminal/Command Prompt and navigate to the download location:
 
@@ -25,13 +30,13 @@ cd <path/to/uncompressed archive/>
 and run the command:
 
 ```sh
-./fstool --settings
+./fs-tool --settings
 ```
 
 or on Windows:
 
-```sh
-fstool --settings
+```ps1
+fs-tool.exe --settings
 ```
 
 the output should look similar to this:

@@ -10,13 +10,10 @@ language: rust
 
 rust:
   - stable
-  - beta
-  - nightly
 
 jobs:
-  allow_failures:
-    - rust: nightly
   fast_finish: true
+
 cache: cargo
 
 before_cache:
@@ -25,15 +22,11 @@ before_cache:
 script:
   - cargo test --verbose --all
   - cargo build --release --verbose --all
-  - ARCH=$(RUSTC_BOOTSTRAP=1 rustc -Z unstable-options --print target-spec-json | grep llvm-target | cut -d ":" -f2 | sed -E 's:("|,| +)::g')
-  - echo $ARCH
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then choco install zip && RELEASE_OS="x86_64-pc-windows-gnu"; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then RELEASE_OS="x86_64-apple-darwin"; fi                                                                                                                      
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then RELEASE_OS="x86_64-unknown-linux-gnu"; fi
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then BUILD_FILE="target/release/fs-tool.exe"; else BUILD_FILE="target/release/fs-tool"; fi
-  - export TAR=$RELEASE_OS.tar.gz && export ZIP=$RELEASE_OS.zip
-  - tar cvzf $TAR $BUILD_FILE
-  - zip $ZIP $BUILD_FILE
+  - ARCH=$(RUSTC_BOOTSTRAP=1 rustc -Z unstable-options --print target-spec-json | grep llvm-target | cut -d ":" -f2 | sed -E 's:("|,| +)::g' | sed 's:macosx.+:darwin:')
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then choco install zip && BINARY="fs-tool.exe"; else BINARY="fs-tool"; fi
+  - export TAR=$ARCH.tar.gz && export ZIP=$ARCH.zip && export BUILD_FILE="target/release/${BINARY}"
+  - tar cvzf "$TAR" $BUILD_FILE
+  - zip "$ZIP" $BUILD_FILE
   - ls *
 
 before_deploy:

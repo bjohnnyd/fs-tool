@@ -21,8 +21,8 @@ The simplest way to install is using the precompiled binaries provided below:
 
 | ![picture](static/64px-Tux.png) | ![picture](static/64px-MacOS_logo.png)  | ![picture](static/64px-Windows_logo_2012.png) |
 | :-----------------------------: | :-------------------------------------: |:--------------------------------------------: |
-| [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz) | (COMING SOON)  | [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz) |
-| [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) | (COMING SOON)  | [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) |
+| [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz) | [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.tar.gz)  | [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz) |
+| [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) | (COMING SOON)  | [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.zip) |
 
 Using the command line you can obtain the binary using (Linux):
 
@@ -56,7 +56,7 @@ $ ./fs-tool -h
 
 ```
 
-fstool 0.2.2
+fstool 0.2.3
 Calculates fraction of shared bound motifs between HLA alleles while incorporating KIR ligand and LILRB binding
 information.
 

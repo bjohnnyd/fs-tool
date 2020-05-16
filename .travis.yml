@@ -25,10 +25,12 @@ before_cache:
 script:
   - cargo test --verbose --all
   - cargo build --release --verbose --all
+  - ARCH=$(RUSTC_BOOTSTRAP=1 rustc -Z unstable-options --print target-spec-json | grep llvm-target | cut -d ":" -f2 | sed -E 's:("|,| +)::g')
+  - echo $ARCH
   - if [ "$TRAVIS_OS_NAME" = "windows" ]; then choco install zip && RELEASE_OS="x86_64-pc-windows-gnu"; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then RELEASE_OS="x86_64-apple-darwin"; fi                                                                                                                      
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then RELEASE_OS="x86_64-unknown-linux-gnu"; fi
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then $BUILD_FILE="target/release/fs-tool.exe"; else $BUILD_FILE="target/release/fs-tool"; fi
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then BUILD_FILE="target/release/fs-tool.exe"; else BUILD_FILE="target/release/fs-tool"; fi
   - export TAR=$RELEASE_OS.tar.gz && export ZIP=$RELEASE_OS.zip
   - tar cvzf $TAR $BUILD_FILE
   - zip $ZIP $BUILD_FILE

@@ -165,7 +165,7 @@ impl Opt {
 pub fn print_defaults() -> Result<(), Box<dyn std::error::Error>> {
     println!("Default Measures:\n  - {}\n  - {}\n", TCR_DEF, KIR_DEF);
 
-    if let Some(project_dir) = directories::ProjectDirs::from("", "", "fstool") {
+    if let Some(project_dir) = directories::ProjectDirs::from("", "", crate::TOOL_NAME) {
         let data_file = project_dir.data_dir().join(PROJECT_LIGAND_TABLE);
         let s = if data_file.exists() {
             "Data is"

@@ -14,7 +14,7 @@ pub(crate) fn write_project_ligand_info(kir_ligand: &KirLigandMap) {
     let mut alleles = kir_ligand.alleles.iter().collect::<Vec<&ClassI>>();
     alleles.sort();
 
-    if let Some(project_dir) = directories::ProjectDirs::from("", "", "fstool") {
+    if let Some(project_dir) = directories::ProjectDirs::from("", "", crate::TOOL_NAME) {
         if !project_dir.data_dir().exists() {
             std::fs::create_dir(project_dir.data_dir()).unwrap_or_else(|_| {
                 warn!(

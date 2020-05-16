@@ -13,9 +13,10 @@ pub static LILRB_SIMSCORES: &str = include_str!("resources/lilrb_simscores.tsv")
 pub static KIR_SIMSCORES: &str = include_str!("resources/kir_ligand_simscores.tsv");
 pub const LIGAND_TABLE: &str = include_str!("resources/allele_motifs.tsv");
 pub const PROJECT_LIGAND_TABLE: &str = "allele_motifs.tsv";
+pub const TOOL_NAME: &str = "fs-tool";
 pub const KIR_DEF: &str = "KIR:2,7,8,9";
 pub const TCR_DEF: &str = "TCR:2,3,4,5,6,9";
-pub const LOGGING_MODULES: [&str; 3] = ["immunoprot", "netmhcpan", "fstool"];
+pub const LOGGING_MODULES: [&str; 3] = ["immunoprot", "netmhcpan", "fs-tool"];
 pub const DEFAULT_DELIM: u8 = b',';
 
 use crate::calc::{calculate_fs, calculate_index_cohort_fs, create_calc_combs, IndexCache};

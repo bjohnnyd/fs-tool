@@ -56,15 +56,15 @@ $ ./fs-tool -h
 
 ```
 
-fs-tool 0.2.0
+fstool 0.2.2
 Calculates fraction of shared bound motifs between HLA alleles while incorporating KIR ligand and LILRB binding
 information.
 
 USAGE:
-    fs-tool [FLAGS] [OPTIONS] --binding-predictions <binding-predictions> --output <output>
+    fs-tool [FLAGS] [OPTIONS] --binding-predictions <binding-predictions>... --output <output>
 
 FLAGS:
-        --drop-default    Drop default measures based on TCR and KIR motifs.
+        --drop-default    Drop default measures based on TCR and KIR motifs
     -h, --help            Prints help information
     -q, --quiet           Disables any information being printed to terminal (except errors)
         --settings        Lists default measure names and motif positions as well as the default location updated kir
@@ -75,22 +75,24 @@ FLAGS:
     -v, --verbose         Determines verbosity of the processing, can be specified multiple times -vvv
 
 OPTIONS:
-    -b, --binding-predictions <binding-predictions>
-            Path to file containing predicted Class I affinity data (NetMHCpan results)
+    -b, --binding-predictions <binding-predictions>...
+            Path to files containing predicted Class I affinity data (NetMHCpan results)
 
-    -c, --cohort <cohort>                              Cohort of individuals for which all measures will be calculated
+    -c, --cohort <cohort>
+            Cohort of individuals for which all measures will be calculated
+
     -i, --index <index>...
             Index allele used for cohort calculations only, all individuals will be compared to these alleles
 
     -m, --measure <measure>...
             Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
 
-    -o, --output <output>                              Directory to store outputs
+    -o, --output <output>                                 Directory to store outputs
     -p, --peptide-length <peptide-length>...
             Which length of input peptide sequence to consider [default: 9]  [possible values: 8, 9, 10, 11]
 
-        --prefix <prefix>                              Prefix to assign to all outputs
-    -t, --threads <threads>                            Number of threads [default: 4]
+        --prefix <prefix>                                 Prefix to assign to all outputs
+    -t, --threads <threads>                               Number of threads [default: 4]
 
 
 ```

@@ -5,7 +5,7 @@ weight=1
 +++
 
 
-The simplest way to use `fs-tool` is to download the provided binary for your OS (MacOS will be available soon).
+The simplest way to use `fs-tool` is to download the provided binary for your OS.
 
 ## Binary
 

@@ -1,9 +1,22 @@
 +++
-title="Input Data"
-description="Describes the main input data for the tool, especially netMHCpan predictions"
+title="Binding Predictions"
+description="Describes the obtaining and running the tool on binding prediction data"
+weight=1
 +++
 
-The required input is a file of binding predictions for the HLA class I alleles and proteome of interest produced by NetMHCpan. 
+The required input is a file of binding predictions for the HLA class I alleles and proteome of interest.
+It is supplied using the `-b` or `--binding-predictions` flag.
+
+```sh
+OPTIONS:                                                                                                                                      │
+    -b, --binding-predictions <binding-predictions>...                                                                                        │
+	Path to file containing predicted Class I affinity data (NetMHCpan results) 
+```
+
+Currently the predictions have to be created using netMHCpan.
+
+## NetMHCpan
+
 The developers of netMHCpan were unable to provide a compatible download so this step needs to be performed separately by the user
 and cannot be performed from command line by `fs-tool`. 
 
@@ -31,7 +44,4 @@ In our paper we choose to use binding affinity predictions rather than eluted li
 Copy and paste or download the resulting raw output and save this locally and note the path as this will be your input file.
 
 An example input file can be seen [HERE](https://raw.githubusercontent.com/bjohnnyd/fs-tool/master/tests/netmhcpan/netmhcpan_wBA.txt).
-
-
-
 

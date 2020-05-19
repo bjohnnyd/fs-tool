@@ -1,7 +1,7 @@
 +++
 title="Cohort"
 description="Describes the cohort data structure"
-weight=3
+weight=2
 +++
 
 The path to the cohort data is specified using the `-c` or `--cohort` flag and specifying this input required also -`i` or `--index` to be specified.  Every individual in the cohort will be compared to each allele passed under the `--index`flag.

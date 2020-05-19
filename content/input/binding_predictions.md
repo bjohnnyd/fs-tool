@@ -8,8 +8,8 @@ The required input is a file of binding predictions for the HLA class I alleles 
 It is supplied using the `-b` or `--binding-predictions` flag.
 
 ```sh
-OPTIONS:                                                                                                                                      │
-    -b, --binding-predictions <binding-predictions>...                                                                                        │
+OPTIONS:                                                                                                                                 
+    -b, --binding-predictions <binding-predictions>... 
 	Path to file containing predicted Class I affinity data (NetMHCpan results) 
 ```
 
@@ -24,7 +24,7 @@ There are two ways to run NetMHCpan, either as a standalone command line tool or
 
 Both versions are available at:
 
-[https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0](https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0)
+[https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0][netMHCpan-link]
 
 The directions on obtaining the standalone version (for academic use only) are available under the `Downloads` tab.
 
@@ -45,3 +45,5 @@ Copy and paste or download the resulting raw output and save this locally and no
 
 An example input file can be seen [HERE](https://raw.githubusercontent.com/bjohnnyd/fs-tool/master/tests/netmhcpan/netmhcpan_wBA.txt).
 
+
+[netMHCpan-link]: https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0 

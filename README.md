@@ -1,5 +1,7 @@
 # fs-tool 
 
+# NOTE: under development and might have some breaking changes, please wait for downwload until 2020-06-01 
+
 [![Release][ico-version]][link-version]
 [![Build Status][ico-travis]][link-travis]
 [![Software License][ico-license]](LICENSE.md)

@@ -21,6 +21,7 @@ chrono = "0.4.11"
 serde_with = "1.4"
 immunoprot = {path = "immunoprot"}
 netmhcpan = {path = "netmhcpan"}
+niffler = "2.0.1"
 
 [dependencies.serde]
 version = "1.0"

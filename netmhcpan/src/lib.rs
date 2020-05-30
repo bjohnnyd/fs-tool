@@ -8,3 +8,4 @@ pub mod result;
 
 pub const WEAK_TRESHOLD: f32 = 2.0;
 pub const STRONG_THRESHOLD: f32 = 0.5;
+pub const NETMHCPAN_VERSION: [&str; 2] = ["4.0", "4.1"];

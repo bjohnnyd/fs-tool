@@ -1,5 +1,4 @@
 // TODO: Deal with errors from nom to custom
-pub const NETMHCPAN_VERSION: &str = "4.0";
 pub const HLA_GENES: [char; 3] = ['A', 'B', 'C'];
 pub const HLA_GENE_SEPARATORS: [char; 3] = [':', '*', '-'];
 
@@ -55,6 +54,10 @@ pub fn is_rank_line(i: &str) -> IResult<&str, Option<&str>> {
     opt(tag("# Rank Threshold"))(i)
 }
 
+pub fn is_version_line(i: &str) -> IResult<&str, Option<&str>> {
+    opt(tag("# NetMHCpan version"))(i)
+}
+
 pub fn is_peptide_line(i: &str) -> IResult<&str, bool> {
     let (non_space, _) = take_while(|c: char| c.is_whitespace())(i)?;
     match non_space.chars().next() {
@@ -64,6 +67,10 @@ pub fn is_peptide_line(i: &str) -> IResult<&str, bool> {
 }
 
 /* Line Parsers */
+
+pub fn get_netmhcpan_version(i: &str) -> IResult<&str, &str> {
+    take_first_numeric(i)
+}
 
 // TODO: Error fixing needed, especially regarding match
 pub fn get_rank_info(i: &str) -> IResult<&str, RankThreshold> {

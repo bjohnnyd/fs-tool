@@ -5,7 +5,7 @@ use std::path::Path;
 use crate::parser::*;
 use crate::result::*;
 
-use log::debug;
+use log::{debug, error};
 
 // TODO: Needs refactoring and error handling not finished converting from nom::Err
 /// Reads a netmhcpan output file.  Not optimized to skip peptides already processed.
@@ -19,6 +19,7 @@ where
     for path in &paths {
         let f = File::open(path)?;
         let rdr = BufReader::new(f);
+        let netmhcpan_version = crate::NETMHCPAN_VERSION[0];
 
         for (n, line) in rdr.lines().enumerate() {
             debug!(
@@ -27,52 +28,66 @@ where
                 path.as_ref().display()
             );
             let line = line?;
-            let (i, nn_line) = is_nn_line(line.as_str()).unwrap();
+            let (i, version_line) = is_version_line(&line).unwrap();
 
-            if nn_line.is_some() {
-                let (_, nn) = get_nn_info(i).unwrap();
-                binding_data.alleles.insert(nn);
+            if version_line.is_some() {
+                let (_, version) = get_netmhcpan_version(i).unwrap();
+                if version != netmhcpan_version {
+                    error!("Currenlty only version 4.0 is supported the binding predictions are based on {}", version);
+                    std::process::exit(1)
+                }
             } else {
-                if binding_data.strong_threshold.is_none() || binding_data.weak_threshold.is_none()
-                {
-                    let (i, rank_line) = is_rank_line(i).unwrap();
+                let (i, nn_line) = is_nn_line(i).unwrap();
 
-                    if rank_line.is_some() {
-                        let (_, rank) = get_rank_info(i).unwrap();
-                        match rank {
-                            Strong(threshold) => binding_data.strong_threshold = Some(threshold),
-                            Weak(threshold) => binding_data.weak_threshold = Some(threshold),
+                if nn_line.is_some() {
+                    let (_, nn) = get_nn_info(i).unwrap();
+                    binding_data.alleles.insert(nn);
+                } else {
+                    if binding_data.strong_threshold.is_none()
+                        || binding_data.weak_threshold.is_none()
+                    {
+                        let (i, rank_line) = is_rank_line(i).unwrap();
+
+                        if rank_line.is_some() {
+                            let (_, rank) = get_rank_info(i).unwrap();
+                            match rank {
+                                Strong(threshold) => {
+                                    binding_data.strong_threshold = Some(threshold)
+                                }
+                                Weak(threshold) => binding_data.weak_threshold = Some(threshold),
+                            }
                         }
                     }
-                }
-                let (i, pep_line) = is_peptide_line(i).unwrap();
+                    let (i, pep_line) = is_peptide_line(i).unwrap();
 
-                if pep_line {
-                    let (i, (pos, allele, pep_seq)) = get_netmhc_entry_info(i).unwrap();
-                    let (i, (alignment_mods, icore, identity)) = get_netmhc_align_info(i).unwrap();
+                    if pep_line {
+                        let (i, (pos, allele, pep_seq)) = get_netmhc_entry_info(i).unwrap();
+                        let (i, (alignment_mods, icore, identity)) =
+                            get_netmhc_align_info(i).unwrap();
 
-                    let protein = binding_data
-                        .proteome
-                        .entry(identity.to_string())
-                        .or_insert_with(|| Protein::new(identity.to_string()));
-                    protein
-                        .add_sequence_at_pos(pos, pep_seq.to_string())
-                        .unwrap();
+                        let protein = binding_data
+                            .proteome
+                            .entry(identity.to_string())
+                            .or_insert_with(|| Protein::new(identity.to_string()));
+                        protein
+                            .add_sequence_at_pos(pos, pep_seq.to_string())
+                            .unwrap();
 
-                    let peptide = Peptide::new(
-                        pos,
-                        pep_seq.to_string(),
-                        identity.to_string(),
-                        icore.to_string(),
-                        &alignment_mods,
-                    );
+                        let peptide = Peptide::new(
+                            pos,
+                            pep_seq.to_string(),
+                            identity.to_string(),
+                            icore.to_string(),
+                            &alignment_mods,
+                        );
 
-                    binding_data.peptides.insert(peptide.clone());
+                        binding_data.peptides.insert(peptide.clone());
 
-                    let (_, binding_info) = get_netmhc_binding_info(i, peptide).unwrap();
+                        let (_, binding_info) = get_netmhc_binding_info(i, peptide).unwrap();
 
-                    let allele_binding = binding_data.allele_binding.entry(allele).or_default();
-                    allele_binding.push(binding_info);
+                        let allele_binding = binding_data.allele_binding.entry(allele).or_default();
+                        allele_binding.push(binding_info);
+                    }
                 }
             }
         }

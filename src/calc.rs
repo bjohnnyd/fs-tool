@@ -455,6 +455,7 @@ fn get_bound_kirs(
 }
 
 // TODO: Deal with possible errors and also some are never going to return an error
+// TODO: Issue when no FS result still LILRB should be produced
 pub fn calculate_index_cohort_fs(
     index_cache: IndexCache,
     cohort: &[Individual],
@@ -496,7 +497,7 @@ pub fn calculate_index_cohort_fs(
                         (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
                         |(mut fs, mut ikir_fs, mut akir_fs, mut lilrb1, mut lilrb2), genotype_allele| {
 
-                            if !index_lilrb_scores.is_empty() {
+                            if !index_lilrb_scores.is_empty() && index != genotype_allele {
                                 let lilrb_scores = index_lilrb_scores.iter().copied().get_matching(genotype_allele);
 
                                 match lilrb_scores.len() {

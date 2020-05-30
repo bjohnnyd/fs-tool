@@ -31,3 +31,4 @@ features = ["serde_derive"]
 [dev-dependencies]
 assert_cmd = "1.0.1"
 predicates = "1.0.4"
+tempfile = "3.1.0"

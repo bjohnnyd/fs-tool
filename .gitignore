@@ -17,3 +17,4 @@
 /themes
 /example_result
 /templates
+/tests/input/binding_predictions/large_cohort_batch*.txt

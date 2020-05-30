@@ -26,3 +26,7 @@ netmhcpan = {path = "netmhcpan"}
 version = "1.0"
 default-features = false
 features = ["serde_derive"]
+
+[dev-dependencies]
+assert_cmd = "1.0.1"
+predicates = "1.0.4"

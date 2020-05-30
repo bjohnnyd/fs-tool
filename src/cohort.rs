@@ -237,12 +237,12 @@ mod tests {
 
     #[test]
     fn test_read_cohort() {
-        let cohort = read_temp_cohort("tests/example_cohort.csv").unwrap();
+        let cohort = read_temp_cohort("tests/input/cohorts/example_cohort.csv").unwrap();
     }
 
     #[test]
     fn test_create_individual() {
-        let cohort = read_temp_cohort("tests/example_cohort.csv").unwrap();
+        let cohort = read_temp_cohort("tests/input/cohorts/example_cohort.csv").unwrap();
         let individuals = cohort
             .into_iter()
             .map(|temp| Individual::from(temp))
@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_get_bound_motifs() {
-        let cohort = read_temp_cohort("tests/example_cohort.csv").unwrap();
+        let cohort = read_temp_cohort("tests/input/cohorts/example_cohort.csv").unwrap();
         let individuals = cohort
             .into_iter()
             .map(|temp| Individual::from(temp))

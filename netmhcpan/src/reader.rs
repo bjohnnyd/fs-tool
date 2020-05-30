@@ -5,7 +5,7 @@ use std::path::Path;
 use crate::parser::*;
 use crate::result::*;
 
-use log::{debug, error};
+use log::debug;
 
 // TODO: Needs refactoring and error handling not finished converting from nom::Err
 /// Reads a netmhcpan output file.  Not optimized to skip peptides already processed.
@@ -19,7 +19,7 @@ where
     for path in &paths {
         let f = File::open(path)?;
         let rdr = BufReader::new(f);
-        let netmhcpan_version = crate::NETMHCPAN_VERSION[0];
+        let mut netmhcpan_version = crate::NETMHCPAN_VERSION[0].to_string();
 
         for (n, line) in rdr.lines().enumerate() {
             debug!(
@@ -32,10 +32,7 @@ where
 
             if version_line.is_some() {
                 let (_, version) = get_netmhcpan_version(i).unwrap();
-                if version != netmhcpan_version {
-                    error!("Currenlty only version 4.0 is supported the binding predictions are based on {}", version);
-                    std::process::exit(1)
-                }
+                netmhcpan_version = version.to_string();
             } else {
                 let (i, nn_line) = is_nn_line(i).unwrap();
 
@@ -83,7 +80,8 @@ where
 
                         binding_data.peptides.insert(peptide.clone());
 
-                        let (_, binding_info) = get_netmhc_binding_info(i, peptide).unwrap();
+                        let (_, binding_info) =
+                            get_netmhc_binding_info(i, peptide, &netmhcpan_version).unwrap();
 
                         let allele_binding = binding_data.allele_binding.entry(allele).or_default();
                         allele_binding.push(binding_info);

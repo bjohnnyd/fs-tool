@@ -137,8 +137,13 @@ pub fn get_netmhc_align_info(i: &str) -> IResult<&str, (Vec<usize>, &str, &str)>
     Ok((remainder, (alignment_mods, icore, identity)))
 }
 
-pub fn get_netmhc_binding_info(i: &str, peptide: Peptide) -> IResult<&str, BindingInfo> {
-    let (remainder, binding_info) = many_m_n(2, 3, take_first_numeric)(i)?;
+// NOTE: might be good to change version from string to a Version enum with major and minor
+pub fn get_netmhc_binding_info<'a>(
+    i: &'a str,
+    peptide: Peptide,
+    version: &str,
+) -> IResult<&'a str, BindingInfo> {
+    let (remainder, binding_info) = many_m_n(2, 5, take_first_numeric)(i)?;
 
     let binding_info = binding_info
         .iter()
@@ -147,10 +152,14 @@ pub fn get_netmhc_binding_info(i: &str, peptide: Peptide) -> IResult<&str, Bindi
 
     let score = binding_info[0];
 
-    let (affinity, rank) = if binding_info.len() == 2 {
-        (None, binding_info[1])
-    } else {
-        (Some(binding_info[1]), binding_info[2])
+    let (affinity, rank) = match version {
+        "4.0" | "4.1" if binding_info.len() == 2 => (None, binding_info[1]),
+        "4.0" if binding_info.len() == 3 => (Some(binding_info[1]), binding_info[2]),
+        "4.1" if binding_info.len() == 5 => (Some(binding_info[4]), binding_info[3]),
+        _ => {
+            log::error!("Unknow netmhcpan version output");
+            std::process::exit(1)
+        }
     };
 
     Ok((
@@ -251,7 +260,7 @@ mod tests {
             &alignment_info.0,
         );
 
-        let (_, binding_info) = get_netmhc_binding_info(i, peptide).unwrap();
+        let (_, binding_info) = get_netmhc_binding_info(i, peptide, "4.0").unwrap();
         dbg!(&binding_info);
     }
 }

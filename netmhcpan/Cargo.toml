@@ -14,3 +14,6 @@ thiserror = "1.0"
 csv = "1.1"
 nom = "5.1"
 immunoprot = { path = "../immunoprot" }
+
+[target.'cfg(windows)'.dependencies]
+glob = "0.3.0"

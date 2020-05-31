@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::parser::*;
 use crate::result::*;
@@ -15,6 +15,22 @@ where
 {
     use RankThreshold::*;
     let mut binding_data = BindingData::new();
+    #[allow(unused_mut)]
+    let mut paths = paths
+        .iter()
+        .map(|p| p.as_ref().to_owned())
+        .collect::<Vec<PathBuf>>();
+
+    #[cfg(target_os = "windows")]
+    {
+        paths = paths
+            .iter()
+            .flat_map(|p| p.to_str())
+            .flat_map(|p| glob::glob(p))
+            .map(|p| p.flat_map(|p| p).collect::<Vec<PathBuf>>())
+            .flatten()
+            .collect::<Vec<PathBuf>>();
+    }
 
     for path in &paths {
         let f = File::open(path)?;
@@ -25,7 +41,7 @@ where
             debug!(
                 "Parsing line number {} in netMHCpan output from file {}",
                 n,
-                path.as_ref().display()
+                path.display()
             );
             let line = line?;
             let (i, version_line) = is_version_line(&line).unwrap();

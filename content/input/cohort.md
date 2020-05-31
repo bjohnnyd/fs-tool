@@ -38,7 +38,7 @@ The KIR columns can have the following values represent the presence or absence 
 - `Absence` = `0`, `FALSE`, `N`, `F`
 
 
-[cohort]: https://github.com/bjohnnyd/fs-tool/blob/master/tests/example_cohort.csv
+[cohort]: https://github.com/bjohnnyd/fs-tool/blob/master/tests/input/cohorts/example_cohort.csv
 
 
 

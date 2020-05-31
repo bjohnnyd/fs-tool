@@ -43,7 +43,7 @@ In our paper we choose to use binding affinity predictions rather than eluted li
 
 Copy and paste or download the resulting raw output and save this locally and note the path as this will be your input file.
 
-An example input file can be seen [HERE](https://raw.githubusercontent.com/bjohnnyd/fs-tool/master/tests/netmhcpan/netmhcpan_wBA.txt).
+An example input file can be seen [HERE](https://raw.githubusercontent.com/bjohnnyd/fs-tool/master/tests/input/binding_predictions/netmhcpan_wBA.txt).
 
 
 [netMHCpan-link]: https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0 

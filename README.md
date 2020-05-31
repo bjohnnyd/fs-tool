@@ -1,7 +1,5 @@
 # fs-tool 
 
-# NOTE: under development and might have some breaking changes, please wait for downwload until 2020-06-01 
-
 [![Release][ico-version]][link-version]
 [![Build Status][ico-travis]][link-travis]
 [![Software License][ico-license]](LICENSE.md)
@@ -12,8 +10,6 @@ Current HLA allele ligand group assignments that is included with this tool was 
 The kir ligand motifs can be updated using the tool.
 
 Detailed instructions and descriptions are available in the [Documentation][link-docs] (documentation will be available soon).
-
-
 
 ## Install
 
@@ -58,7 +54,7 @@ $ ./fs-tool -h
 
 ```
 
-fstool 0.2.3
+fstool 0.2.5
 Calculates fraction of shared bound motifs between HLA alleles while incorporating KIR ligand and LILRB binding
 information.
 
@@ -110,7 +106,7 @@ The `target/release/fs-tool` is for examples after building the tool from source
 To run comparison on positions `1,3,7`, and to name the output measure `Example` while updating data from EBI:
 
 ``` bash
-$ ./target/release/fs-tool -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result
+$ ./target/release/fs-tool -b tests/input/binding_predictions/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result
 ```
 
 
@@ -121,7 +117,7 @@ to drop the default measures `TCR` and `KIR` the flag `--drop-default-measures` 
 To perform calculations, using the default measures, for `A02:01` and `C08:02` the following command can be ran:
 
 ``` bash
-$ ./target/release/fs-tool   -b tests/netmhcpan/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result -i A03:01 C08:02 -c tests/example_cohort.csv
+$ ./target/release/fs-tool   -b tests/input/binding_predictions/netmhcpan_wBA.txt  --prefix "example_cohort_Gag_180_209" -o example_result -i A03:01 C08:02 -c tests/input/cohorts/example_cohort.csv
 ```
 
 ### Output

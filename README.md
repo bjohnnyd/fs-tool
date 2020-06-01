@@ -23,8 +23,8 @@ The simplest way to install is using the precompiled binaries provided below:
 
 | ![picture](static/64px-Tux.png) | ![picture](static/64px-MacOS_logo.png)  | ![picture](static/64px-Windows_logo_2012.png) |
 | :-----------------------------: | :-------------------------------------: |:--------------------------------------------: |
-| [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz) | [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.tar.gz)  | [TAR](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz) |
-| [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) | [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.zip)  | [ZIP](https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip) |
+| [TAR][linux-tar] | [TAR][osx-tar]  | [TAR][windows-tar] |
+| [ZIP][linux-zip] | [ZIP][osx-zip]  | [ZIP][windows-zip] |
 
 Using the command line you can obtain the binary using (Linux):
 
@@ -167,3 +167,10 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 [link-author2]: https://github.com/liesb
 
 [link-docs]: https://bjohnnyd.github.io/fs-tool/public/introduction
+
+[linux-tar]: https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz
+[linux-zip]: https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.zip
+[osx-tar]: https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.tar.gz
+[osx-zip]: https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.zip
+[windows-tar]: https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz
+[windows-zip]: https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip

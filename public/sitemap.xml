@@ -32,27 +32,22 @@
         </url>
     
         <url>
-            <loc>https://bjohnnyd.github.io/fs-tool/public/installation/linux/</loc>
-            
-        </url>
-    
-        <url>
-            <loc>https://bjohnnyd.github.io/fs-tool/public/installation/osx/</loc>
-            
-        </url>
-    
-        <url>
-            <loc>https://bjohnnyd.github.io/fs-tool/public/installation/windows/</loc>
-            
-        </url>
-    
-        <url>
             <loc>https://bjohnnyd.github.io/fs-tool/public/introduction/</loc>
             
         </url>
     
         <url>
             <loc>https://bjohnnyd.github.io/fs-tool/public/introduction/overview/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://bjohnnyd.github.io/fs-tool/public/usage/</loc>
+            
+        </url>
+    
+        <url>
+            <loc>https://bjohnnyd.github.io/fs-tool/public/usage/additional-arguments/</loc>
             
         </url>
     

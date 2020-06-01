@@ -59,31 +59,6 @@
                                     Installation
                                 </a>
                                 
-                                    <ul>
-                                        
-                                            <li class="active">
-                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;installation&#x2F;linux&#x2F;">
-                                                    <strong>2.1.</strong>
-                                                    Manual - Linux (CentOS)
-                                                </a>
-                                            </li>
-                                        
-                                            <li >
-                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;installation&#x2F;osx&#x2F;">
-                                                    <strong>2.2.</strong>
-                                                    Manual - MacOS
-                                                </a>
-                                            </li>
-                                        
-                                            <li >
-                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;installation&#x2F;windows&#x2F;">
-                                                    <strong>2.3.</strong>
-                                                    Manual - Windows
-                                                </a>
-                                            </li>
-                                        
-                                    </ul>
-                                
                             </li>
                         
                             
@@ -114,6 +89,27 @@
                                                 <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;input&#x2F;cohort&#x2F;">
                                                     <strong>3.3.</strong>
                                                     Cohort
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li class="active">
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;usage&#x2F;">
+                                    <strong>4.</strong>
+                                    Usage
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;usage&#x2F;additional-arguments&#x2F;">
+                                                    <strong>4.1.</strong>
+                                                    Additional Arguments
                                                 </a>
                                             </li>
                                         
@@ -152,8 +148,15 @@
                 
                 <div class="book-content">
                     
-    <h1>Manual - Linux (CentOS)</h1>
-    
+    <h1>Usage</h1>
+    <p>The <code>fs-tool</code> is a command-line program that be essentially be ran in two modes:</p>
+<ol>
+<li><strong>Allele Mode</strong>: input is a file or files  of peptide predictions for the HLA class I alleles and proteome of interest. It performs the fraction shared calculations pairwise for each allele in the input file and generates an output file which lists the fraction shared by the different metrics. </li>
+<li><strong>Cohort Mode</strong>: The same input as in <code>allele mode</code> is provided but in addition the cohort to be studied and the index allele(s) of interest are provided. It performs the fraction shared calculations for each metric for each individual in the cohort.</li>
+</ol>
+<p>Use <code>allele mode</code> if you are interested in studying the attributes of an allele independent of a particular cohort, <code>cohort mode</code> if you want to do regression analysis to investigate cell types underlying an association between the index allele and outcome in a particular cohort. </p>
+<p><code>fs-tool</code> automatically toggles between modes depending on the input files you provide (i.e. if you provide a cohort and index allele as well as the binding predictions it will automatically perform <code>cohort mode</code>, if you only provide binding predictions it will execute <code>allele mode</code>).</p>
+
 
                 </div>
             </div>
@@ -161,9 +164,35 @@
             <div class="prev-link">
                 
     
+    
+    
+    
         
         
-        <a class="previous" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;installation&#x2F;"><</a>
+            
+        
+    
+        
+        
+            
+                
+                    
+                    <a class="previous" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;input&#x2F;cohort&#x2F;"><</a>
+                
+                
+                
+            
+        
+    
+        
+        
+            
+        
+    
+        
+        
+            
+        
     
 
             </div>
@@ -172,41 +201,7 @@
                 
     
         
-        
-        
-        
-            
-            
-            
-                
-            
-        
-            
-            
-            
-                
-                    
-                
-            
-                
-            
-                
-            
-        
-            
-            
-                <a class="next" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;input&#x2F;">></a>
-                
-                
-            
-            
-                
-            
-                
-            
-                
-            
-        
+        <a class="next" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;public&#x2F;usage&#x2F;additional-arguments&#x2F;">></a>
     
 
             </div>

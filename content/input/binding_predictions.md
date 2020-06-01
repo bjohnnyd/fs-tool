@@ -24,7 +24,8 @@ There are two ways to run NetMHCpan, either as a standalone command line tool or
 
 Both versions are available at:
 
-[https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0][netMHCpan-link]
+- version 4.0: [https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0][netMHCpan4-link]
+- version 4.1: [https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.1][netMHCpan4.1-link]
 
 The directions on obtaining the standalone version (for academic use only) are available under the `Downloads` tab.
 
@@ -46,4 +47,5 @@ Copy and paste or download the resulting raw output and save this locally and no
 An example input file can be seen [HERE](https://raw.githubusercontent.com/bjohnnyd/fs-tool/master/tests/input/binding_predictions/netmhcpan_wBA.txt).
 
 
-[netMHCpan-link]: https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0 
+[netMHCpan4-link]: https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0 
+[netMHCpan4.1-link]: https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.1 

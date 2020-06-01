@@ -149,7 +149,79 @@
                 <div class="book-content">
                     
     <h1>Additional Arguments</h1>
-    
+    <p>The full list of arguments are shown below:</p>
+<pre style="background-color:#002b36;">
+<span style="color:#839496;">fstool 0.2.5
+Calculates fraction of shared bound motifs between HLA alleles while incorporating KIR ligand and LILRB binding
+information.
+
+USAGE:
+    fs-tool [FLAGS] [OPTIONS] --binding-predictions &lt;binding-predictions&gt;... --output &lt;output&gt;
+
+FLAGS:
+        --drop-default    Drop default measures based on TCR and KIR motifs
+    -h, --help            Prints help information
+    -q, --quiet           Disables any information being printed to terminal (except errors)
+        --settings        Lists default measure names and motif positions as well as the default location updated kir
+                          ligand will be stored
+    -u, --unique          Whether only unique peptide/motif sequences should be considered in the calculations
+        --update          Updates the current kir ligand group data
+    -V, --version         Prints version information
+    -v, --verbose         Determines verbosity of the processing, can be specified multiple times -vvv
+
+OPTIONS:
+    -b, --binding-predictions &lt;binding-predictions&gt;...
+            Path to file containing predicted Class I affinity data (NetMHCpan results)
+
+    -c, --cohort &lt;cohort&gt;
+            Cohort of individuals for which all measures will be calculated
+
+    -i, --index &lt;index&gt;...
+            Index allele used for cohort calculations only, all individuals will be compared to these alleles
+
+    -m, --measure &lt;measure&gt;...
+            Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
+
+    -o, --output &lt;output&gt;                                 Directory to store outputs
+    -p, --peptide-length &lt;peptide-length&gt;...
+            Which length of input peptide sequence to consider [default: 9]  [possible values: 8, 9, 10, 11]
+
+        --prefix &lt;prefix&gt;                                 Prefix to assign to all outputs
+    -t, --threads &lt;threads&gt;                               Number of threads [default: 4]
+</span></pre>
+<p>In addition, to the arguments described in previous sections (<a href="https://bjohnnyd.github.io/fs-tool/public/input/binding-predictions/">Binding Predictions</a> and <a href="https://bjohnnyd.github.io/fs-tool/public/input/cohort/">Cohort</a>), detailed descriptions of the remaining arguments are:</p>
+<hr />
+<h4 id="o-or-output"><code>-o</code> or <code>--output</code></h4>
+<p>Specifies the output directory where all the results will be stored. This is a required argument.  If the directory does not exist, it will be created. </p>
+<hr />
+<h4 id="i-or-index"><code>-i</code> or <code>--index</code></h4>
+<p>Required only when <code>-c</code> or <code>--cohort</code> is provided.</p>
+<p>Each genotype in the cohort will be compared to this allele.  Multiple index alleles can be provides as space delimited values (e.g. <code>-i A02:01 C08:01</code>).</p>
+<hr />
+<h4 id="m-or-measure"><code>-m</code> or <code>--measure</code></h4>
+<p>In addition, to the default calculations based on TCR/KIR interaction positions it is possible to provide a custom motif and name.  All calculations will also be performed for the supplied measures.</p>
+<p>One or multiple measures can be provided, <code>-m Example1:1,2,3 Example2:4,5,6</code>. The output will then contain additional results for <code>Example1</code> and <code>Example2</code>.</p>
+<hr />
+<h4 id="drop-default"><code>--drop-default</code></h4>
+<p>If this flag is supplied, no calculations will be made on default motifs representing the TCR and KIR &quot;interaction space&quot;.</p>
+<hr />
+<h4 id="p-or-peptide-length"><code>-p</code> or <code>--peptide-length</code></h4>
+<p>By default only 9-mer peptides are used for calculations.  However, it is also possible to perform separate calculation for each k-mer as long as it is present in the binding predictions.</p>
+<p>Multiple peptide lengths can be supplied at the same time as <code>-p 8 9 10 11</code>, which will perform independent calculation for each of the 4 k-mer sizes.</p>
+<hr />
+<h4 id="u-or-unique"><code>-u</code> or <code>--unique</code></h4>
+<p>If the same motif occurs across diferent bound peptides for a given allele, they will be counted/considered only once.</p>
+<hr />
+<h4 id="prefix"><code>--prefix</code></h4>
+<p>This will prepend a identifier of choice to all the output files.  This is useful if you want to name the outputs after the specific cohort and proteome combination (e.g. <code>--prefix HTLV_RandomCohort</code>).</p>
+<hr />
+<h4 id="threads"><code>--threads</code></h4>
+<p>By default 4 threads are used for calculations but more can be provided, for very large proteomes this will make significant speed improvements if increased.</p>
+<hr />
+<h4 id="update"><code>--update</code></h4>
+<p>This flag will ensure that new EBI kir ligand motif data is downloaded before any calculations.</p>
+<hr />
+
 
                 </div>
             </div>

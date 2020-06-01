@@ -196,9 +196,15 @@
 </span></pre>
 <p>where <code>path/to/your/os/data/dir</code> will be an OS specific directory where global data will be stored (not the output just metadata).</p>
 <h2 id="install-manually">Install Manually</h2>
-<p>The following sections describe how to install from source for each OS separately.</p>
-<p>To install manually (build from source) you will first need to download and install <a href="https://rustup.rs/">Rustup</a>.</p>
-<p>Building from source should be needed in rare cases that the above binary does not work, the following installation instructions on building and installing is for those rare fail cases (exception is CentOS, where some releases will not work with the above Linux binary and will be needed to build from source).</p>
+<p>To install manually (build from source) you will need to:</p>
+<ol>
+<li>Download and install <a href="https://rustup.rs/">Rustup</a>.</li>
+<li>Download the latest archive of the repository <a href="https://github.com/bjohnnyd/fs-tool/archive/master.zip">HERE</a></li>
+<li>Uncompress the downloaded <code>master.zip</code> and change to the created directory (e.g. <code>cd fs-tool-master</code>)</li>
+<li>Inside the directory run the command <code>cargo build --release --bin fs-tool</code></li>
+<li>Once the build has finished, you can find the binary inside the directory <code>/target/release</code> named <code>fs-tool</code> on linux/osx and <code>fs-tool.exe</code> on windows.</li>
+<li>You can copy/move the binary to a directory of choice and add it to your PATH so it can be ran from any location. </li>
+</ol>
 
 
                 </div>

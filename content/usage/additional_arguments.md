@@ -5,48 +5,6 @@ weight=0
 sort_by="weight"
 +++
 
-The full list of arguments are shown below:
-
-```
-fstool 0.2.5
-Calculates fraction of shared bound motifs between HLA alleles while incorporating KIR ligand and LILRB binding
-information.
-
-USAGE:
-    fs-tool [FLAGS] [OPTIONS] --binding-predictions <binding-predictions>... --output <output>
-
-FLAGS:
-        --drop-default    Drop default measures based on TCR and KIR motifs
-    -h, --help            Prints help information
-    -q, --quiet           Disables any information being printed to terminal (except errors)
-        --settings        Lists default measure names and motif positions as well as the default location updated kir
-                          ligand will be stored
-    -u, --unique          Whether only unique peptide/motif sequences should be considered in the calculations
-        --update          Updates the current kir ligand group data
-    -V, --version         Prints version information
-    -v, --verbose         Determines verbosity of the processing, can be specified multiple times -vvv
-
-OPTIONS:
-    -b, --binding-predictions <binding-predictions>...
-            Path to file containing predicted Class I affinity data (NetMHCpan results)
-
-    -c, --cohort <cohort>
-            Cohort of individuals for which all measures will be calculated
-
-    -i, --index <index>...
-            Index allele used for cohort calculations only, all individuals will be compared to these alleles
-
-    -m, --measure <measure>...
-            Custom motif positions to use for calculations (format `Name:index,index..` e.g. KIR:2,7,8,9)
-
-    -o, --output <output>                                 Directory to store outputs
-    -p, --peptide-length <peptide-length>...
-            Which length of input peptide sequence to consider [default: 9]  [possible values: 8, 9, 10, 11]
-
-        --prefix <prefix>                                 Prefix to assign to all outputs
-    -t, --threads <threads>                               Number of threads [default: 4]
-```
-
 In addition, to the arguments described in previous sections ([Binding Predictions](@/input/binding_predictions.md) and [Cohort](@/input/cohort.md)), detailed descriptions of the remaining arguments are:
 
 ---
@@ -68,7 +26,9 @@ Each genotype in the cohort will be compared to this allele.  Multiple index all
 
 In addition, to the default calculations based on TCR/KIR interaction positions it is possible to provide a custom motif and name.  All calculations will also be performed for the supplied measures.
 
-One or multiple measures can be provided, `-m Example1:1,2,3 Example2:4,5,6`. The output will then contain additional results for `Example1` and `Example2`.
+One or multiple measures can be provided as `Name:pos,pos,pos...` 
+
+For example `-m Example1:1,2,3 Example2:4,5,6`, will produce additional entries in the output for measures named `Example1` and `Example2` based on the specified peptide positions/motifs.
 
 ---
 

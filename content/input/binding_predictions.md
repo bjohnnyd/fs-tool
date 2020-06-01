@@ -22,7 +22,7 @@ and cannot be performed from command line by `fs-tool`.
 
 There are two ways to run NetMHCpan, either as a standalone command line tool or by accessing it over the server. 
 
-Both versions are available at:
+The two versions of netMHCpan supported are available at:
 
 - version 4.0: [https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0][netMHCpan4-link]
 - version 4.1: [https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.1][netMHCpan4.1-link]

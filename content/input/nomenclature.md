@@ -33,7 +33,7 @@ For further information on HLA nomenclature, please visit [http://hla.alleles.or
 ## KIR 
 
 KIR alleles supplied are valid with or without acronym and with or without  allele specifed. However, alleles speciefed have to have at least the three letter series specified (`KIR2DL1*003` vs `KIR2DL1*3`).  
-The `KIR acronym` is not required and can be ommited both in input and in the column names of cohort data.
+The `KIR acronym` is not required and can be ommited in the column names of cohort data.
 
 | Example | Valid |
 | :-----: | :----:|

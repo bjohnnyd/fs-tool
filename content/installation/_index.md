@@ -54,9 +54,11 @@ where `path/to/your/os/data/dir` will be an OS specific directory where global d
 
 ## Install Manually
 
+To install manually (build from source) you will need to:
 
-The following sections describe how to install from source for each OS separately.
-
-To install manually (build from source) you will first need to download and install [Rustup](https://rustup.rs/).
-
-Building from source should be needed in rare cases that the above binary does not work, the following installation instructions on building and installing is for those rare fail cases (exception is CentOS, where some releases will not work with the above Linux binary and will be needed to build from source).
+1. Download and install [Rustup](https://rustup.rs/).
+2. Download the latest archive of the repository [HERE](https://github.com/bjohnnyd/fs-tool/archive/master.zip)
+3. Uncompress the downloaded `master.zip` and change to the created directory (e.g. `cd fs-tool-master`)
+4. Inside the directory run the command `cargo build --release --bin fs-tool`
+5. Once the build has finished, you can find the binary inside the directory `/target/release` named `fs-tool` on linux/osx and `fs-tool.exe` on windows.
+6. You can copy/move the binary to a directory of choice and add it to your PATH so it can be ran from any location. 

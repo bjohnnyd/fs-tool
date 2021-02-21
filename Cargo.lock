@@ -586,7 +586,6 @@ dependencies = [
  "attohttpc",
  "csv",
  "directories",
- "env_logger",
  "log",
  "scraper",
  "thiserror",
@@ -716,7 +715,6 @@ name = "netmhcpan"
 version = "0.1.0"
 dependencies = [
  "csv",
- "env_logger",
  "glob",
  "immunoprot",
  "log",

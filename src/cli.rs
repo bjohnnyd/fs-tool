@@ -7,7 +7,7 @@ use crate::calc::Measure;
 use crate::error::Error;
 use crate::io::reader::*;
 use crate::io::writer::*;
-use crate::{KIR_DEF, LOGGING_MODULES, PROJECT_LIGAND_TABLE, TCR_DEF};
+use crate::{KIR_DEF, PROJECT_LIGAND_TABLE, TCR_DEF};
 
 use immunoprot::ig_like::kir_ligand::KirLigandMap;
 use immunoprot::mhc::hla::ClassI;
@@ -82,9 +82,7 @@ impl Opt {
 
         env_logger::builder()
             .format_module_path(false)
-            .filter_module(LOGGING_MODULES[0], log_level)
-            .filter_module(LOGGING_MODULES[1], log_level)
-            .filter_module(LOGGING_MODULES[2], log_level)
+            .filter_level(log_level)
             .init()
     }
 

@@ -19,3 +19,5 @@
 /templates
 /tests/input/binding_predictions/large_cohort_batch*.txt
 /tests/output
+/*txt
+/*log*

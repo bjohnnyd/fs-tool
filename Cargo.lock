@@ -125,7 +125,7 @@ version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "31accafdb70df7871592c058eca3985b71104e15ac32f64706022c58867da931"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static",
  "memchr",
  "regex-automata",
  "serde",
@@ -252,7 +252,7 @@ dependencies = [
  "autocfg 1.0.0",
  "cfg-if",
  "crossbeam-utils",
- "lazy_static 1.4.0",
+ "lazy_static",
  "maybe-uninit",
  "memoffset",
  "scopeguard",
@@ -276,7 +276,7 @@ checksum = "c3c7c73a2d1e9fc0886a08b93e98eb643461230d5f1925e4036204d5f2e261a8"
 dependencies = [
  "autocfg 1.0.0",
  "cfg-if",
- "lazy_static 1.4.0",
+ "lazy_static",
 ]
 
 [[package]]
@@ -445,7 +445,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "fs-tool"
-version = "0.2.3"
+version = "0.2.5"
 dependencies = [
  "assert_cmd",
  "chrono",
@@ -586,9 +586,9 @@ dependencies = [
  "attohttpc",
  "csv",
  "directories",
+ "env_logger",
  "log",
  "scraper",
- "stderrlog",
  "thiserror",
 ]
 
@@ -606,12 +606,6 @@ checksum = "fa5a448de267e7358beaf4a5d849518fe9a0c13fce7afd44b06e68550e5562a7"
 dependencies = [
  "wasm-bindgen",
 ]
-
-[[package]]
-name = "lazy_static"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76f033c7ad61445c5b347c7382dd1237847eb1bce590fe50365dcb33d546be73"
 
 [[package]]
 name = "lazy_static"
@@ -722,11 +716,11 @@ name = "netmhcpan"
 version = "0.1.0"
 dependencies = [
  "csv",
+ "env_logger",
  "glob",
  "immunoprot",
  "log",
  "nom",
- "stderrlog",
  "thiserror",
 ]
 
@@ -1137,7 +1131,7 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-queue",
  "crossbeam-utils",
- "lazy_static 1.4.0",
+ "lazy_static",
  "num_cpus",
 ]
 
@@ -1185,7 +1179,7 @@ dependencies = [
  "aho-corasick",
  "memchr",
  "regex-syntax",
- "thread_local 1.0.1",
+ "thread_local",
 ]
 
 [[package]]
@@ -1435,25 +1429,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f3eb36b47e512f8f1c9e3d10c2c1965bc992bd9cdb024fa581e2194501c83d3"
 
 [[package]]
-name = "stderrlog"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32e5ee9b90a5452c570a0b0ac1c99ae9498db7e56e33d74366de7f2a7add7f25"
-dependencies = [
- "atty",
- "chrono",
- "log",
- "termcolor",
- "thread_local 0.3.4",
-]
-
-[[package]]
 name = "string_cache"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89c058a82f9fd69b1becf8c274f412281038877c553182f1d02eb027045a2d67"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static",
  "new_debug_unreachable",
  "phf_shared",
  "precomputed-hash",
@@ -1494,7 +1475,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "863246aaf5ddd0d6928dfeb1a9ca65f505599e4e1b399935ef7e75107516b4ef"
 dependencies = [
  "clap",
- "lazy_static 1.4.0",
+ "lazy_static",
  "structopt-derive",
 ]
 
@@ -1616,21 +1597,11 @@ dependencies = [
 
 [[package]]
 name = "thread_local"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1697c4b57aeeb7a536b647165a2825faddffb1d3bad386d507709bd51a90bb14"
-dependencies = [
- "lazy_static 0.2.11",
- "unreachable",
-]
-
-[[package]]
-name = "thread_local"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d40c6d1b69745a6ec6fb1ca717914848da4b44ae29d9b3080cbee91d72a69b14"
 dependencies = [
- "lazy_static 1.4.0",
+ "lazy_static",
 ]
 
 [[package]]
@@ -1686,15 +1657,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
 
 [[package]]
-name = "unreachable"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "382810877fe448991dfc7f0dd6e3ae5d58088fd0ea5e35189655f84e6814fa56"
-dependencies = [
- "void",
-]
-
-[[package]]
 name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1730,12 +1692,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "078775d0255232fb988e6fccf26ddc9d1ac274299aaedcedce21c6f72cc533ce"
 
 [[package]]
-name = "void"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
-
-[[package]]
 name = "wait-timeout"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1767,7 +1723,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3972e137ebf830900db522d6c8fd74d1900dcfc733462e9a12e942b00b4ac94"
 dependencies = [
  "bumpalo",
- "lazy_static 1.4.0",
+ "lazy_static",
  "log",
  "proc-macro2",
  "quote",

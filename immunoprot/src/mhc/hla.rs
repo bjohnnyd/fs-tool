@@ -1,4 +1,3 @@
-// TODO: Need to maybe iterate with `take_while` from reverse to get expression change as there are some labeled twice
 use std::iter::FromIterator;
 use std::str::FromStr;
 
@@ -14,6 +13,8 @@ type Result<T> = std::result::Result<T, NomenclatureError>;
 /* Nomenclature */
 
 #[derive(Debug, Eq, PartialEq, Clone)]
+/// Represents HLA nomenclature fields/delimiters
+#[allow(missing_docs)]
 pub enum HlaFields {
     AlleleGroup,
     Protein,
@@ -22,6 +23,7 @@ pub enum HlaFields {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
+/// Represents HLA nomenclature fields/delimiters
 pub enum Gene {
     A,
     B,

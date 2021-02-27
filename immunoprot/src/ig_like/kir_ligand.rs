@@ -5,16 +5,20 @@ use std::str::FromStr;
 use crate::error::{HtmlParseError, IoError, NomenclatureError};
 use crate::mhc::hla::ClassI;
 
-use log::info;
+use log::{error, info};
 use scraper::{Html, Selector};
 
 type Result<T> = std::result::Result<T, NomenclatureError>;
 
+/// Base URL for accessing HLA ligand information on EBI website
 pub const IPD_KIR_URL: &str = "https://www.ebi.ac.uk/cgi-bin/ipd/kir/retrieve_ligands.cgi?";
+#[allow(missing_docs)]
 pub const GENE_LOCI: [&str; 3] = ["A", "B", "C"];
+#[allow(missing_docs)]
 pub const SKIP_ROWS: usize = 1;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Ord, PartialOrd)]
+#[allow(missing_docs)]
 pub enum LigandMotif {
     A11,
     A3,
@@ -64,6 +68,7 @@ impl std::fmt::Display for LigandMotif {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Ord, PartialOrd)]
+#[allow(missing_docs)]
 pub enum AlleleFreq {
     Common,
     Rare,
@@ -99,8 +104,11 @@ where
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
+/// Represents the IPD databases row in a table ordered as HLA Class I allele, Ligand Motif and one
+/// of the frequency classifications used `Rare`, `Common or Well Defined` and `Unknown`
 pub struct KirLigandInfo(ClassI, LigandMotif, AlleleFreq);
 
+#[allow(missing_docs)]
 impl KirLigandInfo {
     pub fn new(hla: ClassI, motif: LigandMotif, freq: AlleleFreq) -> Self {
         Self(hla, motif, freq)
@@ -119,7 +127,6 @@ impl KirLigandInfo {
     }
 }
 
-// NOTE: Only supports TSV files
 impl FromStr for KirLigandInfo {
     type Err = IoError;
 
@@ -143,12 +150,14 @@ impl FromStr for KirLigandInfo {
     }
 }
 #[derive(Debug, Eq, PartialEq)]
+/// Contains the KIR Ligand annotation for a ClassI HLA allele.
 pub struct KirLigandMap {
+    /// All alleles with available kir ligand info.
     pub alleles: HashSet<ClassI>,
+    /// Allele to Ligand Motif mappings
     pub cache: HashMap<ClassI, KirLigandInfo>,
 }
 
-// NOTE: Could cause errors if the ligand map file is wrong
 impl Default for KirLigandMap {
     fn default() -> Self {
         let alleles = HashSet::<ClassI>::new();
@@ -158,6 +167,7 @@ impl Default for KirLigandMap {
     }
 }
 
+#[allow(missing_docs)]
 impl KirLigandMap {
     pub fn new() -> Self {
         KirLigandMap::default()
@@ -167,7 +177,6 @@ impl KirLigandMap {
         KirLigandMap::from_loci(&GENE_LOCI)
     }
 
-    // TODO: Could be combined with parse but need to see about error specificity
     pub fn init() -> std::result::Result<Self, IoError> {
         let mut alleles = HashSet::<ClassI>::new();
         let mut cache = HashMap::<ClassI, KirLigandInfo>::new();
@@ -267,6 +276,10 @@ impl KirLigandMap {
         Ok(map)
     }
 
+    /// Tries to first get an exact match of the allele that is being searched to assign motif but
+    /// if not found sequentially reduces the number of fields in the cached Class I names up to two times.
+    /// Cached will often be at a higher specificity than the once searched due to the output on
+    /// EBI.  
     pub fn get_allele_info(&self, allele: &ClassI) -> Vec<&KirLigandInfo> {
         let mut kir_ligand_info = Vec::<&KirLigandInfo>::new();
 
@@ -315,6 +328,7 @@ fn read_table(
     html: &Html,
     skip_rows: usize,
 ) -> std::result::Result<Vec<KirLigandInfo>, HtmlParseError> {
+    let mut n_alleles = 0;
     let mut result = Vec::<KirLigandInfo>::new();
 
     let selector =
@@ -337,16 +351,28 @@ fn read_table(
                 AlleleFreq::Unknown
             };
 
+            info!(
+                "Parsed ligand information for allele `{}`, motif = `{}`, frequency = `{}`",
+                &allele, &motif, &freq
+            );
             let ligand_info = KirLigandInfo::new(allele, motif, freq);
             result.push(ligand_info);
+            n_alleles += 1;
         } else {
+            error!(
+                "Found incorrect number of columns inside row with text `{}`",
+                table_row.join("")
+            );
             return Err(HtmlParseError::IncorrectNumberOfColumns(
                 table_row.len(),
                 table_row.join(""),
             ));
         }
     }
-    info!("Finished reading table");
+    info!(
+        "Finished reading table...Found ligand information for {} HLA class alleles",
+        n_alleles
+    );
     Ok(result)
 }
 

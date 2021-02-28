@@ -1,6 +1,9 @@
 // NOTE: Currently motifs are assigned by sorting by allele field (e.g. protein number), Ligand motif, then frequency
-use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+};
 
 use crate::error::{HtmlParseError, IoError, NomenclatureError};
 use crate::mhc::hla::ClassI;
@@ -149,6 +152,13 @@ impl FromStr for KirLigandInfo {
         }
     }
 }
+
+impl Display for KirLigandInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{},{},{}", self.allele(), self.motif(), self.freq())
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 /// Contains the KIR Ligand annotation for a ClassI HLA allele.
 pub struct KirLigandMap {
@@ -203,6 +213,10 @@ impl KirLigandMap {
             };
 
             let info = KirLigandInfo::new(allele.clone(), motif, freq);
+            info!(
+                "Processed default ligand info `{}` on line number `{}`",
+                row, &info
+            );
 
             alleles.insert(allele.clone());
             cache.insert(allele, info);

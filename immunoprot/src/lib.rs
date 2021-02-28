@@ -8,7 +8,7 @@
 /// the IPD/EBI website HTML and errors related to I/O
 pub mod error;
 
-/// Path to default kir ligand table for HLA ClassI allleles
+/// Path to default kir ligand table for HLA ClassI alleles
 pub const LIGAND_MAP_DEF: &str = include_str!("resources/allele_motifs.tsv");
 
 /// Contains representations associated with MHC/HLA representations and nomenclature

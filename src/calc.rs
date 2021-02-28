@@ -12,6 +12,7 @@ use log::{debug, warn};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+pub mod motif;
 /* FS */
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.

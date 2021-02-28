@@ -1,5 +1,6 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
+use immunoprot::mhc::hla::ClassI;
 use netmhcpan::result::Peptide;
 
 // Multiple ways to exract and compare motifs but there are two defining parameters
@@ -8,14 +9,19 @@ use netmhcpan::result::Peptide;
 
 /// Represents a sequence motif bound by
 pub struct SequenceMotif<'a> {
-    peptides: HashSet<&'a Peptide>,
+    peptides: HashMap<usize, HashSet<&'a BoundPeptide<'a>>>,
     /// A boolean mapping to peptide lengths 8,9,10 and 11 so peptide length can be got as 8 + idx
     /// == TRUE
     peptide_lengths: [usize; 4],
     sequence: &'a str,
-    unique: bool,
 }
 
+pub struct BoundPeptide<'a> {
+    peptide: &'a Peptide,
+    alleles: HashSet<&'a ClassI>,
+    length: usize,
+}
+// mapping motifs -> peptides -> lengths && alleles
 impl SequenceMotif<'_> {
     pub fn new(peptides: &Vec<Peptide>, sequence: &str) -> Self {
         todo!()

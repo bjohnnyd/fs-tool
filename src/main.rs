@@ -1,6 +1,6 @@
 // TODO: If binding predicitons file does not exist the error is not good;
 // #![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
-#![allow(dead_code, unused_variables)]
+#![warn(dead_code, unused_variables)]
 mod calc;
 mod cli;
 mod cohort;

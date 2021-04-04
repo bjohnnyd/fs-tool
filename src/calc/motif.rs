@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use immunoprot::mhc::hla::ClassI;
 use netmhcpan::result::Peptide;
 
-// Multiple ways to exract and compare motifs but there are two defining parameters
+// Multiple ways to extract and compare motifs but there are two defining parameters
 // position and length. I want to go over peptides if unique than occurence can be set to 1 and
 // otherwise not
 

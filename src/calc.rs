@@ -12,6 +12,7 @@ use log::{debug, warn};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+pub mod hla;
 pub mod motif;
 /* FS */
 

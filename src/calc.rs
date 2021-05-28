@@ -87,6 +87,7 @@ impl<'a> CalculatorComb<'a> {
             .iter()
             .filter_map(bound_motifs)
             .collect::<Vec<String>>();
+
         let non_index_motifs = self
             .binding_data
             .1

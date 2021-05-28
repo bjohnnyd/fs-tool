@@ -120,7 +120,8 @@ impl Peptide {
         &self.identity
     }
 
-    // TODO: Need to see what happens or if there are cases with gap + ins
+    // TODO: Need to see what happens or if there are cases with gap + ins so far have not found
+    // any
     /// Converts a peptide sequence to core representation.  Undefined behaviour with cases where there
     /// are both gaps and insertions in the alignment
     pub fn core(&self) -> String {

@@ -681,24 +681,38 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_fs() {
+    fn test_create_calculation_combinations() {
         let binding_data = read_raw_netmhcpan(vec![
             "src/tests/input/binding_predictions/netmhcpan_wBA.txt",
         ])
         .unwrap();
         let comb = create_calc_combs(&binding_data);
 
-        dbg!(&comb);
-        dbg!(&comb.len());
+        let index_allele = comb[0].alleles.0.to_nomenclature_string();
+        let nonindex_allele = comb[0].alleles.1.to_nomenclature_string();
+
+        assert_eq!(index_allele, "HLA-A*03:01");
+        assert_eq!(nonindex_allele, "HLA-B*27:05");
     }
 
     #[test]
     fn test_lilrb_search() {
         let lilrb_scores = read_lilrb_scores();
         let test_allele = "A*03:02".parse::<ClassI>().unwrap();
-        let ref_scores = lilrb_scores.iter().collect::<Vec<&LilrbScore>>();
 
-        dbg!(lilrb_scores.iter().get_matching(&test_allele));
-        dbg!(ref_scores.iter().copied().get_matching(&test_allele));
+        assert!(lilrb_scores
+            .iter()
+            .get_matching(&test_allele)
+            .iter()
+            .all(|lilr_info| {
+                lilr_info.first_allele.allele_group() == test_allele.allele_group()
+                    || lilr_info.second_allele.allele_group() == test_allele.allele_group()
+            }));
+    }
+
+    #[test]
+    fn test_calculate_index_cohort_fs() {
+        // Might be more suitable for integration tests
+        todo!()
     }
 }

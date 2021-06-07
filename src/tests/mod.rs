@@ -1,3 +1,6 @@
+#[allow(unused)]
+pub(in crate::tests) mod test_helpers;
+
 // use assert_cmd::prelude::*;
 // use predicates::str::contains;
 // use std::process::Command;

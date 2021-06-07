@@ -8,6 +8,9 @@ mod error;
 mod io;
 mod meta;
 
+#[cfg(test)]
+mod tests;
+
 pub static KIR_MOTIF_BINDING: &str = include_str!("resources/kir_motif_binding.tsv");
 pub static LILRB_SIMSCORES: &str = include_str!("resources/lilrb_simscores.tsv");
 pub static KIR_SIMSCORES: &str = include_str!("resources/kir_ligand_simscores.tsv");

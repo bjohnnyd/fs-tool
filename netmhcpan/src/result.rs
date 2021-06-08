@@ -252,10 +252,10 @@ impl Hash for Protein {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BindingInfo {
-    pub(crate) peptide: Peptide,
-    pub(crate) score: f32,
-    pub(crate) affinity: Option<f32>,
-    pub(crate) rank: f32,
+    pub peptide: Peptide,
+    pub score: f32,
+    pub affinity: Option<f32>,
+    pub rank: f32,
 }
 
 impl BindingInfo {

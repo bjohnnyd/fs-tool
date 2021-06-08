@@ -4,6 +4,7 @@ pub use immunoprot::ig_like::kir_ligand::KirLigandMap;
 use once_cell::sync::Lazy;
 
 use crate::calc::Measure;
+use rand::prelude::*;
 
 pub static KIR_MAP: Lazy<KirLigandMap> = Lazy::new(|| KirLigandMap::init().unwrap());
 pub static TEST_MEASURES: Lazy<[Measure; 2]> = Lazy::new(|| {

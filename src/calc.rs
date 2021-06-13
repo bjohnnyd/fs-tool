@@ -559,7 +559,7 @@ pub fn calculate_index_cohort_fs(
 
                                         debug!("In individual of the activating KIRs bound by the index and the genotype allele {:?}, individual {} has {} of them present.", &act_bound, &individual.id, &act_n);
 
-                                        let inh_n = act_bound
+                                        let inh_n = inh_bound
                                             .iter()
                                             .filter(|kir| individual.kir_genotype.contains(kir))
                                             .count();

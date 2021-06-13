@@ -70,6 +70,18 @@ impl std::fmt::Display for LigandMotif {
     }
 }
 
+impl LigandMotif {
+    /// Checks if the motif is Bw6 or Unclassifed which is considered as not interacting with any
+    /// KIR types
+    pub fn any_kirs_bound(&self) -> bool {
+        use LigandMotif::*;
+        match self {
+            Bw6 | Unclassified => false,
+            _ => true,
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Ord, PartialOrd)]
 #[allow(missing_docs)]
 pub enum AlleleFreq {

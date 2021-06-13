@@ -496,6 +496,9 @@ pub fn calculate_index_cohort_fs(
                         _ => Vec::new(),
                     };
 
+                    debug!("The index HLA being compared {} binds the following activating KIRs: {:?}", &index, &index_act_kirs);
+                    debug!("The index HLA being compared {} binds the following inhibitory KIRs: {:?}", &index, &index_act_kirs);
+
                     let (fs, ikir_fs, akir_fs, lilrb1, lilrb2) = genotype.iter().fold(
                         (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
                         |(mut fs, mut ikir_fs, mut akir_fs, mut lilrb1, mut lilrb2), genotype_allele| {
@@ -524,31 +527,43 @@ pub fn calculate_index_cohort_fs(
                                 let mut ikir = initial;
 
                                 match (index_motif, &fs_result.non_index_ligand_motif) {
-                                    (Some(Unclassified), Some(Unclassified)) => {
+                                    (Some(index_motif), Some(gene_motif)) if !index_motif.any_kirs_bound() && !gene_motif.any_kirs_bound()  => {
                                         akir = 1.0;
                                         ikir = 1.0
                                     }
+                                    (Some(index_motif), Some(gene_motif)) if (index_motif.any_kirs_bound() && !gene_motif.any_kirs_bound()) || (!index_motif.any_kirs_bound() && gene_motif.any_kirs_bound())  => {
+                                        akir = 0.0;
+                                        ikir = 0.0
+                                    },
                                     (Some(index_motif), Some(gene_motif)) => {
                                         let genotype_bound_kirs =
                                             get_bound_kirs(&kir_motif_interactions, &gene_motif);
 
+                                        debug!("Comparing index motif {} with gene motif {} in individual {}", &index_motif, &gene_motif, &individual.id);
+                                        debug!("Individual {} has genotype with HLA {} that binds the following KIRs {:?}.", &individual.id, genotype_allele, &genotype_bound_kirs);
                                         let act_bound = genotype_bound_kirs
                                             .iter()
                                             .filter(|kir| index_act_kirs.contains(kir))
                                             .collect::<Vec<&Kir>>();
+                                        debug!("In individual {} index {} shares the following activating kirs with gene allele {}: {:?}", &individual.id, &index, genotype_allele, &act_bound);
                                         let inh_bound = genotype_bound_kirs
                                             .iter()
                                             .filter(|kir| index_inh_kirs.contains(kir))
                                             .collect::<Vec<&Kir>>();
+                                        debug!("In individual {} index {} shares the following inhibitory kirs with gene allele {}: {:?}", &individual.id, &index, genotype_allele, &act_bound);
 
                                         let act_n = act_bound
                                             .iter()
                                             .filter(|kir| individual.kir_genotype.contains(kir))
                                             .count();
+
+                                        debug!("In individual of the activating KIRs bound by the index and the genotype allele {:?}, individual {} has {} of them present.", &act_bound, &individual.id, &act_n);
+
                                         let inh_n = act_bound
                                             .iter()
                                             .filter(|kir| individual.kir_genotype.contains(kir))
                                             .count();
+                                        debug!("In individual of the inhibitory KIRs bound by the index and the genotype allele {:?}, individual {} has {} of them present.", &inh_bound, &individual.id, &inh_n);
 
                                         if act_n == 0
                                             && !(index_act_kirs.is_empty() && act_bound.is_empty())
@@ -563,7 +578,13 @@ pub fn calculate_index_cohort_fs(
                                         }
                                     }
                                     // Should this be only (None, None) and throw or ignore otherwise
-                                    _ => {
+                                    (None, _) => {
+                                        warn!("Index {} has no known ligand motif, setting kir bound calculations to 0 for both activating and inhibitory KIRs", &index);
+                                        akir = 0.0;
+                                        ikir = 0.0;
+                                    }
+                                    (_, None) => {
+                                        warn!("Allele {} in individual {} has no ligand motif information, setting kir bound calculations to 0 for both activating and inhibitory KIRs", &genotype_allele, &individual.id);
                                         akir = 0.0;
                                         ikir = 0.0;
                                     }

@@ -100,7 +100,7 @@ pub fn create_binding_metadata(binding_data: &BindingData) -> Vec<BindingMeta> {
                     if peptide.len() == *pep_length && peptide.protein() == protein {
                         let binding_rank = binding_info.rank();
 
-                        if binding_rank < weak_threshold {
+                        if binding_rank < weak_threshold && binding_rank >= strong_threshold {
                             n_weak_bound += 1;
                         }
 

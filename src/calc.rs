@@ -708,6 +708,7 @@ mod tests {
         ])
         .unwrap();
         let comb = create_calc_combs(&binding_data);
+        dbg!(&comb);
 
         let index_allele = comb[0].alleles.0.to_nomenclature_string();
         let nonindex_allele = comb[0].alleles.1.to_nomenclature_string();
@@ -729,11 +730,5 @@ mod tests {
                 lilr_info.first_allele.allele_group() == test_allele.allele_group()
                     || lilr_info.second_allele.allele_group() == test_allele.allele_group()
             }));
-    }
-
-    #[test]
-    fn test_calculate_index_cohort_fs() {
-        // Might be more suitable for integration tests
-        todo!()
     }
 }

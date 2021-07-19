@@ -443,7 +443,7 @@ pub struct CohortResult {
 }
 
 /// Temporary function to get kirs bound by allele
-fn get_bound_kirs(
+pub fn get_bound_kirs(
     motif_interactions: &HashMap<Kir, Vec<LigandMotif>>,
     motif: &LigandMotif,
 ) -> Vec<Kir> {

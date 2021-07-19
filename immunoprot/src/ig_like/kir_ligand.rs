@@ -424,7 +424,6 @@ mod tests {
         });
     }
 
-    // TODO: NEED TO FIX IPD CONNECTION FOR THESE 3 TESTS
     #[test]
     fn test_connect_to_ipd() {
         let html = get_ipd_html("C*01:02").unwrap();

@@ -1,6 +1,15 @@
-use immunoprot::ig_like::kir_ligand::KirLigandMap;
+use std::collections::hash_map::RandomState;
+use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
+
+use crate::calc::get_bound_kirs;
+use immunoprot::ig_like::kir::Kir;
+use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
+use immunoprot::mhc::hla::ClassI;
 use netmhcpan::result::{BindingInfo, Peptide};
 use rand::{distributions::Alphanumeric, prelude::SliceRandom, Rng};
+
+use crate::io::reader::read_kir_motif_binding;
 
 const AA: [&str; 20] = [
     "A", "R", "N", "D", "C", "Q", "E", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y",
@@ -10,9 +19,7 @@ const AA: [&str; 20] = [
 const IDENTITY: &str = "Protein";
 const ALIGNMENT_MODS: [usize; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
-pub struct AlleleFactory {
-    kir_ligand_map: KirLigandMap,
-}
+type TestResult<T, E = Box<dyn std::error::Error>> = Result<T, E>;
 
 pub enum RankThreshold {
     Strong,
@@ -27,6 +34,8 @@ impl BindingFactory {
     pub fn new(peptides: Vec<Peptide>) -> Self {
         Self { peptides }
     }
+
+    /// Generates n number of binding info data of a given rank if provided
     pub fn generate_binding_info(
         &self,
         n: usize,
@@ -60,6 +69,7 @@ impl BindingFactory {
     }
 }
 
+/// Generate n peptides of specified length using 20 AA alphabet
 pub fn generate_peptides(n: usize, length: usize) -> Vec<Peptide> {
     let mut aa = AA.clone();
     let mut rng = rand::thread_rng();
@@ -79,8 +89,61 @@ pub fn generate_peptides(n: usize, length: usize) -> Vec<Peptide> {
         .collect()
 }
 
+pub struct AlleleFactory {
+    kir_ligand_map: KirLigandMap,
+    kir_binding: HashMap<Kir, Vec<LigandMotif>>,
+}
+
+impl AlleleFactory {
+    pub fn new() -> TestResult<Self> {
+        let kir_ligand_map = KirLigandMap::init()?;
+        let kir_binding = read_kir_motif_binding();
+        Ok(Self {
+            kir_ligand_map,
+            kir_binding,
+        })
+    }
+
+    pub fn gen_allele_with_motif(&self, motif: &LigandMotif, n: usize) -> Vec<ClassI> {
+        let mut rng = rand::thread_rng();
+        let mut alleles_with_motif = self
+            .kir_ligand_map
+            .cache
+            .iter()
+            .filter(|(_, kir_ligand_info)| kir_ligand_info.motif() == motif)
+            .map(|(k, v)| k)
+            .collect::<Vec<&ClassI>>();
+
+        alleles_with_motif.shuffle(&mut rng);
+        alleles_with_motif.into_iter().take(n).cloned().collect()
+    }
+
+    pub fn gen_allele_with_kir_bound(&self, kir: &Kir, n: usize) -> TestResult<Vec<ClassI>> {
+        let mut rng = rand::thread_rng();
+
+        let target_motifs: HashSet<&LigandMotif, RandomState> = HashSet::from_iter(
+            self.kir_binding
+                .get(kir)
+                .ok_or(format!("No motifs found for {}", kir))?,
+        );
+
+        let mut alleles_that_bind_kir = self
+            .kir_ligand_map
+            .cache
+            .iter()
+            .filter(|(_, kir_ligand_info)| target_motifs.contains(kir_ligand_info.motif()))
+            .map(|(k, v)| k)
+            .collect::<Vec<&ClassI>>();
+
+        alleles_that_bind_kir.shuffle(&mut rng);
+        Ok(alleles_that_bind_kir.into_iter().take(n).cloned().collect())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
+    use std::str::FromStr;
 
     use super::*;
 
@@ -104,9 +167,32 @@ mod tests {
     }
 
     #[test]
-    fn test_allele_factory_generation() {
-        // let allele_factory = AlleleFactory::new();
-        // allele_factory.get_allele_with_motif(SOME_MOTIF);
-        // allele_factory.get_allele_that_binds_kir(SOME_KIR);
+    fn test_allele_motif_factory_generation() {
+        use LigandMotif::*;
+        let allele_factory = AlleleFactory::new().unwrap();
+        let a11_alleles = allele_factory.gen_allele_with_motif(&A11, 5);
+
+        assert_eq!(a11_alleles.len(), 5);
+        assert!(a11_alleles.iter().all(|allele| {
+            let kir_ligand_info = allele_factory.kir_ligand_map.get_allele_info(allele);
+            let motif = kir_ligand_info[0].motif();
+
+            *motif == A11
+        }))
+    }
+    #[test]
+    fn test_allele_kir_bound_factory_generation() {
+        let kir = Kir::from_str("KIR2DL2").unwrap();
+        let allele_factory = AlleleFactory::new().unwrap();
+        let kir2dl2_alleles = allele_factory.gen_allele_with_kir_bound(&kir, 5).unwrap();
+
+        assert_eq!(kir2dl2_alleles.len(), 5);
+        assert!(kir2dl2_alleles.iter().all(|allele| {
+            let kir_ligand_info = allele_factory.kir_ligand_map.get_allele_info(allele);
+            let motif = kir_ligand_info[0].motif();
+            let kir_bound = get_bound_kirs(&allele_factory.kir_binding, &motif);
+
+            kir_bound.iter().any(|bound_kir| *bound_kir == kir)
+        }))
     }
 }

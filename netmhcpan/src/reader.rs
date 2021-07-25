@@ -15,6 +15,7 @@ where
 {
     use RankThreshold::*;
     let mut binding_data = BindingData::new();
+
     #[allow(unused_mut)]
     let mut paths = paths
         .iter()
@@ -56,6 +57,7 @@ where
                     let (_, nn) = get_nn_info(i).unwrap();
                     binding_data.alleles.insert(nn);
                 } else {
+                    // If a rank threshold is not specified or already obtained parse if from NethMHCpan output
                     if binding_data.strong_threshold.is_none()
                         || binding_data.weak_threshold.is_none()
                     {

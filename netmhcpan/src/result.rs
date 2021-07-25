@@ -120,7 +120,8 @@ impl Peptide {
         &self.identity
     }
 
-    // TODO: Need to see what happens or if there are cases with gap + ins
+    // TODO: Need to see what happens or if there are cases with gap + ins so far have not found
+    // any
     /// Converts a peptide sequence to core representation.  Undefined behaviour with cases where there
     /// are both gaps and insertions in the alignment
     pub fn core(&self) -> String {
@@ -251,10 +252,10 @@ impl Hash for Protein {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BindingInfo {
-    pub(crate) peptide: Peptide,
-    pub(crate) score: f32,
-    pub(crate) affinity: Option<f32>,
-    pub(crate) rank: f32,
+    pub peptide: Peptide,
+    pub score: f32,
+    pub affinity: Option<f32>,
+    pub rank: f32,
 }
 
 impl BindingInfo {

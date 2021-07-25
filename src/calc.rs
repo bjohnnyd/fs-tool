@@ -12,6 +12,8 @@ use log::{debug, warn};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+pub mod hla;
+pub mod motif;
 /* FS */
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.
@@ -85,6 +87,7 @@ impl<'a> CalculatorComb<'a> {
             .iter()
             .filter_map(bound_motifs)
             .collect::<Vec<String>>();
+
         let non_index_motifs = self
             .binding_data
             .1
@@ -440,7 +443,7 @@ pub struct CohortResult {
 }
 
 /// Temporary function to get kirs bound by allele
-fn get_bound_kirs(
+pub fn get_bound_kirs(
     motif_interactions: &HashMap<Kir, Vec<LigandMotif>>,
     motif: &LigandMotif,
 ) -> Vec<Kir> {
@@ -493,6 +496,9 @@ pub fn calculate_index_cohort_fs(
                         _ => Vec::new(),
                     };
 
+                    debug!("The index HLA being compared {} binds the following activating KIRs: {:?}", &index, &index_act_kirs);
+                    debug!("The index HLA being compared {} binds the following inhibitory KIRs: {:?}", &index, &index_act_kirs);
+
                     let (fs, ikir_fs, akir_fs, lilrb1, lilrb2) = genotype.iter().fold(
                         (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
                         |(mut fs, mut ikir_fs, mut akir_fs, mut lilrb1, mut lilrb2), genotype_allele| {
@@ -521,31 +527,43 @@ pub fn calculate_index_cohort_fs(
                                 let mut ikir = initial;
 
                                 match (index_motif, &fs_result.non_index_ligand_motif) {
-                                    (Some(Unclassified), Some(Unclassified)) => {
+                                    (Some(index_motif), Some(gene_motif)) if !index_motif.any_kirs_bound() && !gene_motif.any_kirs_bound()  => {
                                         akir = 1.0;
                                         ikir = 1.0
                                     }
+                                    (Some(index_motif), Some(gene_motif)) if (index_motif.any_kirs_bound() && !gene_motif.any_kirs_bound()) || (!index_motif.any_kirs_bound() && gene_motif.any_kirs_bound())  => {
+                                        akir = 0.0;
+                                        ikir = 0.0
+                                    },
                                     (Some(index_motif), Some(gene_motif)) => {
                                         let genotype_bound_kirs =
                                             get_bound_kirs(&kir_motif_interactions, &gene_motif);
 
+                                        debug!("Comparing index motif {} with gene motif {} in individual {}", &index_motif, &gene_motif, &individual.id);
+                                        debug!("Individual {} has genotype with HLA {} that binds the following KIRs {:?}.", &individual.id, genotype_allele, &genotype_bound_kirs);
                                         let act_bound = genotype_bound_kirs
                                             .iter()
                                             .filter(|kir| index_act_kirs.contains(kir))
                                             .collect::<Vec<&Kir>>();
+                                        debug!("In individual {} index {} shares the following activating kirs with gene allele {}: {:?}", &individual.id, &index, genotype_allele, &act_bound);
                                         let inh_bound = genotype_bound_kirs
                                             .iter()
                                             .filter(|kir| index_inh_kirs.contains(kir))
                                             .collect::<Vec<&Kir>>();
+                                        debug!("In individual {} index {} shares the following inhibitory kirs with gene allele {}: {:?}", &individual.id, &index, genotype_allele, &act_bound);
 
                                         let act_n = act_bound
                                             .iter()
                                             .filter(|kir| individual.kir_genotype.contains(kir))
                                             .count();
-                                        let inh_n = act_bound
+
+                                        debug!("In individual of the activating KIRs bound by the index and the genotype allele {:?}, individual {} has {} of them present.", &act_bound, &individual.id, &act_n);
+
+                                        let inh_n = inh_bound
                                             .iter()
                                             .filter(|kir| individual.kir_genotype.contains(kir))
                                             .count();
+                                        debug!("In individual of the inhibitory KIRs bound by the index and the genotype allele {:?}, individual {} has {} of them present.", &inh_bound, &individual.id, &inh_n);
 
                                         if act_n == 0
                                             && !(index_act_kirs.is_empty() && act_bound.is_empty())
@@ -560,7 +578,13 @@ pub fn calculate_index_cohort_fs(
                                         }
                                     }
                                     // Should this be only (None, None) and throw or ignore otherwise
-                                    _ => {
+                                    (None, _) => {
+                                        warn!("Index {} has no known ligand motif, setting kir bound calculations to 0 for both activating and inhibitory KIRs", &index);
+                                        akir = 0.0;
+                                        ikir = 0.0;
+                                    }
+                                    (_, None) => {
+                                        warn!("Allele {} in individual {} has no ligand motif information, setting kir bound calculations to 0 for both activating and inhibitory KIRs", &genotype_allele, &individual.id);
                                         akir = 0.0;
                                         ikir = 0.0;
                                     }
@@ -678,22 +702,33 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_fs() {
-        let binding_data =
-            read_raw_netmhcpan(vec!["tests/input/binding_predictions/netmhcpan_wBA.txt"]).unwrap();
+    fn test_create_calculation_combinations() {
+        let binding_data = read_raw_netmhcpan(vec![
+            "src/tests/input/binding_predictions/netmhcpan_wBA.txt",
+        ])
+        .unwrap();
         let comb = create_calc_combs(&binding_data);
-
         dbg!(&comb);
-        dbg!(&comb.len());
+
+        let index_allele = comb[0].alleles.0.to_nomenclature_string();
+        let nonindex_allele = comb[0].alleles.1.to_nomenclature_string();
+
+        assert_eq!(index_allele, "HLA-A*03:01");
+        assert_eq!(nonindex_allele, "HLA-B*27:05");
     }
 
     #[test]
     fn test_lilrb_search() {
         let lilrb_scores = read_lilrb_scores();
         let test_allele = "A*03:02".parse::<ClassI>().unwrap();
-        let ref_scores = lilrb_scores.iter().collect::<Vec<&LilrbScore>>();
 
-        dbg!(lilrb_scores.iter().get_matching(&test_allele));
-        dbg!(ref_scores.iter().copied().get_matching(&test_allele));
+        assert!(lilrb_scores
+            .iter()
+            .get_matching(&test_allele)
+            .iter()
+            .all(|lilr_info| {
+                lilr_info.first_allele.allele_group() == test_allele.allele_group()
+                    || lilr_info.second_allele.allele_group() == test_allele.allele_group()
+            }));
     }
 }

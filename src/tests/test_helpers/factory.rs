@@ -1,15 +1,8 @@
+use crate::tests::test_helpers::*;
+use rand::{distributions::Alphanumeric, prelude::SliceRandom, Rng};
 use std::collections::hash_map::RandomState;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
-
-use crate::calc::get_bound_kirs;
-use immunoprot::ig_like::kir::Kir;
-use immunoprot::ig_like::kir_ligand::{KirLigandMap, LigandMotif};
-use immunoprot::mhc::hla::ClassI;
-use netmhcpan::result::{BindingInfo, Peptide};
-use rand::{distributions::Alphanumeric, prelude::SliceRandom, Rng};
-
-use crate::io::reader::read_kir_motif_binding;
 
 const AA: [&str; 20] = [
     "A", "R", "N", "D", "C", "Q", "E", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y",
@@ -18,8 +11,6 @@ const AA: [&str; 20] = [
 
 const IDENTITY: &str = "Protein";
 const ALIGNMENT_MODS: [usize; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-
-type TestResult<T, E = Box<dyn std::error::Error>> = Result<T, E>;
 
 pub enum RankThreshold {
     Strong,
@@ -90,13 +81,13 @@ pub fn generate_peptides(n: usize, length: usize) -> Vec<Peptide> {
 }
 
 pub struct AlleleFactory {
-    kir_ligand_map: KirLigandMap,
+    kir_ligand_map: &'static KirLigandMap,
     kir_binding: HashMap<Kir, Vec<LigandMotif>>,
 }
 
 impl AlleleFactory {
     pub fn new() -> TestResult<Self> {
-        let kir_ligand_map = KirLigandMap::init()?;
+        let kir_ligand_map = &KIR_MAP;
         let kir_binding = read_kir_motif_binding();
         Ok(Self {
             kir_ligand_map,

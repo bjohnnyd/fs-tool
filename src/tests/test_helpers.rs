@@ -1,13 +1,27 @@
 mod factory;
 
-pub use immunoprot::ig_like::kir_ligand::KirLigandMap;
+use crate::io::reader::read_kir_motif_binding;
+use immunoprot::ig_like::kir_ligand::KirLigandMap;
 use once_cell::sync::Lazy;
-
-use crate::calc::Measure;
 use rand::prelude::*;
+use std::collections::HashMap;
 
+pub use crate::calc::get_bound_kirs;
+pub use crate::calc::Measure;
+pub use immunoprot::ig_like::kir::Kir;
+pub use immunoprot::ig_like::kir_ligand::LigandMotif;
+pub use immunoprot::mhc::hla::ClassI;
+pub use netmhcpan::result::{BindingInfo, Peptide};
+
+/// Generic type for erros in tests where we don't care about the underlying error kind
+pub type TestResult<T, E = Box<dyn std::error::Error>> = Result<T, E>;
+
+/// Ensures that all tests are using the same kir ligand info
 pub static KIR_MAP: Lazy<KirLigandMap> = Lazy::new(|| KirLigandMap::init().unwrap());
-pub static TEST_MEASURES: Lazy<[Measure; 2]> = Lazy::new(|| {
+
+/// Set of measures to be used in tests with the last measure being a subset of the other 2
+/// ensuring that it is always at least as large both of the other measures
+pub static TEST_MEASURES: Lazy<[Measure; 3]> = Lazy::new(|| {
     [
         Measure {
             name: "TCR".to_string(),
@@ -16,6 +30,10 @@ pub static TEST_MEASURES: Lazy<[Measure; 2]> = Lazy::new(|| {
         Measure {
             name: "KIR".to_string(),
             motif_pos: vec![2, 7, 8, 9],
+        },
+        Measure {
+            name: "ANCHOR".to_string(),
+            motif_pos: vec![2, 9],
         },
     ]
 });

@@ -7,7 +7,7 @@ use rand::prelude::*;
 use std::collections::HashMap;
 
 pub use crate::calc::get_bound_kirs;
-pub use crate::calc::Measure;
+pub use crate::calc::motif::Measure;
 pub use immunoprot::ig_like::kir::Kir;
 pub use immunoprot::ig_like::kir_ligand::LigandMotif;
 pub use immunoprot::mhc::hla::ClassI;

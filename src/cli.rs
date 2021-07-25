@@ -3,7 +3,7 @@ const PEPTIDE_LENGTHS: [&str; 4] = ["8", "9", "10", "11"];
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-use crate::calc::Measure;
+use crate::calc::motif::Measure;
 use crate::error::Error;
 use crate::io::reader::*;
 use crate::io::writer::*;

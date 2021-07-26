@@ -7,6 +7,7 @@ mod cohort;
 mod error;
 mod io;
 mod meta;
+mod seq;
 
 #[cfg(test)]
 mod tests;

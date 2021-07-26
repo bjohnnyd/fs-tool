@@ -23,6 +23,10 @@ pub enum Error {
     CouldNotOpenCohortFile(#[from] csv::Error),
     #[error("No global config directory exists")]
     NoGlobalConfigDir,
+    #[error("Unsorted vector of peptide indices found")]
+    UnsortedIndices,
+    #[error("Measures have to be of the format <name:idx,idx,idx...> got {0}")]
+    IncorrectMeasure(String),
 }
 
 trait ErrorKindDisplay {

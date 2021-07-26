@@ -1,4 +1,5 @@
 use crate::error::Error;
+use std::ops::Range;
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.
 /// Might be extended by a field representing whether the calculations should take KIR genotypes into
@@ -6,28 +7,68 @@ use crate::error::Error;
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Measure {
     pub name: String,
-    pub motif_pos: Vec<usize>,
+    pub ranges: Vec<Range<usize>>,
 }
 
 impl Measure {
+    pub fn new(name: String, s: &str) -> Result<Self, Error> {
+        let mut indices = Self::parse_indices(s)?;
+        indices.sort();
+
+        let ranges = Self::indices_to_ranges(0, 1, &indices, Vec::new())?;
+
+        Ok(Self { name, ranges })
+    }
+    pub fn get_motif<'a>(&self, peptide: &'a str) -> Motif<'a> {
+        let pep_len = peptide.len();
+        Motif(
+            self.ranges
+                .iter()
+                .flat_map(|range| {
+                    if range.end < pep_len {
+                        Some(&peptide.as_bytes()[*range])
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        )
+    }
+
     fn parse_indices(s: &str) -> Result<Vec<usize>, Error> {
         Ok(s.split(',')
             .map(|digit| digit.parse::<usize>())
             .collect::<Result<Vec<_>, _>>()?)
     }
 
-    fn get_motif(&self, peptide: &str) -> Vec<u8> {
-        let pep_len = peptide.len();
-        self.motif_pos
-            .iter()
-            .flat_map(|idx| {
-                if *idx < pep_len {
-                    Some(peptide.as_bytes()[*idx])
-                } else {
-                    None
-                }
-            })
-            .collect()
+    fn indices_to_ranges(
+        start_idx: usize,
+        end_idx: usize,
+        values: &[usize],
+        mut result: Vec<Range<usize>>,
+    ) -> Result<Vec<Range<usize>>, Error> {
+        if end_idx == values.len() {
+            result.push(Range {
+                start: values[start_idx],
+                end: values[end_idx - 1],
+            });
+            Ok(result)
+        } else if end_idx == 0 || end_idx == start_idx {
+            Self::indices_to_ranges(start_idx, end_idx + 1, values, result)
+        } else {
+            let diff = values[end_idx] - values[end_idx - 1];
+            if diff == 1 {
+                Self::indices_to_ranges(start_idx, end_idx + 1, values, result)
+            } else if diff > 1 {
+                result.push(Range {
+                    start: values[start_idx],
+                    end: values[end_idx - 1],
+                });
+                Self::indices_to_ranges(end_idx, end_idx + 1, values, result)
+            } else {
+                return Err(Error::UnsortedIndices);
+            }
+        }
     }
 }
 
@@ -35,30 +76,21 @@ impl std::str::FromStr for Measure {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut name = String::new();
-        let mut motif_pos = Vec::<usize>::new();
+        let name_indices: Vec<&str> = s.split(':').collect();
 
-        let mut name_pos = s.split(':');
+        if name_indices.len() != 2 {
+            Err(Error::IncorrectMeasure(s.to_string()))
+        } else {
+            let name = &name_indices[0];
+            let indices = &name_indices[1];
 
-        if let Some(field) = name_pos.next() {
-            match name_pos.next() {
-                Some(measure_pos) => {
-                    name = field.to_string();
-                    motif_pos = Measure::parse_indices(measure_pos)?
-                }
-                _ => {
-                    motif_pos = Measure::parse_indices(field)?;
-                    name = motif_pos
-                        .iter()
-                        .map(ToString::to_string)
-                        .collect::<Vec<String>>()
-                        .join("_");
-                }
-            }
+            Measure::new(name.to_string(), indices)
         }
-        Ok(Self { name, motif_pos })
     }
 }
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Motif<'a>(Vec<&'a [u8]>);
 
 #[cfg(test)]
 mod tests {

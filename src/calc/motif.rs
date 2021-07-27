@@ -1,5 +1,5 @@
 use crate::error::Error;
-use std::ops::Range;
+use std::{convert::TryFrom, fmt::Display, ops::Range, str::Utf8Error};
 
 /// Represents the motif positions to be used for calculating fraction of shared peptides.
 /// Might be extended by a field representing whether the calculations should take KIR genotypes into
@@ -19,6 +19,7 @@ impl Measure {
 
         Ok(Self { name, ranges })
     }
+
     pub fn get_motif<'a>(&self, peptide: &'a str) -> Motif<'a> {
         let pep_len = peptide.len();
         Motif(
@@ -92,6 +93,21 @@ impl std::str::FromStr for Measure {
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Motif<'a>(Vec<&'a [u8]>);
 
+impl TryFrom<Motif<'_>> for String {
+    type Error = std::string::FromUtf8Error;
+
+    fn try_from(value: Motif<'_>) -> Result<Self, Self::Error> {
+        String::from_utf8(
+            value
+                .0
+                .iter()
+                .map(|seq| seq.to_vec())
+                .flatten()
+                .collect::<Vec<u8>>(),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -102,16 +118,11 @@ mod tests {
         let measure = input_measure.parse::<Measure>().unwrap();
 
         let input_peptide = "ABCDEFGHIJ";
-        let expected = input_peptide
-            .bytes()
-            .enumerate()
-            .filter(|(i, _)| measure.motif_pos.contains(i))
-            .map(|(_, aa)| aa)
-            .collect::<Vec<u8>>();
+        let expected = String::from("BCDEFI");
 
         let motif = measure.get_motif(&input_peptide);
 
-        assert_eq!(motif, expected);
+        assert_eq!(String::try_from(motif).unwrap(), expected);
     }
 
     #[test]
@@ -120,15 +131,10 @@ mod tests {
         let measure = input_measure.parse::<Measure>().unwrap();
 
         let input_peptide = "ABCDEFGH";
-        let expected = input_peptide
-            .bytes()
-            .enumerate()
-            .filter(|(i, _)| measure.motif_pos.contains(i))
-            .map(|(_, aa)| aa)
-            .collect::<Vec<u8>>();
+        let expected = String::from("BCDEF");
 
         let motif = measure.get_motif(&input_peptide);
 
-        assert_eq!(motif, expected);
+        assert_eq!(String::try_from(motif).unwrap(), expected);
     }
 }

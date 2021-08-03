@@ -640,6 +640,7 @@ mod tests {
     use super::*;
     use crate::io::reader::read_lilrb_scores;
     use netmhcpan::reader::read_raw_netmhcpan;
+    use std::ops::Range;
 
     #[test]
     fn test_create_measure() {
@@ -650,7 +651,8 @@ mod tests {
             measure,
             Measure {
                 name: "CD8".to_string(),
-                motif_pos: vec![2, 3, 4, 5, 6, 9]
+                motif_pos: vec![2, 3, 4, 5, 6, 9],
+                ranges: vec![Range { start: 2, end: 6 }, Range { start: 9, end: 9 }]
             }
         )
     }

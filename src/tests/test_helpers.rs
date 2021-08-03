@@ -23,17 +23,8 @@ pub static KIR_MAP: Lazy<KirLigandMap> = Lazy::new(|| KirLigandMap::init().unwra
 /// ensuring that it is always at least as large both of the other measures
 pub static TEST_MEASURES: Lazy<[Measure; 3]> = Lazy::new(|| {
     [
-        Measure {
-            name: "TCR".to_string(),
-            motif_pos: vec![2, 3, 4, 5, 6, 9],
-        },
-        Measure {
-            name: "KIR".to_string(),
-            motif_pos: vec![2, 7, 8, 9],
-        },
-        Measure {
-            name: "ANCHOR".to_string(),
-            motif_pos: vec![2, 9],
-        },
+        Measure::new(String::from("TCR"), "2,3,4,5,6,9").unwrap(),
+        Measure::new(String::from("KIR"), "2,7,8,9").unwrap(),
+        Measure::new(String::from("ANCHOR"), "2,9").unwrap(),
     ]
 });

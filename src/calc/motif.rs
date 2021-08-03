@@ -8,26 +8,33 @@ use std::{convert::TryFrom, fmt::Display, ops::Range, str::Utf8Error};
 pub struct Measure {
     pub name: String,
     pub ranges: Vec<Range<usize>>,
+    pub motif_pos: Vec<usize>,
 }
 
 impl Measure {
     pub fn new(name: String, s: &str) -> Result<Self, Error> {
-        let mut indices = Self::parse_indices(s)?;
-        indices.sort();
+        let mut motif_pos = Self::parse_indices(s)?;
+        motif_pos.sort();
 
-        let ranges = Self::indices_to_ranges(0, 1, &indices, Vec::new())?;
+        let ranges = Self::indices_to_ranges(0, 1, &motif_pos, Vec::new())?;
 
-        Ok(Self { name, ranges })
+        Ok(Self {
+            name,
+            ranges,
+            motif_pos,
+        })
     }
 
+    // Performs cloned iteration
     pub fn get_motif<'a>(&self, peptide: &'a str) -> Motif<'a> {
         let pep_len = peptide.len();
         Motif(
             self.ranges
                 .iter()
+                .cloned()
                 .flat_map(|range| {
                     if range.end < pep_len {
-                        Some(&peptide.as_bytes()[*range])
+                        Some(&peptide.as_bytes()[range])
                     } else {
                         None
                     }

@@ -1,4 +1,4 @@
-pub mod hla;
+pub mod binding;
 pub mod motif;
 
 use std::collections::{HashMap, HashSet};

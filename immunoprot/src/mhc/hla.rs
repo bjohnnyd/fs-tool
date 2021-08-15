@@ -186,6 +186,20 @@ impl PartialOrd for ClassI {
     }
 }
 
+impl Default for ClassI {
+    fn default() -> Self {
+        Self {
+            gene: Gene::A,
+            allele_group: String::from("01"),
+            hla_protein: Some(String::from("01")),
+            cds_syn_sub: None,
+            non_coding: None,
+            expression_change: ExpressionChange::Unknown,
+            ligand_info: None,
+        }
+    }
+}
+
 impl ClassI {
     pub fn new(
         gene: Gene,

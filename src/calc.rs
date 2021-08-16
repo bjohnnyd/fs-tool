@@ -1,4 +1,5 @@
 pub mod binding;
+pub mod fs;
 pub mod motif;
 
 use std::collections::{HashMap, HashSet};

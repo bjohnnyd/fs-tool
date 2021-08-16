@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use crate::calc::motif::Measure;
-use fxhash::{FxBuildHasher, FxHashMap};
+use fxhash::FxBuildHasher;
 use immunoprot::mhc::hla::ClassI;
+
+pub type MotifsBound = HashMap<String, usize, FxBuildHasher>;
 
 #[derive(Debug)]
 pub struct BindingMhc<'a> {
     hla: &'a ClassI,
-    binding_data: HashMap<&'a Measure, HashMap<String, usize, FxBuildHasher>>,
+    binding_data: HashMap<&'a Measure, MotifsBound>,
 }
 
 impl<'a> BindingMhc<'a> {
@@ -18,11 +20,7 @@ impl<'a> BindingMhc<'a> {
         }
     }
 
-    pub fn add_measure(
-        &mut self,
-        measure: &'a Measure,
-        motifs: HashMap<String, usize, FxBuildHasher>,
-    ) {
+    pub fn add_measure(&mut self, measure: &'a Measure, motifs: MotifsBound) {
         self.binding_data.insert(measure, motifs);
     }
 }
@@ -31,6 +29,12 @@ impl<'a> BindingMhc<'a> {
 mod test {
 
     use super::*;
+
+    const cd8_indices: &str = "2,3,4,5,6,7,9";
+    const kir_indices: &str = "2,7,8,9";
+
+    const orig_pep1: &str = "TPQDLNTML";
+    const orig_pep2: &str = "PQDLNTMLN";
 
     #[test]
     fn create_binding_hla() {

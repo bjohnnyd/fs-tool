@@ -1,5 +1,5 @@
 # The URL the site will be built for
-base_url = "https://bjohnnyd.github.io/fs-tool/public"
+base_url = "https://bjohnnyd.github.io/fs-tool"
 
 # Whether to automatically compile all Sass files in the sass directory
 compile_sass = false

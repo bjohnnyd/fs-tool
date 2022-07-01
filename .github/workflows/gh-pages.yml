@@ -3,7 +3,7 @@ name: gh-pages
 on:
   push:
     branches:
-      - gh-pages 
+      - gh-pages-dev
   
 jobs:
   build_and_deploy:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v3.0.0
         with:
-          ref: gh-pages
+          ref: gh-pages-dev
       - name: Build and deploy
         uses: shalzz/zola-deploy-action@master
         env:

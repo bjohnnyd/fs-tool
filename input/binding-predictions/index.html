@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>fstool</title>
+
+      
+      
+
+      <!-- CSS -->
+      
+      <link rel="stylesheet" href="https://bjohnnyd.github.io/fs-tool/book.css">
+      
+
+      
+      
+    </head>
+
+    <body>
+        <div class="menu">
+            
+            
+            <nav role="navigation">
+                <ul>
+                    
+                        
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;">
+                                    <strong>1.</strong>
+                                    Introduction
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;overview&#x2F;">
+                                                    <strong>1.1.</strong>
+                                                    Overview
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;installation&#x2F;">
+                                    <strong>2.</strong>
+                                    Installation
+                                </a>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;">
+                                    <strong>3.</strong>
+                                    Input
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;nomenclature&#x2F;">
+                                                    <strong>3.1.</strong>
+                                                    Nomenclature
+                                                </a>
+                                            </li>
+                                        
+                                            <li class="active">
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;binding-predictions&#x2F;">
+                                                    <strong>3.2.</strong>
+                                                    Binding Predictions
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;cohort&#x2F;">
+                                                    <strong>3.3.</strong>
+                                                    Cohort
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;">
+                                    <strong>4.</strong>
+                                    Usage
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;additional-arguments&#x2F;">
+                                                    <strong>4.1.</strong>
+                                                    Additional Arguments
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                    
+                </ul>
+            </nav>
+            
+            
+        </div>
+
+        <div class="page">
+            <div class="page__header">
+                <div class="menu-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                
+                <span class="search-icon">🔎</span>
+                
+            </div>
+
+            <div class="page__content">
+                
+                <div class="search-container">
+                    <input id="search" type="search" placeholder="Search..">
+                    <div class="search-results">
+                        <div class="search-results__header"></div>
+                        <ul class="search-results__items"></ul>
+                    </div>
+                </div>
+                
+                <div class="book-content">
+                    
+    <h1>Binding Predictions</h1>
+    <p>The required input is a file of binding predictions for the HLA class I alleles and proteome of interest.
+It is supplied using the <code>-b</code> or <code>--binding-predictions</code> flag.</p>
+<pre data-lang="sh" class="language-sh "><code class="language-sh" data-lang="sh">OPTIONS:                                                                                                                                 
+    -b, --binding-predictions &lt;binding-predictions&gt;... 
+	Path to file containing predicted Class I affinity data (NetMHCpan results) 
+</code></pre>
+<p>Currently the predictions have to be created using netMHCpan.</p>
+<h2 id="netmhcpan">NetMHCpan</h2>
+<p>The developers of netMHCpan were unable to provide a compatible download so this step needs to be performed separately by the user
+and cannot be performed from command line by <code>fs-tool</code>. </p>
+<p>There are two ways to run NetMHCpan, either as a standalone command line tool or by accessing it over the server. </p>
+<p>The two versions of netMHCpan supported are available at:</p>
+<ul>
+<li>version 4.0: <a href="https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0">https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.0</a></li>
+<li>version 4.1: <a href="https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.1">https://services.healthtech.dtu.dk/service.php?NetMHCpan-4.1</a></li>
+</ul>
+<p>The directions on obtaining the standalone version (for academic use only) are available under the <code>Downloads</code> tab.</p>
+<p>To generate the input file using the web server, there are details under the <code>Instruction</code> tab, but briefly go to the 
+<code>Submission</code> tab:</p>
+<ul>
+<li>Input your proteome of interest either via the input box or browsing to locate the fasta file on your local disk (one letter amino acid code).</li>
+<li>Select your peptide length. <code>fs-tool</code> can work with 8, 9, 10 or 11-mers. In the work presented in our paper we used 9-mers.</li>
+<li>Select your HLA class I alleles of interest, this should be all HLA class I alleles present in your cohort. 
+NetMHCpan takes up to a maximum of 20 alleles per run so If you need more than 20 alleles then you will need to generate predictions for 20 alleles at a time, then concatenate the resulting binding predictions together.</li>
+<li>The thresholds set in the netMHCpan run will be used in the <code>fs-tool</code>.</li>
+<li>Choose whether to define binders based on eluted ligand predictions (the default) or binding affinity predictions (for this check the box). 
+In our paper we choose to use binding affinity predictions rather than eluted ligand predictions since eluted peptides are thought to be heavily biased towards the most strongly binding peptides.</li>
+<li>Leave the “sort by prediction score” and “save predictions to XLS file” boxes  unchecked.</li>
+<li>Submit the run</li>
+</ul>
+<p>Copy and paste or download the resulting raw output and save this locally and note the path as this will be your input file.</p>
+<p>An example input file can be seen <a href="https://raw.githubusercontent.com/bjohnnyd/fs-tool/master/tests/input/binding_predictions/netmhcpan_wBA.txt">HERE</a>.</p>
+
+
+                </div>
+            </div>
+
+            <div class="prev-link">
+                
+    
+        <a class="previous" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;nomenclature&#x2F;"><</a>
+    
+
+            </div>
+
+            <div class="next-link">
+                
+    
+        <a class="next" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;cohort&#x2F;">></a>
+    
+
+            </div>
+        </div>
+
+        
+            
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/elasticlunr.min.js"></script>
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/search_index.en.js"></script>
+            
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/book.js"></script>
+        
+    </body>
+
+</html>

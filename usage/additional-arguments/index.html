@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>fstool</title>
+
+      
+      
+
+      <!-- CSS -->
+      
+      <link rel="stylesheet" href="https://bjohnnyd.github.io/fs-tool/book.css">
+      
+
+      
+      
+    </head>
+
+    <body>
+        <div class="menu">
+            
+            
+            <nav role="navigation">
+                <ul>
+                    
+                        
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;">
+                                    <strong>1.</strong>
+                                    Introduction
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;overview&#x2F;">
+                                                    <strong>1.1.</strong>
+                                                    Overview
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;installation&#x2F;">
+                                    <strong>2.</strong>
+                                    Installation
+                                </a>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;">
+                                    <strong>3.</strong>
+                                    Input
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;nomenclature&#x2F;">
+                                                    <strong>3.1.</strong>
+                                                    Nomenclature
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;binding-predictions&#x2F;">
+                                                    <strong>3.2.</strong>
+                                                    Binding Predictions
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;cohort&#x2F;">
+                                                    <strong>3.3.</strong>
+                                                    Cohort
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;">
+                                    <strong>4.</strong>
+                                    Usage
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li class="active">
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;additional-arguments&#x2F;">
+                                                    <strong>4.1.</strong>
+                                                    Additional Arguments
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                    
+                </ul>
+            </nav>
+            
+            
+        </div>
+
+        <div class="page">
+            <div class="page__header">
+                <div class="menu-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                
+                <span class="search-icon">🔎</span>
+                
+            </div>
+
+            <div class="page__content">
+                
+                <div class="search-container">
+                    <input id="search" type="search" placeholder="Search..">
+                    <div class="search-results">
+                        <div class="search-results__header"></div>
+                        <ul class="search-results__items"></ul>
+                    </div>
+                </div>
+                
+                <div class="book-content">
+                    
+    <h1>Additional Arguments</h1>
+    <p>In addition, to the arguments described in previous sections (<a href="https://bjohnnyd.github.io/fs-tool/input/binding-predictions/">Binding Predictions</a> and <a href="https://bjohnnyd.github.io/fs-tool/input/cohort/">Cohort</a>), detailed descriptions of the remaining arguments are:</p>
+<hr />
+<h4 id="o-or-output"><code>-o</code> or <code>--output</code></h4>
+<p>Specifies the output directory where all the results will be stored. This is a required argument.  If the directory does not exist, it will be created. </p>
+<hr />
+<h4 id="i-or-index"><code>-i</code> or <code>--index</code></h4>
+<p>Required only when <code>-c</code> or <code>--cohort</code> is provided.</p>
+<p>Each genotype in the cohort will be compared to this allele.  Multiple index alleles can be provides as space delimited values (e.g. <code>-i A02:01 C08:01</code>).</p>
+<hr />
+<h4 id="m-or-measure"><code>-m</code> or <code>--measure</code></h4>
+<p>In addition, to the default calculations based on TCR/KIR interaction positions it is possible to provide a custom motif and name.  All calculations will also be performed for the supplied measures.</p>
+<p>One or multiple measures can be provided as <code>Name:pos,pos,pos...</code> </p>
+<p>For example <code>-m Example1:1,2,3 Example2:4,5,6</code>, will produce additional entries in the output for measures named <code>Example1</code> and <code>Example2</code> based on the specified peptide positions/motifs.</p>
+<hr />
+<h4 id="drop-default"><code>--drop-default</code></h4>
+<p>If this flag is supplied, no calculations will be made on default motifs representing the TCR and KIR &quot;interaction space&quot;.</p>
+<hr />
+<h4 id="p-or-peptide-length"><code>-p</code> or <code>--peptide-length</code></h4>
+<p>By default only 9-mer peptides are used for calculations.  However, it is also possible to perform separate calculation for each k-mer as long as it is present in the binding predictions.</p>
+<p>Multiple peptide lengths can be supplied at the same time as <code>-p 8 9 10 11</code>, which will perform independent calculation for each of the 4 k-mer sizes.</p>
+<hr />
+<h4 id="u-or-unique"><code>-u</code> or <code>--unique</code></h4>
+<p>If the same motif occurs across diferent bound peptides for a given allele, they will be counted/considered only once.</p>
+<hr />
+<h4 id="prefix"><code>--prefix</code></h4>
+<p>This will prepend a identifier of choice to all the output files.  This is useful if you want to name the outputs after the specific cohort and proteome combination (e.g. <code>--prefix HTLV_RandomCohort</code>).</p>
+<hr />
+<h4 id="threads"><code>--threads</code></h4>
+<p>By default 4 threads are used for calculations but more can be provided, for very large proteomes this will make significant speed improvements if increased.</p>
+<hr />
+<h4 id="update"><code>--update</code></h4>
+<p>This flag will ensure that new EBI kir ligand motif data is downloaded before any calculations.</p>
+<hr />
+
+
+                </div>
+            </div>
+
+            <div class="prev-link">
+                
+    
+        
+        
+        <a class="previous" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;"><</a>
+    
+
+            </div>
+
+            <div class="next-link">
+                
+    
+        
+        
+        
+        
+            
+            
+            
+                
+            
+        
+            
+            
+            
+        
+            
+            
+            
+                
+            
+                
+            
+                
+            
+        
+            
+            
+            
+                
+                    
+                
+            
+        
+    
+
+            </div>
+        </div>
+
+        
+            
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/elasticlunr.min.js"></script>
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/search_index.en.js"></script>
+            
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/book.js"></script>
+        
+    </body>
+
+</html>

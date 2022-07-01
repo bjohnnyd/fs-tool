@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://bjohnnyd.github.io/fs-tool/sitemap.xml

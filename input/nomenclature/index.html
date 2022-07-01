@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>fstool</title>
+
+      
+      
+
+      <!-- CSS -->
+      
+      <link rel="stylesheet" href="https://bjohnnyd.github.io/fs-tool/book.css">
+      
+
+      
+      
+    </head>
+
+    <body>
+        <div class="menu">
+            
+            
+            <nav role="navigation">
+                <ul>
+                    
+                        
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;">
+                                    <strong>1.</strong>
+                                    Introduction
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;overview&#x2F;">
+                                                    <strong>1.1.</strong>
+                                                    Overview
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;installation&#x2F;">
+                                    <strong>2.</strong>
+                                    Installation
+                                </a>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;">
+                                    <strong>3.</strong>
+                                    Input
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li class="active">
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;nomenclature&#x2F;">
+                                                    <strong>3.1.</strong>
+                                                    Nomenclature
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;binding-predictions&#x2F;">
+                                                    <strong>3.2.</strong>
+                                                    Binding Predictions
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;cohort&#x2F;">
+                                                    <strong>3.3.</strong>
+                                                    Cohort
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;">
+                                    <strong>4.</strong>
+                                    Usage
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;additional-arguments&#x2F;">
+                                                    <strong>4.1.</strong>
+                                                    Additional Arguments
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                    
+                </ul>
+            </nav>
+            
+            
+        </div>
+
+        <div class="page">
+            <div class="page__header">
+                <div class="menu-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                
+                <span class="search-icon">🔎</span>
+                
+            </div>
+
+            <div class="page__content">
+                
+                <div class="search-container">
+                    <input id="search" type="search" placeholder="Search..">
+                    <div class="search-results">
+                        <div class="search-results__header"></div>
+                        <ul class="search-results__items"></ul>
+                    </div>
+                </div>
+                
+                <div class="book-content">
+                    
+    <h1>Nomenclature</h1>
+    <p><code>fs-tool</code> in all inputs expects a certain level on nomenclature standards being maintained.</p>
+<h2 id="hla-class-i">HLA Class I</h2>
+<p>HLA alllele nomenclature can vary substantially across tools, laboratories or even agencies.<br />
+There are certain times where it will take a considerable time to standardize the names where the benefit is not obvious.
+Example is the <code>HLA Prefix</code> or the <code>*</code> separator, however the field separator <code>:</code> and maintaining the Gene (<code>A0201</code> vs  <code>0201</code>) as part of the allele name ensure certain safeguards.</p>
+<p>An obvious one, is that using different programs and dealing with values as <code>0201</code> or <code>A0201</code> could lead to unwanted removal of the <code>0</code> digit as well as cause problems during parsing when such inputs are supplied to various programs.</p>
+<p>For this reason in all inpus to <code>fs-tool</code>, the <code>:</code> (colon) field separator must be present in both the <code>--index</code> allele supplied and in the cohort HLA genotype columns. This means that the following is true:</p>
+<table><thead><tr><th align="center">Example</th><th align="center">Valid</th></tr></thead><tbody>
+<tr><td align="center">A0201</td><td align="center">No</td></tr>
+<tr><td align="center">0201</td><td align="center">No</td></tr>
+<tr><td align="center">A02:01</td><td align="center">Yes</td></tr>
+<tr><td align="center">A*02:01</td><td align="center">Yes</td></tr>
+<tr><td align="center">HLA-A*02:01</td><td align="center">Yes</td></tr>
+<tr><td align="center">HLA-A*24:09N</td><td align="center">Yes</td></tr>
+<tr><td align="center">A30:14L</td><td align="center">Yes</td></tr>
+</tbody></table>
+<p>For further information on HLA nomenclature, please visit <a href="http://hla.alleles.org/nomenclature/naming.html">http://hla.alleles.org/nomenclature/naming.html</a>.</p>
+<h2 id="kir">KIR</h2>
+<p>KIR alleles supplied are valid with or without acronym and with or without  allele specifed. However, alleles speciefed have to have at least the three letter series specified (<code>KIR2DL1*003</code> vs <code>KIR2DL1*3</code>).<br />
+The <code>KIR acronym</code> is not required and can be ommited in the column names of cohort data.</p>
+<table><thead><tr><th align="center">Example</th><th align="center">Valid</th></tr></thead><tbody>
+<tr><td align="center">2DL1*03</td><td align="center">No</td></tr>
+<tr><td align="center">KIR2DL1</td><td align="center">Yes</td></tr>
+<tr><td align="center">2DL1</td><td align="center">Yes</td></tr>
+<tr><td align="center">KIR2DL5A</td><td align="center">Yes</td></tr>
+<tr><td align="center">2DL5B</td><td align="center">Yes</td></tr>
+<tr><td align="center">2DL1*0030202</td><td align="center">Yes</td></tr>
+</tbody></table>
+<p>The following KIR genes are currently supported:</p>
+<ul>
+<li>2DL1</li>
+<li>2DL2</li>
+<li>2DL3</li>
+<li>2DL4</li>
+<li>2DL5A/2DL5B</li>
+<li>2DS1</li>
+<li>2DS2</li>
+<li>2DS3</li>
+<li>2DS4</li>
+<li>2DS5</li>
+<li>3DL1/3DS1</li>
+<li>3DL2</li>
+<li>3DL3</li>
+<li>2DP1</li>
+<li>3DP1</li>
+</ul>
+<p>For more information, on the KIR gene/alelle nomenclature,  please visit  <a href="https://www.ebi.ac.uk/ipd/kir/alleles.html">https://www.ebi.ac.uk/ipd/kir/alleles.html</a></p>
+
+
+                </div>
+            </div>
+
+            <div class="prev-link">
+                
+    
+        
+        
+        <a class="previous" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;"><</a>
+    
+
+            </div>
+
+            <div class="next-link">
+                
+    
+        <a class="next" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;binding-predictions&#x2F;">></a>
+    
+
+            </div>
+        </div>
+
+        
+            
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/elasticlunr.min.js"></script>
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/search_index.en.js"></script>
+            
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/book.js"></script>
+        
+    </body>
+
+</html>

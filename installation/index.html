@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>fstool</title>
+
+      
+      
+
+      <!-- CSS -->
+      
+      <link rel="stylesheet" href="https://bjohnnyd.github.io/fs-tool/book.css">
+      
+
+      
+      
+    </head>
+
+    <body>
+        <div class="menu">
+            
+            
+            <nav role="navigation">
+                <ul>
+                    
+                        
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;">
+                                    <strong>1.</strong>
+                                    Introduction
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;overview&#x2F;">
+                                                    <strong>1.1.</strong>
+                                                    Overview
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li class="active">
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;installation&#x2F;">
+                                    <strong>2.</strong>
+                                    Installation
+                                </a>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;">
+                                    <strong>3.</strong>
+                                    Input
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;nomenclature&#x2F;">
+                                                    <strong>3.1.</strong>
+                                                    Nomenclature
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;binding-predictions&#x2F;">
+                                                    <strong>3.2.</strong>
+                                                    Binding Predictions
+                                                </a>
+                                            </li>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;cohort&#x2F;">
+                                                    <strong>3.3.</strong>
+                                                    Cohort
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                            
+                            <li >
+                                
+                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;">
+                                    <strong>4.</strong>
+                                    Usage
+                                </a>
+                                
+                                    <ul>
+                                        
+                                            <li >
+                                                <a href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;usage&#x2F;additional-arguments&#x2F;">
+                                                    <strong>4.1.</strong>
+                                                    Additional Arguments
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                        
+                    
+                </ul>
+            </nav>
+            
+            
+        </div>
+
+        <div class="page">
+            <div class="page__header">
+                <div class="menu-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                
+                <span class="search-icon">🔎</span>
+                
+            </div>
+
+            <div class="page__content">
+                
+                <div class="search-container">
+                    <input id="search" type="search" placeholder="Search..">
+                    <div class="search-results">
+                        <div class="search-results__header"></div>
+                        <ul class="search-results__items"></ul>
+                    </div>
+                </div>
+                
+                <div class="book-content">
+                    
+    <h1>Installation</h1>
+    <p>The simplest way to use <code>fs-tool</code> is to download the provided binary for your OS.</p>
+<h2 id="binary">Binary</h2>
+<ul>
+<li>
+<p>Windows</p>
+<ul>
+<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip">Zip</a></li>
+<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz">Tar</a></li>
+</ul>
+</li>
+<li>
+<p>Linux</p>
+<ul>
+<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.zip">Zip</a></li>
+<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-pc-windows-gnu.tar.gz">Tar</a></li>
+</ul>
+</li>
+<li>
+<p>MacOS</p>
+<ul>
+<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.zip">Zip</a></li>
+<li><a href="https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-apple-darwin.tar.gz">Tar</a></li>
+</ul>
+</li>
+</ul>
+<p>After downloading and uncompressing the archive to test the download open Terminal/Command Prompt and navigate to the download location:</p>
+<pre data-lang="sh" class="language-sh "><code class="language-sh" data-lang="sh">cd &lt;path&#x2F;to&#x2F;uncompressed archive&#x2F;&gt;
+</code></pre>
+<p>and run the command:</p>
+<pre data-lang="sh" class="language-sh "><code class="language-sh" data-lang="sh">.&#x2F;fs-tool --settings
+</code></pre>
+<p>or on Windows:</p>
+<pre data-lang="ps1" class="language-ps1 "><code class="language-ps1" data-lang="ps1">fs-tool.exe --settings
+</code></pre>
+<p>the output should look similar to this:</p>
+<pre><code>   Default Measures:
+      - TCR:2,3,4,5,6,9
+      - KIR,2,7,8,9
+   
+   Updated data will be storead at: &#x27;&lt;path&#x2F;to&#x2F;your&#x2F;os&#x2F;data&#x2F;dir&gt;&#x27;
+</code></pre>
+<p>where <code>path/to/your/os/data/dir</code> will be an OS specific directory where global data will be stored (not the output just metadata).</p>
+<h2 id="install-manually">Install Manually</h2>
+<p>To install manually (build from source) you will need to:</p>
+<ol>
+<li>Download and install <a href="https://rustup.rs/">Rustup</a>.</li>
+<li>Download the latest archive of the repository <a href="https://github.com/bjohnnyd/fs-tool/archive/master.zip">HERE</a></li>
+<li>Uncompress the downloaded <code>master.zip</code> and change to the created directory (e.g. <code>cd fs-tool-master</code>)</li>
+<li>Inside the directory run the command <code>cargo build --release --bin fs-tool</code></li>
+<li>Once the build has finished, you can find the binary inside the directory <code>/target/release</code> named <code>fs-tool</code> on linux/osx and <code>fs-tool.exe</code> on windows.</li>
+<li>You can copy/move the binary to a directory of choice and add it to your PATH so it can be ran from any location. </li>
+</ol>
+
+
+                </div>
+            </div>
+
+            <div class="prev-link">
+                
+    
+    
+    
+    
+        
+        
+            
+        
+    
+        
+        
+            
+        
+    
+        
+        
+            
+        
+    
+        
+        
+            
+                
+                    
+                    <a class="previous" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;introduction&#x2F;overview&#x2F;"><</a>
+                
+                
+                
+            
+        
+    
+
+            </div>
+
+            <div class="next-link">
+                
+    
+        
+        
+        
+        
+            
+            
+            
+        
+            
+            
+            
+                
+            
+        
+            
+            
+                <a class="next" href="https:&#x2F;&#x2F;bjohnnyd.github.io&#x2F;fs-tool&#x2F;input&#x2F;">></a>
+                
+                
+            
+            
+        
+            
+            
+            
+        
+    
+
+            </div>
+        </div>
+
+        
+            
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/elasticlunr.min.js"></script>
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/search_index.en.js"></script>
+            
+            <script type="text/javascript" src="https://bjohnnyd.github.io/fs-tool/book.js"></script>
+        
+    </body>
+
+</html>

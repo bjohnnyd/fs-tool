@@ -1,0 +1,20 @@
+name: gh-pages
+
+on:
+  push:
+    branches:
+      - gh-pages-dev
+  
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v3.0.0
+        with:
+          ref: gh-pages-dev
+      - name: Build and deploy
+        uses: shalzz/zola-deploy-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+

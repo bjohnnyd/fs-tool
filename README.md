@@ -159,7 +159,7 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 [link-author1]: https://github.com/becca-asquith
 [link-author2]: https://github.com/liesb
 
-[link-docs]: https://bjohnnyd.github.io/fs-tool/public/introduction
+[link-docs]: https://bjohnnyd.github.io/fs-tool/introduction/
 
 [linux-tar]: https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.tar.gz
 [linux-zip]: https://github.com/bjohnnyd/fs-tool/releases/latest/download/x86_64-unknown-linux-gnu.zip
